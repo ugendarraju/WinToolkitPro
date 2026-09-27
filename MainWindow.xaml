@@ -1,0 +1,66 @@
+<ui:FluentWindow x:Class="WinToolkit.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:vm="clr-namespace:WinToolkit.ViewModels"
+        xmlns:views="clr-namespace:WinToolkit.Views"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
+        Title="WinToolkit Pro" Height="820" Width="1180"
+        MinHeight="650" MinWidth="950"
+        WindowStartupLocation="CenterScreen"
+        ExtendsContentIntoTitleBar="True"
+        WindowBackdropType="Mica">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top Fluent TitleBar -->
+        <ui:TitleBar Grid.Row="0" Title="WinToolkit Pro">
+            <ui:TitleBar.Header>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
+                    <!-- Title & Tag -->
+                    <TextBlock Text="⚡ WinToolkit Pro" FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    
+                    <!-- Admin Indicator -->
+                    <Border Background="#1f2d3d" CornerRadius="4" Padding="6,2" Margin="0,0,6,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding SystemInfo}" FontSize="11" Foreground="#38bdf8"/>
+                    </Border>
+
+                    <!-- Elevate Button (shown only when NOT admin) -->
+                    <Button Content="🛡️ Elevate to Admin" Command="{Binding RestartAsAdminCommand}" 
+                            Visibility="{Binding CanElevate, Converter={StaticResource BoolToVis}}"
+                            Background="#991b1b" Foreground="White" FontWeight="SemiBold"
+                            Padding="8,2" FontSize="11" Margin="0,0,6,0" VerticalAlignment="Center"/>
+
+                    <!-- Theme Toggle -->
+                    <Button Content="🌓 Theme" Command="{Binding ToggleThemeCommand}" 
+                            Padding="8,2" FontSize="11" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+            </ui:TitleBar.Header>
+        </ui:TitleBar>
+
+        <!-- Main Navigation TabControl -->
+        <TabControl Grid.Row="1" Margin="12,4,12,12" 
+                    SelectedIndex="{Binding SelectedNavigationIndex}">
+            <!-- Apps Tab -->
+            <TabItem Header="📦 Software Installer">
+                <views:AppsView DataContext="{Binding AppsVM}"/>
+            </TabItem>
+
+            <!-- Optimizer Tab -->
+            <TabItem Header="⚡ OS Optimizer">
+                <views:OptimizerView DataContext="{Binding OptimizerVM}"/>
+            </TabItem>
+
+            <!-- Drivers Tab -->
+            <TabItem Header="🚗 Drivers &amp; Hardware">
+                <views:DriversView DataContext="{Binding DriversVM}"/>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</ui:FluentWindow>

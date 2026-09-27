@@ -1,0 +1,186 @@
+[
+  {
+    "Id": "chrome",
+    "Name": "Google Chrome",
+    "WingetId": "Google.Chrome",
+    "Category": "Browsers",
+    "Description": "Fast, secure, and customizable web browser built by Google.",
+    "Icon": "Globe24"
+  },
+  {
+    "Id": "firefox",
+    "Name": "Mozilla Firefox",
+    "WingetId": "Mozilla.Firefox",
+    "Category": "Browsers",
+    "Description": "Free and open-source web browser focused on privacy.",
+    "Icon": "Globe24"
+  },
+  {
+    "Id": "brave",
+    "Name": "Brave Browser",
+    "WingetId": "Brave.Brave",
+    "Category": "Browsers",
+    "Description": "Privacy-first browser with built-in ad and tracker blocker.",
+    "Icon": "Shield24"
+  },
+  {
+    "Id": "operagx",
+    "Name": "Opera GX",
+    "WingetId": "Opera.OperaGX",
+    "Category": "Browsers",
+    "Description": "Gaming browser with CPU, RAM, and network limiters.",
+    "Icon": "Globe24"
+  },
+  {
+    "Id": "vscode",
+    "Name": "Visual Studio Code",
+    "WingetId": "Microsoft.VisualStudioCode",
+    "Category": "Developer Tools",
+    "Description": "Modern code editor with rich ecosystem and extension marketplace.",
+    "Icon": "Code24"
+  },
+  {
+    "Id": "git",
+    "Name": "Git for Windows",
+    "WingetId": "Git.Git",
+    "Category": "Developer Tools",
+    "Description": "Distributed version control system for source code tracking.",
+    "Icon": "BranchCompare24"
+  },
+  {
+    "Id": "nodejs",
+    "Name": "Node.js (LTS)",
+    "WingetId": "OpenJS.NodeJS.LTS",
+    "Category": "Developer Tools",
+    "Description": "Asynchronous event-driven JavaScript runtime environment.",
+    "Icon": "Code24"
+  },
+  {
+    "Id": "python",
+    "Name": "Python 3.12",
+    "WingetId": "Python.Python.3.12",
+    "Category": "Developer Tools",
+    "Description": "High-level general-purpose programming language.",
+    "Icon": "Code24"
+  },
+  {
+    "Id": "winterminal",
+    "Name": "Windows Terminal",
+    "WingetId": "Microsoft.WindowsTerminal",
+    "Category": "Developer Tools",
+    "Description": "Modern terminal application for PowerShell, CMD, and WSL.",
+    "Icon": "WindowConsole20"
+  },
+  {
+    "Id": "7zip",
+    "Name": "7-Zip",
+    "WingetId": "7zip.7zip",
+    "Category": "Utilities",
+    "Description": "High-compression open-source file archiver and unpacker.",
+    "Icon": "FolderZip24"
+  },
+  {
+    "Id": "everything",
+    "Name": "Everything Search",
+    "WingetId": "voidtools.Everything",
+    "Category": "Utilities",
+    "Description": "Instant search engine for files and folders on NTFS drives.",
+    "Icon": "Search24"
+  },
+  {
+    "Id": "powertoys",
+    "Name": "Microsoft PowerToys",
+    "WingetId": "Microsoft.PowerToys",
+    "Category": "Utilities",
+    "Description": "Set of utilities for power users to tune and streamline Windows.",
+    "Icon": "Wrench24"
+  },
+  {
+    "Id": "notepadplusplus",
+    "Name": "Notepad++",
+    "WingetId": "Notepad++.Notepad++",
+    "Category": "Utilities",
+    "Description": "Fast tabbed source code editor and replacement for Notepad.",
+    "Icon": "DocumentText24"
+  },
+  {
+    "Id": "rufus",
+    "Name": "Rufus",
+    "WingetId": "Rufus.Rufus",
+    "Category": "Utilities",
+    "Description": "Create bootable USB flash drives easily and format media.",
+    "Icon": "Save24"
+  },
+  {
+    "Id": "vlc",
+    "Name": "VLC Media Player",
+    "WingetId": "VideoLAN.VLC",
+    "Category": "Media",
+    "Description": "Versatile multimedia player playing virtually all formats.",
+    "Icon": "PlayCircle24"
+  },
+  {
+    "Id": "spotify",
+    "Name": "Spotify",
+    "WingetId": "Spotify.Spotify",
+    "Category": "Media",
+    "Description": "Digital music and podcast streaming service.",
+    "Icon": "MusicNote224"
+  },
+  {
+    "Id": "obs",
+    "Name": "OBS Studio",
+    "WingetId": "OBSProject.OBSStudio",
+    "Category": "Media",
+    "Description": "Free software for video recording and live streaming.",
+    "Icon": "Video24"
+  },
+  {
+    "Id": "steam",
+    "Name": "Steam",
+    "WingetId": "Valve.Steam",
+    "Category": "Gaming",
+    "Description": "Premier gaming platform and store for PC games.",
+    "Icon": "Games24"
+  },
+  {
+    "Id": "epicgames",
+    "Name": "Epic Games Launcher",
+    "WingetId": "EpicGames.EpicGamesLauncher",
+    "Category": "Gaming",
+    "Description": "Store and launcher for Unreal Engine and Epic games.",
+    "Icon": "Games24"
+  },
+  {
+    "Id": "discord",
+    "Name": "Discord",
+    "WingetId": "Discord.Discord",
+    "Category": "Communication",
+    "Description": "Voice, video, and text communication service for communities.",
+    "Icon": "Chat24"
+  },
+  {
+    "Id": "telegram",
+    "Name": "Telegram Desktop",
+    "WingetId": "Telegram.TelegramDesktop",
+    "Category": "Communication",
+    "Description": "Fast and secure cloud-based messaging desktop client.",
+    "Icon": "Send24"
+  },
+  {
+    "Id": "vcredist",
+    "Name": "Visual C++ Runtimes (x64)",
+    "WingetId": "Microsoft.VCRedist.2015+.x64",
+    "Category": "Runtimes",
+    "Description": "Essential Visual C++ redistributable packages for games & apps.",
+    "Icon": "PuzzlePiece24"
+  },
+  {
+    "Id": "dotnetruntime",
+    "Name": ".NET Desktop Runtime 8",
+    "WingetId": "Microsoft.DotNet.DesktopRuntime.8",
+    "Category": "Runtimes",
+    "Description": "Allows running Windows desktop applications built with .NET 8.",
+    "Icon": "PuzzlePiece24"
+  }
+]

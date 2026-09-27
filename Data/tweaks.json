@@ -1,0 +1,128 @@
+[
+  {
+    "Id": "disable_telemetry",
+    "Title": "Disable Windows Telemetry & Data Collection",
+    "Category": "Privacy & Telemetry",
+    "Description": "Stops Windows from collecting diagnostic data, usage telemetry, and sending usage logs to Microsoft servers.",
+    "Impact": "Recommended",
+    "ApplyScript": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection' -Name 'AllowTelemetry' -Type DWord -Value 0 -Force; Stop-Service 'DiagTrack' -WarningAction SilentlyContinue; Set-Service 'DiagTrack' -StartupType Disabled",
+    "RevertScript": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection' -Name 'AllowTelemetry' -Type DWord -Value 1 -Force; Set-Service 'DiagTrack' -StartupType Automatic; Start-Service 'DiagTrack' -WarningAction SilentlyContinue"
+  },
+  {
+    "Id": "disable_bing_start",
+    "Title": "Disable Bing Search & Web Suggestions in Start Menu",
+    "Category": "Privacy & Telemetry",
+    "Description": "Prevents the Start Menu search from querying Bing and showing online ads or web search results, making local file search instant.",
+    "Impact": "Recommended",
+    "ApplyScript": "Set-ItemProperty -Path 'HKCU:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Explorer' -Name 'DisableSearchBoxSuggestions' -Type DWord -Value 1 -Force; Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Search' -Name 'BingSearchEnabled' -Type DWord -Value 0 -Force",
+    "RevertScript": "Remove-ItemProperty -Path 'HKCU:\\SOFTWARE\\Policies\\Microsoft\\Windows\\Explorer' -Name 'DisableSearchBoxSuggestions' -ErrorAction SilentlyContinue; Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Search' -Name 'BingSearchEnabled' -Type DWord -Value 1 -Force"
+  },
+  {
+    "Id": "disable_advertising_id",
+    "Title": "Disable Advertising ID for Personalized Ads",
+    "Category": "Privacy & Telemetry",
+    "Description": "Prevents Windows and third-party apps from tracking your activity across apps for targeted advertising.",
+    "Impact": "Safe",
+    "ApplyScript": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo' -Name 'Enabled' -Type DWord -Value 0 -Force",
+    "RevertScript": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo' -Name 'Enabled' -Type DWord -Value 1 -Force"
+  },
+  {
+    "Id": "disable_activity_history",
+    "Title": "Disable Activity History Tracking",
+    "Category": "Privacy & Telemetry",
+    "Description": "Prevents Windows from storing user timeline activities and uploading activity history to cloud servers.",
+    "Impact": "Safe",
+    "ApplyScript": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System' -Name 'EnableActivityFeed' -Type DWord -Value 0 -Force; Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System' -Name 'PublishUserActivities' -Type DWord -Value 0 -Force",
+    "RevertScript": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System' -Name 'EnableActivityFeed' -Type DWord -Value 1 -Force; Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\System' -Name 'PublishUserActivities' -Type DWord -Value 1 -Force"
+  },
+  {
+    "Id": "ultimate_performance_plan",
+    "Title": "Enable Ultimate Performance Power Plan",
+    "Category": "Performance",
+    "Description": "Unlocks the hidden Ultimate Performance power scheme which eliminates micro-latencies and keeps CPU cores responsive for heavy workloads and gaming.",
+    "Impact": "Recommended",
+    "ApplyScript": "$scheme = powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61; if ($scheme -match '([a-f0-9\\-]{36})') { powercfg -setactive $matches[1] }",
+    "RevertScript": "powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e"
+  },
+  {
+    "Id": "disable_game_bar_dvr",
+    "Title": "Disable Xbox Game DVR Background Recording",
+    "Category": "Performance",
+    "Description": "Disables background video capture for games, freeing up GPU encoding resources and increasing frame rates.",
+    "Impact": "Recommended",
+    "ApplyScript": "Set-ItemProperty -Path 'HKCU:\\System\\GameConfigStore' -Name 'GameDVR_Enabled' -Type DWord -Value 0 -Force; Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR' -Name 'AllowGameDVR' -Type DWord -Value 0 -Force",
+    "RevertScript": "Set-ItemProperty -Path 'HKCU:\\System\\GameConfigStore' -Name 'GameDVR_Enabled' -Type DWord -Value 1 -Force; Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Policies\\Microsoft\\Windows\\GameDVR' -Name 'AllowGameDVR' -Type DWord -Value 1 -Force"
+  },
+  {
+    "Id": "enable_hags",
+    "Title": "Enable Hardware-Accelerated GPU Scheduling (HAGS)",
+    "Category": "Performance",
+    "Description": "Allows the GPU to manage its own video memory directly, significantly reducing latency and improving game smoothness.",
+    "Impact": "Safe",
+    "ApplyScript": "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers' -Name 'HwSchMode' -Type DWord -Value 2 -Force",
+    "RevertScript": "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers' -Name 'HwSchMode' -Type DWord -Value 1 -Force"
+  },
+  {
+    "Id": "optimize_network_throttling",
+    "Title": "Disable Network Throttling for Gaming & Media",
+    "Category": "Performance",
+    "Description": "Windows limits non-multimedia network traffic to prevent packet flooding. Disabling it maximizes throughput and reduces ping in games.",
+    "Impact": "Safe",
+    "ApplyScript": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile' -Name 'NetworkThrottlingIndex' -Type DWord -Value 0xffffffff -Force; Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile' -Name 'SystemResponsiveness' -Type DWord -Value 0 -Force",
+    "RevertScript": "Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile' -Name 'NetworkThrottlingIndex' -Type DWord -Value 10 -Force; Set-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile' -Name 'SystemResponsiveness' -Type DWord -Value 20 -Force"
+  },
+  {
+    "Id": "remove_bloat_promos",
+    "Title": "Remove Pre-installed Consumer Bloatware & Sponsored Apps",
+    "Category": "Debloat",
+    "Description": "Silently uninstalls third-party pre-loaded store apps like TikTok, Disney, Candy Crush, Solitaire collection, and Spotify promo packages.",
+    "Impact": "Recommended",
+    "ApplyScript": "$bloat = @('*CandyCrush*', '*TikTok*', '*Disney*', '*SpotifyAB*', '*Amazon*', '*Facebook*', '*Twitter*', '*EclipseManager*'); foreach ($app in $bloat) { Get-AppxPackage -Name $app -AllUsers -ErrorAction SilentlyContinue | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue }",
+    "RevertScript": "Write-Output 'Apps can be reinstalled from Microsoft Store if desired.'"
+  },
+  {
+    "Id": "remove_cortana_app",
+    "Title": "Remove Deprecated Cortana App",
+    "Category": "Debloat",
+    "Description": "Removes the standalone Cortana application which Microsoft has retired.",
+    "Impact": "Safe",
+    "ApplyScript": "Get-AppxPackage -Name '*Microsoft.549981C3F5F10*' -AllUsers -ErrorAction SilentlyContinue | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue",
+    "RevertScript": "Write-Output 'Cortana is deprecated by Microsoft.'"
+  },
+  {
+    "Id": "remove_feedback_hub",
+    "Title": "Remove Feedback Hub & Tips",
+    "Category": "Debloat",
+    "Description": "Removes Windows Tips, Feedback Hub, and 'Get Help' background prompts.",
+    "Impact": "Safe",
+    "ApplyScript": "Get-AppxPackage -Name '*WindowsFeedbackHub*' -AllUsers -ErrorAction SilentlyContinue | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue; Get-AppxPackage -Name '*GetHelp*' -AllUsers -ErrorAction SilentlyContinue | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue",
+    "RevertScript": "Write-Output 'Can be reinstalled from Microsoft Store.'"
+  },
+  {
+    "Id": "classic_context_menu",
+    "Title": "Restore Classic Windows 10 Right-Click Context Menu (Win 11)",
+    "Category": "UI & Customization",
+    "Description": "Brings back the full, immediate right-click context menu without needing to click 'Show more options' every time.",
+    "Impact": "Recommended",
+    "ApplyScript": "reg.exe add 'HKCU\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32' /f /ve; Stop-Process -Name explorer -Force",
+    "RevertScript": "reg.exe delete 'HKCU\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}' /f; Stop-Process -Name explorer -Force"
+  },
+  {
+    "Id": "show_file_extensions",
+    "Title": "Show Known File Extensions in File Explorer",
+    "Category": "UI & Customization",
+    "Description": "Always displays file extensions (.exe, .txt, .zip, etc.) so you can identify real file types and avoid malicious spoofed extensions.",
+    "Impact": "Safe",
+    "ApplyScript": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'HideFileExt' -Type DWord -Value 0 -Force; Stop-Process -Name explorer -Force",
+    "RevertScript": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'HideFileExt' -Type DWord -Value 1 -Force; Stop-Process -Name explorer -Force"
+  },
+  {
+    "Id": "show_hidden_files",
+    "Title": "Show Hidden Files & Folders in File Explorer",
+    "Category": "UI & Customization",
+    "Description": "Displays hidden system files and folders like AppData in File Explorer.",
+    "Impact": "Safe",
+    "ApplyScript": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'Hidden' -Type DWord -Value 1 -Force; Stop-Process -Name explorer -Force",
+    "RevertScript": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'Hidden' -Type DWord -Value 2 -Force; Stop-Process -Name explorer -Force"
+  }
+]
