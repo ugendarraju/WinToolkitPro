@@ -6,6 +6,12 @@ using WinToolkit.Services;
 
 namespace WinToolkit.ViewModels;
 
+public class AppCategoryGroup
+{
+    public required string CategoryName { get; set; }
+    public ObservableCollection<AppItem> Apps { get; set; } = new();
+}
+
 public partial class AppsViewModel : ObservableObject
 {
     private readonly WingetService _wingetService;
@@ -35,6 +41,7 @@ public partial class AppsViewModel : ObservableObject
 
     public ObservableCollection<AppItem> AllApps { get; } = new();
     public ObservableCollection<AppItem> FilteredApps { get; } = new();
+    public ObservableCollection<AppCategoryGroup> GroupedApps { get; } = new();
     public ObservableCollection<string> Categories { get; } = new();
     public ObservableCollection<string> Logs { get; } = new();
 
@@ -57,10 +64,29 @@ public partial class AppsViewModel : ObservableObject
         Categories.Clear();
         Categories.Add("All");
 
-        var distinctCategories = apps.Select(a => a.Category).Distinct().OrderBy(c => c);
-        foreach (var cat in distinctCategories)
+        // Fixed category order matching standard installer sections
+        var categoryOrder = new List<string>
         {
-            Categories.Add(cat);
+            "Web Browsers", "Messaging", "Media", ".NET", "Java",
+            "Imaging", "3D Printing", "Documents", "Security",
+            "Utilities", "Compression", "File Sharing", "Other",
+            "Online Storage", "Developer Tools", "VC++ Redistributables"
+        };
+
+        var loadedCategories = apps.Select(a => a.Category).Distinct().ToList();
+        foreach (var cat in categoryOrder)
+        {
+            if (loadedCategories.Contains(cat) && !Categories.Contains(cat))
+            {
+                Categories.Add(cat);
+            }
+        }
+        foreach (var cat in loadedCategories)
+        {
+            if (!Categories.Contains(cat))
+            {
+                Categories.Add(cat);
+            }
         }
 
         foreach (var app in apps)
@@ -84,6 +110,8 @@ public partial class AppsViewModel : ObservableObject
     private void ApplyFilter()
     {
         FilteredApps.Clear();
+        GroupedApps.Clear();
+
         var query = SearchQuery?.Trim() ?? string.Empty;
 
         var filtered = AllApps.Where(a =>
@@ -91,11 +119,26 @@ public partial class AppsViewModel : ObservableObject
             (string.IsNullOrWhiteSpace(query) ||
              a.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
              a.Description.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-             a.WingetId.Contains(query, StringComparison.OrdinalIgnoreCase)));
+             a.WingetId.Contains(query, StringComparison.OrdinalIgnoreCase))).ToList();
 
         foreach (var item in filtered)
         {
             FilteredApps.Add(item);
+        }
+
+        // Group by category while preserving clean section order
+        var groups = filtered
+            .GroupBy(a => a.Category)
+            .OrderBy(g => Categories.IndexOf(g.Key) >= 0 ? Categories.IndexOf(g.Key) : 999);
+
+        foreach (var group in groups)
+        {
+            var grp = new AppCategoryGroup { CategoryName = group.Key };
+            foreach (var app in group)
+            {
+                grp.Apps.Add(app);
+            }
+            GroupedApps.Add(grp);
         }
     }
 

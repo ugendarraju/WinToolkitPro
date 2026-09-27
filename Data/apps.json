@@ -3,120 +3,170 @@
     "Id": "chrome",
     "Name": "Google Chrome",
     "WingetId": "Google.Chrome",
-    "Category": "Browsers",
+    "Category": "Web Browsers",
     "Description": "Fast, secure, and customizable web browser built by Google.",
+    "Icon": "Globe24"
+  },
+  {
+    "Id": "opera",
+    "Name": "Opera",
+    "WingetId": "Opera.Opera",
+    "Category": "Web Browsers",
+    "Description": "Fast and secure browser with built-in ad blocker and VPN.",
     "Icon": "Globe24"
   },
   {
     "Id": "firefox",
     "Name": "Mozilla Firefox",
     "WingetId": "Mozilla.Firefox",
-    "Category": "Browsers",
+    "Category": "Web Browsers",
     "Description": "Free and open-source web browser focused on privacy.",
+    "Icon": "Globe24"
+  },
+  {
+    "Id": "edge",
+    "Name": "Microsoft Edge",
+    "WingetId": "Microsoft.Edge",
+    "Category": "Web Browsers",
+    "Description": "Fast and modern browser developed by Microsoft.",
     "Icon": "Globe24"
   },
   {
     "Id": "brave",
     "Name": "Brave Browser",
     "WingetId": "Brave.Brave",
-    "Category": "Browsers",
+    "Category": "Web Browsers",
     "Description": "Privacy-first browser with built-in ad and tracker blocker.",
     "Icon": "Shield24"
   },
   {
-    "Id": "operagx",
-    "Name": "Opera GX",
-    "WingetId": "Opera.OperaGX",
-    "Category": "Browsers",
-    "Description": "Gaming browser with CPU, RAM, and network limiters.",
+    "Id": "vivaldi",
+    "Name": "Vivaldi",
+    "WingetId": "VivaldiTechnologies.Vivaldi",
+    "Category": "Web Browsers",
+    "Description": "Powerful, personal, and private desktop browser.",
     "Icon": "Globe24"
   },
+
   {
-    "Id": "vscode",
-    "Name": "Visual Studio Code",
-    "WingetId": "Microsoft.VisualStudioCode",
-    "Category": "Developer Tools",
-    "Description": "Modern code editor with rich ecosystem and extension marketplace.",
-    "Icon": "Code24"
+    "Id": "zoom",
+    "Name": "Zoom Workplace",
+    "WingetId": "Zoom.Zoom",
+    "Category": "Messaging",
+    "Description": "Video conferencing and team messaging service.",
+    "Icon": "Chat24"
   },
   {
-    "Id": "git",
-    "Name": "Git for Windows",
-    "WingetId": "Git.Git",
-    "Category": "Developer Tools",
-    "Description": "Distributed version control system for source code tracking.",
-    "Icon": "BranchCompare24"
+    "Id": "discord",
+    "Name": "Discord",
+    "WingetId": "Discord.Discord",
+    "Category": "Messaging",
+    "Description": "Voice, video, and text communication platform for communities.",
+    "Icon": "Chat24"
   },
   {
-    "Id": "nodejs",
-    "Name": "Node.js (LTS)",
-    "WingetId": "OpenJS.NodeJS.LTS",
-    "Category": "Developer Tools",
-    "Description": "Asynchronous event-driven JavaScript runtime environment.",
-    "Icon": "Code24"
+    "Id": "teams",
+    "Name": "Microsoft Teams",
+    "WingetId": "Microsoft.Teams",
+    "Category": "Messaging",
+    "Description": "Workspace chat, video meetings, and file collaboration.",
+    "Icon": "Chat24"
   },
   {
-    "Id": "python",
-    "Name": "Python 3.12",
-    "WingetId": "Python.Python.3.12",
-    "Category": "Developer Tools",
-    "Description": "High-level general-purpose programming language.",
-    "Icon": "Code24"
+    "Id": "pidgin",
+    "Name": "Pidgin",
+    "WingetId": "Pidgin.Pidgin",
+    "Category": "Messaging",
+    "Description": "Multi-protocol instant messaging client.",
+    "Icon": "Chat24"
   },
   {
-    "Id": "winterminal",
-    "Name": "Windows Terminal",
-    "WingetId": "Microsoft.WindowsTerminal",
-    "Category": "Developer Tools",
-    "Description": "Modern terminal application for PowerShell, CMD, and WSL.",
-    "Icon": "WindowConsole20"
+    "Id": "thunderbird",
+    "Name": "Mozilla Thunderbird",
+    "WingetId": "Mozilla.Thunderbird",
+    "Category": "Messaging",
+    "Description": "Free email, calendar, and contacts client from Mozilla.",
+    "Icon": "Mail24"
   },
   {
-    "Id": "7zip",
-    "Name": "7-Zip",
-    "WingetId": "7zip.7zip",
-    "Category": "Utilities",
-    "Description": "High-compression open-source file archiver and unpacker.",
-    "Icon": "FolderZip24"
+    "Id": "trillian",
+    "Name": "Trillian",
+    "WingetId": "CeruleanStudios.Trillian",
+    "Category": "Messaging",
+    "Description": "Secure, cross-platform enterprise and modern instant messaging.",
+    "Icon": "Chat24"
   },
+
   {
-    "Id": "everything",
-    "Name": "Everything Search",
-    "WingetId": "voidtools.Everything",
-    "Category": "Utilities",
-    "Description": "Instant search engine for files and folders on NTFS drives.",
-    "Icon": "Search24"
-  },
-  {
-    "Id": "powertoys",
-    "Name": "Microsoft PowerToys",
-    "WingetId": "Microsoft.PowerToys",
-    "Category": "Utilities",
-    "Description": "Set of utilities for power users to tune and streamline Windows.",
-    "Icon": "Wrench24"
-  },
-  {
-    "Id": "notepadplusplus",
-    "Name": "Notepad++",
-    "WingetId": "Notepad++.Notepad++",
-    "Category": "Utilities",
-    "Description": "Fast tabbed source code editor and replacement for Notepad.",
-    "Icon": "DocumentText24"
-  },
-  {
-    "Id": "rufus",
-    "Name": "Rufus",
-    "WingetId": "Rufus.Rufus",
-    "Category": "Utilities",
-    "Description": "Create bootable USB flash drives easily and format media.",
-    "Icon": "Save24"
+    "Id": "itunes",
+    "Name": "iTunes",
+    "WingetId": "Apple.iTunes",
+    "Category": "Media",
+    "Description": "Media player and library application by Apple.",
+    "Icon": "MusicNote224"
   },
   {
     "Id": "vlc",
     "Name": "VLC Media Player",
     "WingetId": "VideoLAN.VLC",
     "Category": "Media",
-    "Description": "Versatile multimedia player playing virtually all formats.",
+    "Description": "Versatile open-source media player supporting nearly all formats.",
+    "Icon": "PlayCircle24"
+  },
+  {
+    "Id": "aimp",
+    "Name": "AIMP",
+    "WingetId": "AIMP.AIMP",
+    "Category": "Media",
+    "Description": "High-quality audio player with support for extensive formats.",
+    "Icon": "MusicNote224"
+  },
+  {
+    "Id": "foobar2000",
+    "Name": "foobar2000",
+    "WingetId": "PeterPawlowski.foobar2000",
+    "Category": "Media",
+    "Description": "Advanced, lightweight audio player for Windows.",
+    "Icon": "MusicNote224"
+  },
+  {
+    "Id": "winamp",
+    "Name": "Winamp",
+    "WingetId": "Winamp.Winamp",
+    "Category": "Media",
+    "Description": "Classic media player with skins, visualizers, and playlist tools.",
+    "Icon": "PlayCircle24"
+  },
+  {
+    "Id": "musicbee",
+    "Name": "MusicBee",
+    "WingetId": "StevenMayall.MusicBee",
+    "Category": "Media",
+    "Description": "Ultimate music manager and audio player for music lovers.",
+    "Icon": "MusicNote224"
+  },
+  {
+    "Id": "audacity",
+    "Name": "Audacity",
+    "WingetId": "Audacity.Audacity",
+    "Category": "Media",
+    "Description": "Free, open source, cross-platform audio recording and editing software.",
+    "Icon": "Speaker24"
+  },
+  {
+    "Id": "klite",
+    "Name": "K-Lite Codec Pack",
+    "WingetId": "CodecGuide.K-LiteCodecPack.Standard",
+    "Category": "Media",
+    "Description": "Collection of DirectShow filters, VFW/ACM codecs, and tools.",
+    "Icon": "Video24"
+  },
+  {
+    "Id": "gomplayer",
+    "Name": "GOM Player",
+    "WingetId": "GOMLab.GOMPlayer",
+    "Category": "Media",
+    "Description": "Free video player with built-in codec finder and subtitle support.",
     "Icon": "PlayCircle24"
   },
   {
@@ -124,63 +174,624 @@
     "Name": "Spotify",
     "WingetId": "Spotify.Spotify",
     "Category": "Media",
-    "Description": "Digital music and podcast streaming service.",
+    "Description": "Digital music, podcast, and video streaming service.",
     "Icon": "MusicNote224"
   },
   {
-    "Id": "obs",
-    "Name": "OBS Studio",
-    "WingetId": "OBSProject.OBSStudio",
+    "Id": "mediamonkey",
+    "Name": "MediaMonkey",
+    "WingetId": "VentisMedia.MediaMonkey",
     "Category": "Media",
-    "Description": "Free software for video recording and live streaming.",
+    "Description": "Media jukebox and library organizer for serious collectors.",
+    "Icon": "MusicNote224"
+  },
+  {
+    "Id": "handbrake",
+    "Name": "HandBrake",
+    "WingetId": "HandBrake.HandBrake",
+    "Category": "Media",
+    "Description": "Open-source tool for converting video from nearly any format.",
     "Icon": "Video24"
+  },
+
+  {
+    "Id": "dotnet_481",
+    "Name": ".NET Framework 4.8.1",
+    "WingetId": "Microsoft.DotNet.Framework.DeveloperPack_4_8_1",
+    "Category": ".NET",
+    "Description": "Microsoft .NET Framework 4.8.1 runtime pack.",
+    "Icon": "PuzzlePiece24"
+  },
+  {
+    "Id": "dotnet_desktop_8",
+    "Name": ".NET Desktop Runtime 8 (x64)",
+    "WingetId": "Microsoft.DotNet.DesktopRuntime.8",
+    "Category": ".NET",
+    "Description": "Enables running existing Windows desktop applications for .NET 8.",
+    "Icon": "PuzzlePiece24"
+  },
+  {
+    "Id": "dotnet_desktop_9",
+    "Name": ".NET Desktop Runtime 9 (x64)",
+    "WingetId": "Microsoft.DotNet.DesktopRuntime.9",
+    "Category": ".NET",
+    "Description": "Enables running Windows desktop applications built with modern .NET 9.",
+    "Icon": "PuzzlePiece24"
+  },
+  {
+    "Id": "aspnet_8",
+    "Name": "ASP.NET Core Runtime 8",
+    "WingetId": "Microsoft.DotNet.AspNetCore.8",
+    "Category": ".NET",
+    "Description": "Enables running ASP.NET Core web server applications on .NET 8.",
+    "Icon": "PuzzlePiece24"
+  },
+  {
+    "Id": "aspnet_9",
+    "Name": "ASP.NET Core Runtime 9",
+    "WingetId": "Microsoft.DotNet.AspNetCore.9",
+    "Category": ".NET",
+    "Description": "Enables running modern ASP.NET Core web server applications on .NET 9.",
+    "Icon": "PuzzlePiece24"
+  },
+
+  {
+    "Id": "oracle_jre8",
+    "Name": "Oracle Java Runtime Environment (JRE 8)",
+    "WingetId": "Oracle.JavaRuntimeEnvironment",
+    "Category": "Java",
+    "Description": "Official Oracle Java 8 JRE offline desktop runtime.",
+    "Icon": "Coffee24"
+  },
+  {
+    "Id": "temurin_jre17",
+    "Name": "Eclipse Temurin JRE 17 (LTS)",
+    "WingetId": "EclipseAdoptium.Temurin.17.JRE",
+    "Category": "Java",
+    "Description": "Open-source official production-ready Java SE runtime.",
+    "Icon": "Coffee24"
+  },
+
+  {
+    "Id": "krita",
+    "Name": "Krita",
+    "WingetId": "KDE.Krita",
+    "Category": "Imaging",
+    "Description": "Free and open source digital painting and 2D animation tool.",
+    "Icon": "PaintBrush24"
+  },
+  {
+    "Id": "blender",
+    "Name": "Blender",
+    "WingetId": "BlenderFoundation.Blender",
+    "Category": "Imaging",
+    "Description": "Free and open-source 3D creation suite.",
+    "Icon": "Design24"
+  },
+  {
+    "Id": "paintnet",
+    "Name": "Paint.NET",
+    "WingetId": "dotPDNLLC.paintdotnet",
+    "Category": "Imaging",
+    "Description": "Image and photo editing software for PCs running Windows.",
+    "Icon": "PaintBrush24"
+  },
+  {
+    "Id": "gimp",
+    "Name": "GIMP",
+    "WingetId": "GIMP.GIMP",
+    "Category": "Imaging",
+    "Description": "GNU Image Manipulation Program for photo retouching and authoring.",
+    "Icon": "PaintBrush24"
+  },
+  {
+    "Id": "irfanview",
+    "Name": "IrfanView",
+    "WingetId": "IrfanSkiljan.IrfanView",
+    "Category": "Imaging",
+    "Description": "Fast and compact graphic viewer for Windows.",
+    "Icon": "Image24"
+  },
+  {
+    "Id": "xnview",
+    "Name": "XnView MP",
+    "WingetId": "XnSoft.XnView.MP",
+    "Category": "Imaging",
+    "Description": "Image viewer, browser and converter with batch processing.",
+    "Icon": "Image24"
+  },
+  {
+    "Id": "inkscape",
+    "Name": "Inkscape",
+    "WingetId": "Inkscape.Inkscape",
+    "Category": "Imaging",
+    "Description": "Professional vector graphics editor for Windows.",
+    "Icon": "Design24"
+  },
+  {
+    "Id": "faststone",
+    "Name": "FastStone Image Viewer",
+    "WingetId": "FastStone.Viewer",
+    "Category": "Imaging",
+    "Description": "Fast, stable, user-friendly image browser, converter and editor.",
+    "Icon": "Image24"
+  },
+  {
+    "Id": "greenshot",
+    "Name": "Greenshot",
+    "WingetId": "Greenshot.Greenshot",
+    "Category": "Imaging",
+    "Description": "Lightweight screenshot software tool for Windows.",
+    "Icon": "Crop24"
+  },
+  {
+    "Id": "sharex",
+    "Name": "ShareX",
+    "WingetId": "ShareX.ShareX",
+    "Category": "Imaging",
+    "Description": "Screen capture, file sharing and productivity tool.",
+    "Icon": "Crop24"
+  },
+
+  {
+    "Id": "bambustudio",
+    "Name": "Bambu Studio",
+    "WingetId": "Bambulab.Bambustudio",
+    "Category": "3D Printing",
+    "Description": "Cutting-edge, feature-rich 3D slicing software for Bambu Lab printers.",
+    "Icon": "Cube24"
+  },
+  {
+    "Id": "cura",
+    "Name": "UltiMaker Cura",
+    "WingetId": "Ultimaker.Cura",
+    "Category": "3D Printing",
+    "Description": "World's most popular 3D printing slicing engine.",
+    "Icon": "Cube24"
+  },
+
+  {
+    "Id": "foxitreader",
+    "Name": "Foxit PDF Reader",
+    "WingetId": "Foxit.FoxitReader",
+    "Category": "Documents",
+    "Description": "Small, fast, and feature-rich PDF reader.",
+    "Icon": "DocumentText24"
+  },
+  {
+    "Id": "libreoffice",
+    "Name": "LibreOffice",
+    "WingetId": "TheDocumentFoundation.LibreOffice",
+    "Category": "Documents",
+    "Description": "Free and powerful open source office suite.",
+    "Icon": "DocumentText24"
+  },
+  {
+    "Id": "sumatrapdf",
+    "Name": "SumatraPDF",
+    "WingetId": "SumatraPDF.SumatraPDF",
+    "Category": "Documents",
+    "Description": "Ultra-fast, lightweight open-source PDF, ePub, and comic book reader.",
+    "Icon": "DocumentText24"
+  },
+  {
+    "Id": "cutepdf",
+    "Name": "CutePDF Writer",
+    "WingetId": "AcroSoftware.CutePDFWriter",
+    "Category": "Documents",
+    "Description": "Virtual printer to create PDF documents from any Windows application.",
+    "Icon": "Print24"
+  },
+  {
+    "Id": "openoffice",
+    "Name": "Apache OpenOffice",
+    "WingetId": "Apache.OpenOffice",
+    "Category": "Documents",
+    "Description": "Leading open-source office suite for word processing and spreadsheets.",
+    "Icon": "DocumentText24"
+  },
+
+  {
+    "Id": "malwarebytes",
+    "Name": "Malwarebytes",
+    "WingetId": "Malwarebytes.Malwarebytes",
+    "Category": "Security",
+    "Description": "Comprehensive anti-malware and cyber threat scanner.",
+    "Icon": "Shield24"
+  },
+  {
+    "Id": "avast",
+    "Name": "Avast Free Antivirus",
+    "WingetId": "Avast.AvastFreeAntivirus",
+    "Category": "Security",
+    "Description": "Essential protection against viruses, malware, and ransomware.",
+    "Icon": "Shield24"
+  },
+  {
+    "Id": "avg",
+    "Name": "AVG AntiVirus Free",
+    "WingetId": "AVG.AVGProtectionFree",
+    "Category": "Security",
+    "Description": "Real-time virus scanner and malware security suite.",
+    "Icon": "Shield24"
+  },
+  {
+    "Id": "spybot2",
+    "Name": "Spybot Search & Destroy",
+    "WingetId": "SaferNetworking.Spybot2",
+    "Category": "Security",
+    "Description": "Spyware detector and remover for Windows systems.",
+    "Icon": "Shield24"
+  },
+  {
+    "Id": "avira",
+    "Name": "Avira Free Security",
+    "WingetId": "Avira.AviraFreeSecurity",
+    "Category": "Security",
+    "Description": "Antivirus, VPN, and system cleanup security package.",
+    "Icon": "Shield24"
+  },
+  {
+    "Id": "superantispyware",
+    "Name": "SUPERAntiSpyware",
+    "WingetId": "SUPERAntiSpyware.SUPERAntiSpyware",
+    "Category": "Security",
+    "Description": "Detects and eliminates spyware, trojans, adware, and dialers.",
+    "Icon": "Shield24"
+  },
+
+  {
+    "Id": "ultraviewer",
+    "Name": "UltraViewer",
+    "WingetId": "DucFabulous.UltraViewer",
+    "Category": "Utilities",
+    "Description": "Fast, safe remote desktop support and screen sharing software.",
+    "Icon": "WindowRemote24"
+  },
+  {
+    "Id": "wireshark",
+    "Name": "Wireshark",
+    "WingetId": "WiresharkFoundation.Wireshark",
+    "Category": "Utilities",
+    "Description": "World's foremost network protocol analyzer.",
+    "Icon": "NetworkCheck24"
+  },
+  {
+    "Id": "powertoys",
+    "Name": "Microsoft PowerToys",
+    "WingetId": "Microsoft.PowerToys",
+    "Category": "Utilities",
+    "Description": "Suite of utilities for power users to customize Windows.",
+    "Icon": "Wrench24"
+  },
+  {
+    "Id": "anydesk",
+    "Name": "AnyDesk",
+    "WingetId": "AnyDeskSoftwareGmbH.AnyDesk",
+    "Category": "Utilities",
+    "Description": "Fast remote desktop connectivity application.",
+    "Icon": "WindowRemote24"
+  },
+  {
+    "Id": "teamviewer",
+    "Name": "TeamViewer",
+    "WingetId": "TeamViewer.TeamViewer",
+    "Category": "Utilities",
+    "Description": "Comprehensive remote access, support, and collaboration solution.",
+    "Icon": "WindowRemote24"
+  },
+  {
+    "Id": "imgburn",
+    "Name": "ImgBurn",
+    "WingetId": "LIGHTNINGUK.ImgBurn",
+    "Category": "Utilities",
+    "Description": "Lightweight CD / DVD / HD DVD / Blu-ray burning application.",
+    "Icon": "Cd24"
+  },
+  {
+    "Id": "tightvnc",
+    "Name": "TightVNC",
+    "WingetId": "TightVNC.TightVNC",
+    "Category": "Utilities",
+    "Description": "Free, open-source remote control and administration tool.",
+    "Icon": "WindowRemote24"
+  },
+  {
+    "Id": "teracopy",
+    "Name": "TeraCopy",
+    "WingetId": "CodeSector.TeraCopy",
+    "Category": "Utilities",
+    "Description": "Accelerate file copying, verify integrity with checksums, and resume transfers.",
+    "Icon": "Copy24"
+  },
+  {
+    "Id": "cdburnerxp",
+    "Name": "CDBurnerXP",
+    "WingetId": "Canneverbe.CDBurnerXP",
+    "Category": "Utilities",
+    "Description": "Burn CDs and DVDs, including Blu-Ray and HD-DVDs.",
+    "Icon": "Cd24"
+  },
+  {
+    "Id": "revo",
+    "Name": "Revo Uninstaller",
+    "WingetId": "RevoUninstaller.RevoUninstaller",
+    "Category": "Utilities",
+    "Description": "Thorough software uninstaller removing leftover files and registry entries.",
+    "Icon": "Delete24"
+  },
+  {
+    "Id": "launchy",
+    "Name": "Launchy",
+    "WingetId": "Launchy.Launchy",
+    "Category": "Utilities",
+    "Description": "Keystroke launcher for quickly finding programs and documents.",
+    "Icon": "Search24"
+  },
+  {
+    "Id": "windirstat",
+    "Name": "WinDirStat",
+    "WingetId": "WinDirStat.WinDirStat",
+    "Category": "Utilities",
+    "Description": "Disk usage statistics viewer and cleanup tool for Windows.",
+    "Icon": "Storage24"
+  },
+  {
+    "Id": "wiztree",
+    "Name": "WizTree",
+    "WingetId": "AntibodySoftware.WizTree",
+    "Category": "Utilities",
+    "Description": "Ultra-fast disk space analyzer that scans directly via MFT in seconds.",
+    "Icon": "Storage24"
+  },
+  {
+    "Id": "glary",
+    "Name": "Glary Utilities",
+    "WingetId": "Glarysoft.GlaryUtilities",
+    "Category": "Utilities",
+    "Description": "Powerful system cleaning, optimization, and registry maintenance.",
+    "Icon": "Wrench24"
+  },
+  {
+    "Id": "infrarecorder",
+    "Name": "InfraRecorder",
+    "WingetId": "InfraRecorder.InfraRecorder",
+    "Category": "Utilities",
+    "Description": "Free CD/DVD burning solution with ISO image support.",
+    "Icon": "Cd24"
+  },
+  {
+    "Id": "openshell",
+    "Name": "Open-Shell Menu",
+    "WingetId": "Open-Shell.Open-Shell-Menu",
+    "Category": "Utilities",
+    "Description": "Classic style start menu, taskbar, and File Explorer customization.",
+    "Icon": "Window24"
+  },
+  {
+    "Id": "ccleaner",
+    "Name": "CCleaner",
+    "WingetId": "Piriform.CCleaner",
+    "Category": "Utilities",
+    "Description": "Cleans temporary files, registry entries, and frees system disk space.",
+    "Icon": "Broom24"
+  },
+
+  {
+    "Id": "7zip",
+    "Name": "7-Zip",
+    "WingetId": "7zip.7zip",
+    "Category": "Compression",
+    "Description": "High-compression ratio open-source file archiver.",
+    "Icon": "FolderZip24"
+  },
+  {
+    "Id": "peazip",
+    "Name": "PeaZip",
+    "WingetId": "Giorgiotani.Peazip",
+    "Category": "Compression",
+    "Description": "Free file archiver utility supporting over 200 archive formats.",
+    "Icon": "FolderZip24"
+  },
+  {
+    "Id": "winrar",
+    "Name": "WinRAR",
+    "WingetId": "RARLab.WinRAR",
+    "Category": "Compression",
+    "Description": "Powerful archive manager supporting RAR, ZIP, and other formats.",
+    "Icon": "FolderZip24"
+  },
+
+  {
+    "Id": "qbittorrent",
+    "Name": "qBittorrent",
+    "WingetId": "qBittorrent.qBittorrent",
+    "Category": "File Sharing",
+    "Description": "Ad-free, open-source BitTorrent client with built-in search engine.",
+    "Icon": "ArrowDownload24"
+  },
+
+  {
+    "Id": "evernote",
+    "Name": "Evernote",
+    "WingetId": "Evernote.Evernote",
+    "Category": "Other",
+    "Description": "Note taking, project planning, and organization tool.",
+    "Icon": "Notebook24"
+  },
+  {
+    "Id": "googleearth",
+    "Name": "Google Earth Pro",
+    "WingetId": "Google.GoogleEarthPro",
+    "Category": "Other",
+    "Description": "Explore satellite imagery, 3D terrain of the entire globe.",
+    "Icon": "Globe24"
   },
   {
     "Id": "steam",
     "Name": "Steam",
     "WingetId": "Valve.Steam",
-    "Category": "Gaming",
-    "Description": "Premier gaming platform and store for PC games.",
+    "Category": "Other",
+    "Description": "Premier gaming platform and store for PC gaming.",
     "Icon": "Games24"
   },
   {
     "Id": "epicgames",
     "Name": "Epic Games Launcher",
     "WingetId": "EpicGames.EpicGamesLauncher",
-    "Category": "Gaming",
-    "Description": "Store and launcher for Unreal Engine and Epic games.",
+    "Category": "Other",
+    "Description": "Launcher and store for Epic Games, Unreal Engine, and Fortnite.",
     "Icon": "Games24"
   },
   {
-    "Id": "discord",
-    "Name": "Discord",
-    "WingetId": "Discord.Discord",
-    "Category": "Communication",
-    "Description": "Voice, video, and text communication service for communities.",
-    "Icon": "Chat24"
+    "Id": "keepass",
+    "Name": "KeePass 2",
+    "WingetId": "DominikReichl.KeePass",
+    "Category": "Other",
+    "Description": "Free, open-source, light-weight and easy-to-use password manager.",
+    "Icon": "Key24"
   },
   {
-    "Id": "telegram",
-    "Name": "Telegram Desktop",
-    "WingetId": "Telegram.TelegramDesktop",
-    "Category": "Communication",
-    "Description": "Fast and secure cloud-based messaging desktop client.",
-    "Icon": "Send24"
+    "Id": "everything",
+    "Name": "Everything Search",
+    "WingetId": "voidtools.Everything",
+    "Category": "Other",
+    "Description": "Instant search engine for files and folders by filename on NTFS drives.",
+    "Icon": "Search24"
   },
   {
-    "Id": "vcredist",
-    "Name": "Visual C++ Runtimes (x64)",
-    "WingetId": "Microsoft.VCRedist.2015+.x64",
-    "Category": "Runtimes",
-    "Description": "Essential Visual C++ redistributable packages for games & apps.",
-    "Icon": "PuzzlePiece24"
+    "Id": "nvda",
+    "Name": "NV Access (NVDA)",
+    "WingetId": "NVAccess.NVDA",
+    "Category": "Other",
+    "Description": "NonVisual Desktop Access (NVDA) free screen reader for Windows.",
+    "Icon": "Accessibility24"
+  },
+
+  {
+    "Id": "dropbox",
+    "Name": "Dropbox",
+    "WingetId": "Dropbox.Dropbox",
+    "Category": "Online Storage",
+    "Description": "Cloud storage and file synchronization desktop client.",
+    "Icon": "Cloud24"
   },
   {
-    "Id": "dotnetruntime",
-    "Name": ".NET Desktop Runtime 8",
-    "WingetId": "Microsoft.DotNet.DesktopRuntime.8",
-    "Category": "Runtimes",
-    "Description": "Allows running Windows desktop applications built with .NET 8.",
-    "Icon": "PuzzlePiece24"
+    "Id": "googledrive",
+    "Name": "Google Drive",
+    "WingetId": "Google.GoogleDrive",
+    "Category": "Online Storage",
+    "Description": "Sync and backup files to Google Drive cloud seamlessly.",
+    "Icon": "Cloud24"
+  },
+  {
+    "Id": "onedrive",
+    "Name": "Microsoft OneDrive",
+    "WingetId": "Microsoft.OneDrive",
+    "Category": "Online Storage",
+    "Description": "Store photos and docs online and access them from any PC.",
+    "Icon": "Cloud24"
+  },
+  {
+    "Id": "sugarsync",
+    "Name": "SugarSync",
+    "WingetId": "SugarSync.SugarSync",
+    "Category": "Online Storage",
+    "Description": "Cloud file sharing, online backup, and syncing service.",
+    "Icon": "Cloud24"
+  },
+
+  {
+    "Id": "python3",
+    "Name": "Python 3.12",
+    "WingetId": "Python.Python.3.12",
+    "Category": "Developer Tools",
+    "Description": "High-level programming language interpreter and pip package manager.",
+    "Icon": "Code24"
+  },
+  {
+    "Id": "git",
+    "Name": "Git for Windows",
+    "WingetId": "Git.Git",
+    "Category": "Developer Tools",
+    "Description": "Distributed version control system with Git Bash and GUI.",
+    "Icon": "BranchCompare24"
+  },
+  {
+    "Id": "filezilla",
+    "Name": "FileZilla Client",
+    "WingetId": "TimKosse.FileZilla.Client",
+    "Category": "Developer Tools",
+    "Description": "Fast and reliable cross-platform FTP, FTPS and SFTP client.",
+    "Icon": "Folder24"
+  },
+  {
+    "Id": "notepadplusplus",
+    "Name": "Notepad++",
+    "WingetId": "Notepad++.Notepad++",
+    "Category": "Developer Tools",
+    "Description": "Tabbed source code and text editor supporting multiple languages.",
+    "Icon": "DocumentText24"
+  },
+  {
+    "Id": "winscp",
+    "Name": "WinSCP",
+    "WingetId": "WinSCP.WinSCP",
+    "Category": "Developer Tools",
+    "Description": "SFTP, FTP, WebDAV, Amazon S3 and SCP client for Windows.",
+    "Icon": "Folder24"
+  },
+  {
+    "Id": "putty",
+    "Name": "PuTTY",
+    "WingetId": "PuTTY.PuTTY",
+    "Category": "Developer Tools",
+    "Description": "SSH and Telnet client for secure remote terminal access.",
+    "Icon": "WindowConsole20"
+  },
+  {
+    "Id": "winmerge",
+    "Name": "WinMerge",
+    "WingetId": "WinMerge.WinMerge",
+    "Category": "Developer Tools",
+    "Description": "Differencing and merging tool for files and directories.",
+    "Icon": "BranchCompare24"
+  },
+  {
+    "Id": "eclipse",
+    "Name": "Eclipse IDE",
+    "WingetId": "EclipseFoundation.Eclipse",
+    "Category": "Developer Tools",
+    "Description": "Integrated Development Environment for Java, C/C++, and PHP.",
+    "Icon": "Code24"
+  },
+  {
+    "Id": "vscode",
+    "Name": "Visual Studio Code",
+    "WingetId": "Microsoft.VisualStudioCode",
+    "Category": "Developer Tools",
+    "Description": "Code editor with Git integration, debugging, and extension store.",
+    "Icon": "Code24"
+  },
+  {
+    "Id": "cursor",
+    "Name": "Cursor AI Code Editor",
+    "WingetId": "Anysphere.Cursor",
+    "Category": "Developer Tools",
+    "Description": "AI-first code editor built for pair-programming with LLMs.",
+    "Icon": "Code24"
+  },
+
+  {
+    "Id": "vcredist_aio",
+    "Name": "Visual C++ Redistributable Runtimes All-in-One",
+    "WingetId": "abbodi1406.vcredist",
+    "Category": "VC++ Redistributables",
+    "Description": "Installs all Microsoft Visual C++ runtimes (2005 to 2022+ x86/x64) in a single silent package. Automatically extracts and executes install_all.bat -ai.",
+    "Icon": "PuzzlePiece24",
+    "InstallerType": "zip_bat",
+    "DownloadUrl": "https://github.com/abbodi1406/vcredist/releases/latest/download/VisualCppRedist_AIO_x86_x64.zip",
+    "BatFile": "install_all.bat",
+    "BatArguments": "-ai"
   }
 ]

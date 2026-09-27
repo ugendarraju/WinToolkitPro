@@ -21,6 +21,26 @@ public partial class AppItem : ObservableObject
     public string Description { get; set; } = string.Empty;
     public string Icon { get; set; } = "AppGeneric24";
 
+    /// <summary>
+    /// Type of installer: "winget" (default), or "zip_bat" (download zip, extract, and execute .bat)
+    /// </summary>
+    public string InstallerType { get; set; } = "winget";
+
+    /// <summary>
+    /// Direct download URL if not using standard winget or for custom zip
+    /// </summary>
+    public string? DownloadUrl { get; set; }
+
+    /// <summary>
+    /// Script or batch file name inside extracted zip, e.g. "install_all.bat"
+    /// </summary>
+    public string? BatFile { get; set; }
+
+    /// <summary>
+    /// Arguments for the batch file, e.g. "-ai"
+    /// </summary>
+    public string? BatArguments { get; set; }
+
     [ObservableProperty]
     private bool _isSelected;
 
