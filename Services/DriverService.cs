@@ -20,18 +20,37 @@ public class DriverService
         onLog?.Invoke("Scanning hardware devices and driver states...");
 
         var script = @"
-            $devices = Get-CimInstance Win32_PnPEntity | Where-Object { 
-                $_.PNPClass -in @('Display', 'Net', 'MEDIA', 'Bluetooth', 'System', 'Storage', 'Processor') -and $_.Name -ne $null
-            } | Select-Object -First 40 Name, PNPClass, Manufacturer, DeviceID, Status, ConfigManagerErrorCode
+            try { pnputil /scan-devices | Out-Null } catch { }
 
-            $result = foreach ($d in $devices) {
+            # Priority 1: Any device missing drivers or in error state (e.g. plugged-in Printers, Scanners without drivers)
+            $problemDevices = Get-CimInstance Win32_PnPEntity | Where-Object { 
+                $_.ConfigManagerErrorCode -ne 0 -and $_.Name -ne $null 
+            }
+
+            # Priority 2: Installed peripherals (Printers, Scanners, USB, Network, Audio, Display, etc.)
+            $standardDevices = Get-CimInstance Win32_PnPEntity | Where-Object { 
+                $_.ConfigManagerErrorCode -eq 0 -and $_.Name -ne $null -and
+                $_.PNPClass -in @('Printer', 'PrintQueue', 'Image', 'USB', 'USBDevice', 'Display', 'Net', 'MEDIA', 'Bluetooth', 'Storage', 'System', 'Processor', 'Ports', 'HIDClass')
+            } | Select-Object -First 60
+
+            $all = @($problemDevices) + @($standardDevices)
+
+            $result = foreach ($d in $all) {
                 $hasIssue = ($d.ConfigManagerErrorCode -ne 0 -or $d.Status -ne 'OK')
+                $statusText = if ($d.ConfigManagerErrorCode -eq 28) {
+                    'Driver Missing (Code 28)'
+                } elseif ($d.ConfigManagerErrorCode -ne 0) {
+                    ""Hardware Notice (Code $($d.ConfigManagerErrorCode))""
+                } else {
+                    'Healthy'
+                }
+
                 [PSCustomObject]@{
                     DeviceName = $d.Name
-                    DeviceClass = if ($d.PNPClass) { $d.PNPClass } else { 'System' }
+                    DeviceClass = if ($d.PNPClass) { $d.PNPClass } else { 'Peripheral Device' }
                     Manufacturer = if ($d.Manufacturer) { $d.Manufacturer } else { 'Unknown' }
                     HardwareId = $d.DeviceID
-                    Status = if ($hasIssue) { 'Needs Attention / Missing Driver' } else { 'Healthy' }
+                    Status = $statusText
                     HasUpdate = $hasIssue
                 }
             }
