@@ -213,119 +213,137 @@ public partial class WingetService
             }
 
             var tempDir = Path.Combine(Path.GetTempPath(), "WinToolkit", app.Id);
-            Directory.CreateDirectory(tempDir);
-            var zipPath = Path.Combine(tempDir, "package.zip");
-            var extractPath = Path.Combine(tempDir, "extracted");
-
-            onLog?.Invoke($"[{app.Name}] Downloading from {downloadUrl}...");
-            using (var response = await HttpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+            try
             {
-                response.EnsureSuccessStatusCode();
-                var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+                Directory.CreateDirectory(tempDir);
+                var zipPath = Path.Combine(tempDir, "package.zip");
+                var extractPath = Path.Combine(tempDir, "extracted");
 
-                await using var streamToReadFrom = await response.Content.ReadAsStreamAsync(cancellationToken);
-                await using var streamToWriteTo = File.Create(zipPath);
-
-                var buffer = new byte[81920];
-                var bytesRead = 0;
-                var totalBytesRead = 0L;
-
-                while ((bytesRead = await streamToReadFrom.ReadAsync(buffer, cancellationToken)) > 0)
+                onLog?.Invoke($"[{app.Name}] Downloading from {downloadUrl} to OS Temp directory...");
+                using (var response = await HttpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
                 {
-                    await streamToWriteTo.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
-                    totalBytesRead += bytesRead;
+                    response.EnsureSuccessStatusCode();
+                    var totalBytes = response.Content.Headers.ContentLength ?? -1L;
 
-                    if (totalBytes > 0)
+                    await using var streamToReadFrom = await response.Content.ReadAsStreamAsync(cancellationToken);
+                    await using var streamToWriteTo = File.Create(zipPath);
+
+                    var buffer = new byte[81920];
+                    var bytesRead = 0;
+                    var totalBytesRead = 0L;
+
+                    while ((bytesRead = await streamToReadFrom.ReadAsync(buffer, cancellationToken)) > 0)
                     {
-                        var pct = (double)totalBytesRead / totalBytes * 50.0;
-                        app.Progress = Math.Min(50.0, pct);
-                        app.StatusMessage = $"Downloading: {(int)(pct * 2)}%";
+                        await streamToWriteTo.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                        totalBytesRead += bytesRead;
+
+                        if (totalBytes > 0)
+                        {
+                            var pct = (double)totalBytesRead / totalBytes * 50.0;
+                            app.Progress = Math.Min(50.0, pct);
+                            app.StatusMessage = $"Downloading: {(int)(pct * 2)}%";
+                        }
                     }
                 }
-            }
 
-            app.Status = InstallStatus.Installing;
-            app.StatusMessage = "Extracting files...";
-            app.Progress = 60;
-            onLog?.Invoke($"[{app.Name}] Extracting zip package to {extractPath}...");
+                app.Status = InstallStatus.Installing;
+                app.StatusMessage = "Extracting files in OS Temp...";
+                app.Progress = 60;
+                onLog?.Invoke($"[{app.Name}] Extracting zip package to {extractPath}...");
 
-            if (Directory.Exists(extractPath))
-            {
-                Directory.Delete(extractPath, true);
-            }
-            Directory.CreateDirectory(extractPath);
-            ZipFile.ExtractToDirectory(zipPath, extractPath, true);
-
-            // Locate .bat file
-            var batTarget = app.BatFile ?? "install_all.bat";
-            var batFiles = Directory.GetFiles(extractPath, batTarget, SearchOption.AllDirectories);
-            if (batFiles.Length == 0)
-            {
-                // Find any .bat in folder
-                batFiles = Directory.GetFiles(extractPath, "*.bat", SearchOption.AllDirectories);
-            }
-
-            if (batFiles.Length == 0)
-            {
-                throw new FileNotFoundException($"Could not find batch installation script ({batTarget}) in package.");
-            }
-
-            var targetBat = batFiles[0];
-            var batWorkingDir = Path.GetDirectoryName(targetBat) ?? extractPath;
-            var batArgs = app.BatArguments ?? "-ai";
-
-            app.StatusMessage = "Running unattended batch installation...";
-            app.Progress = 75;
-            onLog?.Invoke($"[{app.Name}] Running script: {Path.GetFileName(targetBat)} {batArgs}...");
-
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "cmd.exe",
-                Arguments = $"/c \"\"{targetBat}\" {batArgs}\"",
-                WorkingDirectory = batWorkingDir,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-
-            using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
-            process.OutputDataReceived += (_, e) =>
-            {
-                if (!string.IsNullOrWhiteSpace(e.Data))
+                if (Directory.Exists(extractPath))
                 {
-                    onLog?.Invoke($"[{app.Name}] {e.Data}");
+                    Directory.Delete(extractPath, true);
                 }
-            };
-            process.ErrorDataReceived += (_, e) =>
-            {
-                if (!string.IsNullOrWhiteSpace(e.Data))
+                Directory.CreateDirectory(extractPath);
+                ZipFile.ExtractToDirectory(zipPath, extractPath, true);
+
+                // Locate .bat file
+                var batTarget = app.BatFile ?? "install_all.bat";
+                var batFiles = Directory.GetFiles(extractPath, batTarget, SearchOption.AllDirectories);
+                if (batFiles.Length == 0)
                 {
-                    onLog?.Invoke($"[{app.Name}] ERROR: {e.Data}");
+                    batFiles = Directory.GetFiles(extractPath, "*.bat", SearchOption.AllDirectories);
                 }
-            };
 
-            process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
+                if (batFiles.Length == 0)
+                {
+                    throw new FileNotFoundException($"Could not find batch installation script ({batTarget}) in package.");
+                }
 
-            using (cancellationToken.Register(() =>
+                var targetBat = batFiles[0];
+                var batWorkingDir = Path.GetDirectoryName(targetBat) ?? extractPath;
+                var batArgs = app.BatArguments ?? "-ai";
+
+                app.StatusMessage = "Running unattended batch installation...";
+                app.Progress = 75;
+                onLog?.Invoke($"[{app.Name}] Running script: {Path.GetFileName(targetBat)} {batArgs}...");
+
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/c \"\"{targetBat}\" {batArgs}\"",
+                    WorkingDirectory = batWorkingDir,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+                using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+                process.OutputDataReceived += (_, e) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(e.Data))
+                    {
+                        onLog?.Invoke($"[{app.Name}] {e.Data}");
+                    }
+                };
+                process.ErrorDataReceived += (_, e) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(e.Data))
+                    {
+                        onLog?.Invoke($"[{app.Name}] ERROR: {e.Data}");
+                    }
+                };
+
+                process.Start();
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+
+                using (cancellationToken.Register(() =>
+                {
+                    try
+                    {
+                        if (!process.HasExited) process.Kill(true);
+                    }
+                    catch { }
+                }))
+                {
+                    await process.WaitForExitAsync(cancellationToken);
+                }
+
+                app.Progress = 100;
+                app.Status = InstallStatus.Installed;
+                app.StatusMessage = "All runtimes installed successfully";
+                onLog?.Invoke($"[{app.Name}] Installation finished successfully!");
+                return true;
+            }
+            finally
             {
+                // Clean up OS temp folder for this package
                 try
                 {
-                    if (!process.HasExited) process.Kill(true);
+                    if (Directory.Exists(tempDir))
+                    {
+                        Directory.Delete(tempDir, true);
+                        onLog?.Invoke($"[{app.Name}] Cleaned up temporary installation folder: {tempDir}");
+                    }
                 }
-                catch { }
-            }))
-            {
-                await process.WaitForExitAsync(cancellationToken);
+                catch (Exception ex)
+                {
+                    onLog?.Invoke($"[{app.Name}] Note: Could not immediately delete temp folder (will be cleaned on exit): {ex.Message}");
+                }
             }
-
-            app.Progress = 100;
-            app.Status = InstallStatus.Installed;
-            app.StatusMessage = "All runtimes installed successfully";
-            onLog?.Invoke($"[{app.Name}] Installation finished successfully!");
-            return true;
         }
         catch (OperationCanceledException)
         {
@@ -341,5 +359,41 @@ public partial class WingetService
             onLog?.Invoke($"[{app.Name}] Installation error: {ex.Message}");
             return false;
         }
+    }
+
+    /// <summary>
+    /// Cleans up all temporary downloads, extracted archives, and cached installer files from OS Temp.
+    /// </summary>
+    public async Task CleanTempFilesAsync(Action<string>? onLog = null)
+    {
+        await Task.Run(() =>
+        {
+            try
+            {
+                var baseTemp = Path.Combine(Path.GetTempPath(), "WinToolkit");
+                if (Directory.Exists(baseTemp))
+                {
+                    onLog?.Invoke("🧹 Cleaning temporary downloads and cache from OS Temp...");
+                    Directory.Delete(baseTemp, true);
+                    onLog?.Invoke("✅ OS Temp folder cleaned successfully.");
+                }
+
+                // Also clean loose temporary winget download caches
+                var wingetTemp = Path.Combine(Path.GetTempPath(), "WinGet");
+                if (Directory.Exists(wingetTemp))
+                {
+                    try
+                    {
+                        Directory.Delete(wingetTemp, true);
+                        onLog?.Invoke("✅ WinGet temporary installer cache cleared.");
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                onLog?.Invoke($"Notice during temp cleanup: {ex.Message}");
+            }
+        });
     }
 }

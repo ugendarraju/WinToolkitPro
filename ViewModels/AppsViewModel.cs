@@ -182,22 +182,36 @@ public partial class AppsViewModel : ObservableObject
 
         AddLog($"Starting batch silent installation of {total} package(s)...");
 
-        foreach (var app in selectedApps)
+        try
         {
-            if (ct.IsCancellationRequested) break;
+            foreach (var app in selectedApps)
+            {
+                if (ct.IsCancellationRequested) break;
 
-            current++;
-            StatusText = $"Installing {app.Name} ({current}/{total})...";
-            OverallProgress = ((double)(current - 1) / total) * 100.0;
+                current++;
+                StatusText = $"Installing {app.Name} ({current}/{total})...";
+                OverallProgress = ((double)(current - 1) / total) * 100.0;
 
-            await _wingetService.InstallAppAsync(app, AddLog, ct);
+                await _wingetService.InstallAppAsync(app, AddLog, ct);
 
-            OverallProgress = ((double)current / total) * 100.0;
+                OverallProgress = ((double)current / total) * 100.0;
+            }
+
+            StatusText = ct.IsCancellationRequested ? "Installation cancelled." : "Batch installation finished!";
+            AddLog(StatusText);
         }
+        finally
+        {
+            // Automatically clean up all temporary download and extraction files from OS Temp
+            await _wingetService.CleanTempFilesAsync(AddLog);
+            IsInstalling = false;
+        }
+    }
 
-        IsInstalling = false;
-        StatusText = ct.IsCancellationRequested ? "Installation cancelled." : "Batch installation finished!";
-        AddLog(StatusText);
+    [RelayCommand]
+    private async Task CleanTempCache()
+    {
+        await _wingetService.CleanTempFilesAsync(AddLog);
     }
 
     [RelayCommand]
