@@ -45,7 +45,10 @@ public partial class AppItem : ObservableObject
     private bool _isSelected;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasActiveStatus))]
     private InstallStatus _status = InstallStatus.Idle;
+
+    public bool HasActiveStatus => Status != InstallStatus.Idle;
 
     [ObservableProperty]
     private string _statusMessage = "Ready";

@@ -6,167 +6,146 @@
              xmlns:vm="clr-namespace:WinToolkit.ViewModels"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:AppsViewModel}"
-             d:DesignHeight="700" d:DesignWidth="1050">
-    <Grid Margin="16">
+             d:DesignHeight="750" d:DesignWidth="1150">
+    <Grid Margin="16,12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="120"/>
+            <RowDefinition Height="100"/>
         </Grid.RowDefinitions>
 
         <!-- Top Header & Controls -->
-        <Grid Grid.Row="0" Margin="0,0,0,12">
+        <Grid Grid.Row="0" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <StackPanel Orientation="Vertical">
-                <TextBlock Text="Software Installer" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                <TextBlock Text="Select the softwares you want and click install to download and install them automatically." 
-                           FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0"/>
+                <TextBlock Text="1. Pick the apps you want" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                <TextBlock Text="Select softwares and click install to download and install them automatically without user input." 
+                           FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
             </StackPanel>
 
             <!-- Action Buttons -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button Content="Select All" Command="{Binding SelectAllCommand}" Margin="0,0,8,0" Padding="14,6"/>
-                <Button Content="Clear" Command="{Binding DeselectAllCommand}" Margin="0,0,8,0" Padding="14,6"/>
-                <Button Content="🧹 Clean Temp" Command="{Binding CleanTempCacheCommand}" Margin="0,0,12,0" Padding="12,6"/>
+                <Button Content="Select All" Command="{Binding SelectAllCommand}" Margin="0,0,6,0" Padding="12,5" FontSize="12"/>
+                <Button Content="Clear" Command="{Binding DeselectAllCommand}" Margin="0,0,6,0" Padding="12,5" FontSize="12"/>
+                <Button Content="🧹 Clean Temp" Command="{Binding CleanTempCacheCommand}" Margin="0,0,10,0" Padding="10,5" FontSize="12"/>
                 
                 <Button Content="{Binding SelectedCount, StringFormat='⚡ Install Selected ({0})'}" 
                         Command="{Binding InstallSelectedCommand}"
                         Background="{DynamicResource AccentFillColorDefaultBrush}"
                         Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
                         FontWeight="SemiBold"
-                        Padding="18,7"
-                        Margin="0,0,8,0"/>
+                        Padding="16,6"
+                        FontSize="13"
+                        Margin="0,0,6,0"/>
 
                 <Button Content="Cancel" Command="{Binding CancelInstallationCommand}" 
                         Visibility="{Binding IsInstalling, Converter={StaticResource BoolToVis}}"
-                        Padding="14,6"/>
+                        Padding="12,5" FontSize="12"/>
             </StackPanel>
         </Grid>
 
         <!-- Search & Filter Bar -->
         <Border Grid.Row="1" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
                 BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,12">
+                BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,10">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2*"/>
-                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="200"/>
                 </Grid.ColumnDefinitions>
 
                 <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" 
                          VerticalContentAlignment="Center"
-                         Padding="8,6"
+                         Padding="8,5"
+                         FontSize="12"
                          Margin="0,0,10,0"/>
 
                 <ComboBox Grid.Column="1" 
                           ItemsSource="{Binding Categories}" 
                           SelectedItem="{Binding SelectedCategory}"
-                          Padding="8,6"/>
+                          Padding="8,5"
+                          FontSize="12"/>
             </Grid>
         </Border>
 
-        <!-- Categorized Ninite-Style Sections Grid -->
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
+        <!-- Ninite-Style Multi-Column Grid View -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,8">
             <ItemsControl ItemsSource="{Binding GroupedApps}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <StackPanel Margin="0,0,0,18">
-                            <!-- Category Header -->
-                            <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
-                                    CornerRadius="6" Padding="10,6" Margin="0,0,0,8">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding CategoryName}" FontWeight="Bold" FontSize="15" 
+                        <Border Width="215" Margin="0,0,12,14" VerticalAlignment="Top"
+                                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                                BorderThickness="1" 
+                                CornerRadius="6" 
+                                Padding="10,8">
+                            <StackPanel>
+                                <!-- Category Title Header -->
+                                <Border BorderBrush="{DynamicResource AccentFillColorDefaultBrush}" 
+                                        BorderThickness="0,0,0,2" Padding="0,0,0,5" Margin="0,0,0,6">
+                                    <TextBlock Text="{Binding CategoryName}" FontWeight="Bold" FontSize="13" 
                                                Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                                    <TextBlock Text="{Binding Apps.Count, StringFormat=' ({0} apps)'}" FontSize="12" 
-                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" Margin="4,0,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                </Border>
 
-                            <!-- Apps inside this Category -->
-                            <ItemsControl ItemsSource="{Binding Apps}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel Orientation="Horizontal" ItemWidth="300"/>
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Margin="0,0,10,10" 
-                                                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
-                                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                                                BorderThickness="1" 
-                                                CornerRadius="8" 
-                                                Padding="12">
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="*"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
+                                <!-- Compact App Checkboxes List -->
+                                <ItemsControl ItemsSource="{Binding Apps}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,2" ToolTip="{Binding Description}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
 
-                                                <!-- Header: Checkbox -->
-                                                <CheckBox Grid.Row="0"
-                                                          IsChecked="{Binding IsSelected}" 
+                                                <!-- Checkbox with Name -->
+                                                <CheckBox IsChecked="{Binding IsSelected}" 
                                                           Content="{Binding Name}" 
-                                                          FontWeight="SemiBold" 
-                                                          FontSize="14"
+                                                          FontSize="12"
                                                           VerticalAlignment="Center"/>
 
-                                                <!-- Package ID -->
-                                                <TextBlock Grid.Row="1" Text="{Binding WingetId}" 
-                                                           FontSize="11" 
-                                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}" 
-                                                           Margin="26,2,0,4"/>
-
-                                                <!-- Description -->
-                                                <TextBlock Grid.Row="2" Text="{Binding Description}" 
-                                                           FontSize="12" 
-                                                           TextWrapping="Wrap" 
-                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                                           Margin="26,0,0,8" 
-                                                           MaxHeight="38" 
-                                                           TextTrimming="CharacterEllipsis"/>
-
-                                                <!-- Status & Progress Bar -->
-                                                <StackPanel Grid.Row="3" Margin="26,0,0,0">
-                                                    <TextBlock Text="{Binding StatusMessage}" FontSize="11" 
-                                                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" 
-                                                               Margin="0,0,0,4"/>
-                                                    <ProgressBar Value="{Binding Progress}" Maximum="100" Height="4" 
-                                                                 BorderThickness="0"
-                                                                 Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
-                                                </StackPanel>
+                                                <!-- Status Badge (only shown during/after install) -->
+                                                <Border Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0"
+                                                        CornerRadius="3" Padding="4,1"
+                                                        Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                                                        Visibility="{Binding HasActiveStatus, Converter={StaticResource BoolToVis}}">
+                                                    <TextBlock Text="{Binding StatusMessage}" FontSize="9" 
+                                                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                                </Border>
                                             </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
 
         <!-- Overall Progress Bar (Visible while installing) -->
-        <ProgressBar Grid.Row="3" Value="{Binding OverallProgress}" Maximum="100" Height="6" 
-                     Margin="0,0,0,8"
+        <ProgressBar Grid.Row="3" Value="{Binding OverallProgress}" Maximum="100" Height="5" 
+                     Margin="0,0,0,6"
                      Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
 
         <!-- Live Output Log Terminal -->
-        <Border Grid.Row="4" Background="#111116" BorderBrush="#33333e" BorderThickness="1" CornerRadius="6" Padding="8">
+        <Border Grid.Row="4" Background="#111116" BorderBrush="#33333e" BorderThickness="1" CornerRadius="6" Padding="6">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Text="Installation Console Logs" FontSize="11" FontWeight="SemiBold" Foreground="#888899" Margin="0,0,0,4"/>
+                <TextBlock Text="Installation Console Logs" FontSize="11" FontWeight="SemiBold" Foreground="#888899" Margin="2,0,0,2"/>
                 <ListBox Grid.Row="1" ItemsSource="{Binding Logs}" 
                          Background="Transparent" BorderThickness="0" 
                          FontFamily="Consolas, Cascadia Code, Courier New" FontSize="11" Foreground="#c0caf5"/>
