@@ -170,6 +170,38 @@
     "Description": "Enables running modern ASP.NET Core web server applications on .NET 9.",
     "Icon": "PuzzlePiece24"
   },
+  {
+    "Id": "dotnet_desktop_10",
+    "Name": ".NET Desktop Runtime 10 (x64)",
+    "WingetId": "Microsoft.DotNet.DesktopRuntime.10",
+    "Category": ".NET",
+    "Description": "Enables running Windows desktop applications built with .NET 10.",
+    "Icon": "PuzzlePiece24"
+  },
+  {
+    "Id": "dotnet_sdk_10",
+    "Name": ".NET SDK 10",
+    "WingetId": "Microsoft.DotNet.SDK.10",
+    "Category": ".NET",
+    "Description": "Software Development Kit for building modern cross-platform apps with .NET 10.",
+    "Icon": "Code24"
+  },
+  {
+    "Id": "dotnet_sdk_9",
+    "Name": ".NET SDK 9",
+    "WingetId": "Microsoft.DotNet.SDK.9",
+    "Category": ".NET",
+    "Description": "Software Development Kit for building applications with .NET 9.",
+    "Icon": "Code24"
+  },
+  {
+    "Id": "dotnet_sdk_8",
+    "Name": ".NET SDK 8 (LTS)",
+    "WingetId": "Microsoft.DotNet.SDK.8",
+    "Category": ".NET",
+    "Description": "Long-Term Support (LTS) Software Development Kit for .NET 8.",
+    "Icon": "Code24"
+  },
 
   {
     "Id": "oracle_jre8",
