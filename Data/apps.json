@@ -24,14 +24,6 @@
     "Icon": "Globe24"
   },
   {
-    "Id": "edge",
-    "Name": "Microsoft Edge",
-    "WingetId": "Microsoft.Edge",
-    "Category": "Web Browsers",
-    "Description": "Fast and modern browser developed by Microsoft.",
-    "Icon": "Globe24"
-  },
-  {
     "Id": "brave",
     "Name": "Brave Browser",
     "WingetId": "Brave.Brave",
@@ -73,28 +65,12 @@
     "Icon": "Chat24"
   },
   {
-    "Id": "pidgin",
-    "Name": "Pidgin",
-    "WingetId": "Pidgin.Pidgin",
-    "Category": "Messaging",
-    "Description": "Multi-protocol instant messaging client.",
-    "Icon": "Chat24"
-  },
-  {
     "Id": "thunderbird",
     "Name": "Mozilla Thunderbird",
     "WingetId": "Mozilla.Thunderbird",
     "Category": "Messaging",
     "Description": "Free email, calendar, and contacts client from Mozilla.",
     "Icon": "Mail24"
-  },
-  {
-    "Id": "trillian",
-    "Name": "Trillian",
-    "WingetId": "CeruleanStudios.Trillian",
-    "Category": "Messaging",
-    "Description": "Secure, cross-platform enterprise and modern instant messaging.",
-    "Icon": "Chat24"
   },
 
   {
@@ -122,30 +98,6 @@
     "Icon": "MusicNote224"
   },
   {
-    "Id": "foobar2000",
-    "Name": "foobar2000",
-    "WingetId": "PeterPawlowski.foobar2000",
-    "Category": "Media",
-    "Description": "Advanced, lightweight audio player for Windows.",
-    "Icon": "MusicNote224"
-  },
-  {
-    "Id": "winamp",
-    "Name": "Winamp",
-    "WingetId": "Winamp.Winamp",
-    "Category": "Media",
-    "Description": "Classic media player with skins, visualizers, and playlist tools.",
-    "Icon": "PlayCircle24"
-  },
-  {
-    "Id": "musicbee",
-    "Name": "MusicBee",
-    "WingetId": "StevenMayall.MusicBee",
-    "Category": "Media",
-    "Description": "Ultimate music manager and audio player for music lovers.",
-    "Icon": "MusicNote224"
-  },
-  {
     "Id": "audacity",
     "Name": "Audacity",
     "WingetId": "Audacity.Audacity",
@@ -162,27 +114,11 @@
     "Icon": "Video24"
   },
   {
-    "Id": "gomplayer",
-    "Name": "GOM Player",
-    "WingetId": "GOMLab.GOMPlayer",
-    "Category": "Media",
-    "Description": "Free video player with built-in codec finder and subtitle support.",
-    "Icon": "PlayCircle24"
-  },
-  {
     "Id": "spotify",
     "Name": "Spotify",
     "WingetId": "Spotify.Spotify",
     "Category": "Media",
     "Description": "Digital music, podcast, and video streaming service.",
-    "Icon": "MusicNote224"
-  },
-  {
-    "Id": "mediamonkey",
-    "Name": "MediaMonkey",
-    "WingetId": "VentisMedia.MediaMonkey",
-    "Category": "Media",
-    "Description": "Media jukebox and library organizer for serious collectors.",
     "Icon": "MusicNote224"
   },
   {
@@ -351,6 +287,22 @@
   },
 
   {
+    "Id": "msoffice",
+    "Name": "Microsoft 365 Apps (Word, Excel, PowerPoint)",
+    "WingetId": "Microsoft.Office",
+    "Category": "Documents",
+    "Description": "Official Microsoft Office suite containing Word, Excel, PowerPoint, Outlook, and OneNote.",
+    "Icon": "DocumentText24"
+  },
+  {
+    "Id": "acrobatreader",
+    "Name": "Adobe Acrobat Reader (64-bit)",
+    "WingetId": "Adobe.Acrobat.Reader.64-bit",
+    "Category": "Documents",
+    "Description": "Industry standard free PDF viewer for viewing, printing, and commenting on PDFs.",
+    "Icon": "DocumentText24"
+  },
+  {
     "Id": "foxitreader",
     "Name": "Foxit PDF Reader",
     "WingetId": "Foxit.FoxitReader",
@@ -416,27 +368,11 @@
     "Icon": "Shield24"
   },
   {
-    "Id": "spybot2",
-    "Name": "Spybot Search & Destroy",
-    "WingetId": "SaferNetworking.Spybot2",
-    "Category": "Security",
-    "Description": "Spyware detector and remover for Windows systems.",
-    "Icon": "Shield24"
-  },
-  {
     "Id": "avira",
     "Name": "Avira Free Security",
     "WingetId": "Avira.AviraFreeSecurity",
     "Category": "Security",
     "Description": "Antivirus, VPN, and system cleanup security package.",
-    "Icon": "Shield24"
-  },
-  {
-    "Id": "superantispyware",
-    "Name": "SUPERAntiSpyware",
-    "WingetId": "SUPERAntiSpyware.SUPERAntiSpyware",
-    "Category": "Security",
-    "Description": "Detects and eliminates spyware, trojans, adware, and dialers.",
     "Icon": "Shield24"
   },
 
@@ -669,6 +605,14 @@
   },
 
   {
+    "Id": "megasync",
+    "Name": "MEGAsync",
+    "WingetId": "Mega.MEGASync",
+    "Category": "Online Storage",
+    "Description": "Automated syncing between your computer and MEGA Cloud Storage.",
+    "Icon": "Cloud24"
+  },
+  {
     "Id": "dropbox",
     "Name": "Dropbox",
     "WingetId": "Dropbox.Dropbox",
@@ -701,6 +645,14 @@
     "Icon": "Cloud24"
   },
 
+  {
+    "Id": "nodejs",
+    "Name": "Node.js (LTS)",
+    "WingetId": "OpenJS.NodeJS.LTS",
+    "Category": "Developer Tools",
+    "Description": "JavaScript runtime built on Chrome's V8 engine with npm package manager.",
+    "Icon": "Code24"
+  },
   {
     "Id": "python3",
     "Name": "Python 3.12",
