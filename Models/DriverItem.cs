@@ -12,14 +12,29 @@ public partial class DriverItem : ObservableObject
     public string DriverDate { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _status = "Healthy";
+    private string _status = "Update Available";
+
+    [ObservableProperty]
+    private string _statusMessage = "Ready";
+
+    [ObservableProperty]
+    private double _progress;
 
     [ObservableProperty]
     private bool _hasUpdate;
 
     [ObservableProperty]
-    private bool _isSelected;
+    private bool _isSelected = true;
 
     [ObservableProperty]
     private bool _isBusy;
+
+    [ObservableProperty]
+    private bool _isSuccess;
+
+    [ObservableProperty]
+    private bool _isFailed;
+
+    [ObservableProperty]
+    private string _errorMessage = string.Empty;
 }

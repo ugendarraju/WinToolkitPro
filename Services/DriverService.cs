@@ -129,52 +129,127 @@ public class DriverService
         }
 
         onLog?.Invoke(list.Count > 0 
-            ? $"Found {list.Count} driver update(s) online!" 
+            ? $"Found {list.Count} certified driver update(s) online!" 
             : "All drivers are up to date in the Windows Update Catalog.");
 
         return list;
     }
 
     /// <summary>
-    /// Downloads and installs driver updates automatically through Windows Update Agent.
+    /// Downloads and installs driver updates one by one with real-time per-driver event notifications.
     /// </summary>
-    public async Task<bool> InstallDriverUpdatesAsync(Action<string>? onLog = null, CancellationToken cancellationToken = default)
+    public async Task<bool> InstallDriverUpdatesAsync(
+        Action<string>? onLog = null,
+        Action<int, string, string>? onDriverEvent = null,
+        CancellationToken cancellationToken = default)
     {
-        onLog?.Invoke("Beginning silent download and installation of certified driver updates...");
+        onLog?.Invoke("Starting step-by-step driver installation engine...");
 
         var script = @"
+            $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+            if (-not $isAdmin) {
+                Write-Output 'DRIVER_ERROR|ADMIN_REQUIRED|Administrator privileges required to install drivers. Please click Elevate to Admin.'
+                exit 1
+            }
+
             try {
                 $session = New-Object -ComObject Microsoft.Update.Session
                 $searcher = $session.CreateUpdateSearcher()
                 $searcher.ServerSelection = 2
                 $searchResult = $searcher.Search(""IsInstalled=0 and Type='Driver'"")
 
-                if ($searchResult.Updates.Count -eq 0) {
+                $count = $searchResult.Updates.Count
+                if ($count -eq 0) {
                     Write-Output 'No driver updates pending.'
                     exit 0
                 }
 
-                Write-Output ""Downloading $($searchResult.Updates.Count) driver updates...""
-                $downloader = $session.CreateUpdateDownloader()
-                $downloader.Updates = $searchResult.Updates
-                $downloader.Download()
+                Write-Output ""Processing $count driver updates sequentially...""
 
-                Write-Output 'Installing driver updates silently...'
-                $installer = $session.CreateUpdateInstaller()
-                $installer.Updates = $searchResult.Updates
-                $installResult = $installer.Install()
+                $successCount = 0
+                $failCount = 0
 
-                Write-Output ""Installation Result Code: $($installResult.ResultCode)""
+                for ($i = 0; $i -lt $count; $i++) {
+                    $update = $searchResult.Updates.Item($i)
+                    $title = $update.Title
+
+                    # Single-item update collection for download
+                    $singleColl = New-Object -ComObject Microsoft.Update.UpdateColl
+                    $singleColl.Add($update) | Out-Null
+
+                    # 1. Download
+                    Write-Output ""DRIVER_EVENT|$i|DOWNLOADING|$title""
+                    $downloader = $session.CreateUpdateDownloader()
+                    $downloader.Updates = $singleColl
+                    $downRes = $downloader.Download()
+
+                    if ($downRes.ResultCode -ne 2 -and $downRes.ResultCode -ne 3) {
+                        Write-Output ""DRIVER_EVENT|$i|FAILED|$title|Download failed with code $($downRes.ResultCode)""
+                        $failCount++
+                        continue
+                    }
+
+                    # 2. Install
+                    Write-Output ""DRIVER_EVENT|$i|INSTALLING|$title""
+                    $installer = $session.CreateUpdateInstaller()
+                    $installer.Updates = $singleColl
+                    $instRes = $installer.Install()
+
+                    # Result Codes: 2 = Succeeded, 3 = SucceededWithErrors, 4 = Failed, 5 = Aborted
+                    if ($instRes.ResultCode -eq 2 -or $instRes.ResultCode -eq 3) {
+                        Write-Output ""DRIVER_EVENT|$i|SUCCESS|$title""
+                        $successCount++
+                    } else {
+                        $updRes = $instRes.GetUpdateResult(0)
+                        $hres = $updRes.HResult
+                        Write-Output ""DRIVER_EVENT|$i|FAILED|$title|Install failed (Error: 0x$($hres.ToString('X')) - Code: $($instRes.ResultCode))""
+                        $failCount++
+                    }
+                }
+
+                Write-Output ""DRIVER_SUMMARY|$successCount|$failCount""
                 exit 0
             } catch {
-                Write-Error $_.Exception.Message
+                Write-Output ""DRIVER_ERROR|EXCEPTION|$($_.Exception.Message)""
                 exit 1
             }
         ";
 
         var (success, _, _) = await _powerShellService.ExecuteCommandAsync(
             script,
-            onOutputLine: line => onLog?.Invoke(line),
+            onOutputLine: line =>
+            {
+                if (string.IsNullOrWhiteSpace(line)) return;
+
+                if (line.StartsWith("DRIVER_EVENT|"))
+                {
+                    var parts = line.Split('|');
+                    if (parts.Length >= 4 && int.TryParse(parts[1], out var idx))
+                    {
+                        var stage = parts[2];
+                        var detail = parts.Length > 4 ? parts[4] : parts[3];
+                        onDriverEvent?.Invoke(idx, stage, detail);
+                    }
+                }
+                else if (line.StartsWith("DRIVER_SUMMARY|"))
+                {
+                    var parts = line.Split('|');
+                    if (parts.Length >= 3)
+                    {
+                        onLog?.Invoke($"🎯 Installation Complete: {parts[1]} driver(s) succeeded, {parts[2]} failed.");
+                    }
+                }
+                else if (line.StartsWith("DRIVER_ERROR|"))
+                {
+                    var parts = line.Split('|');
+                    var msg = parts.Length > 2 ? parts[2] : parts[1];
+                    onLog?.Invoke($"⚠️ ERROR: {msg}");
+                }
+                else
+                {
+                    onLog?.Invoke(line);
+                }
+            },
             cancellationToken: cancellationToken);
 
         return success;
@@ -186,7 +261,7 @@ public class DriverService
         var pnpClass = element.TryGetProperty("DeviceClass", out var c) ? c.GetString() ?? "System" : "System";
         var mfr = element.TryGetProperty("Manufacturer", out var m) ? m.GetString() ?? "Unknown" : "Unknown";
         var hwId = element.TryGetProperty("HardwareId", out var h) ? h.GetString() ?? "" : "";
-        var status = element.TryGetProperty("Status", out var s) ? s.GetString() ?? "Healthy" : "Healthy";
+        var status = element.TryGetProperty("Status", out var s) ? s.GetString() ?? "Update Available" : "Update Available";
         var hasUpd = element.TryGetProperty("HasUpdate", out var u) && u.GetBoolean();
 
         return new DriverItem
@@ -196,8 +271,9 @@ public class DriverService
             Manufacturer = mfr,
             HardwareId = hwId,
             Status = status,
+            StatusMessage = "Ready to install",
             HasUpdate = hasUpd,
-            IsSelected = hasUpd
+            IsSelected = true
         };
     }
 }
