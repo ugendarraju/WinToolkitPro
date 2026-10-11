@@ -66,6 +66,11 @@
             <TabItem Header="🔄 Windows Update">
                 <views:WindowsUpdateView DataContext="{Binding WindowsUpdateVM}"/>
             </TabItem>
+
+            <!-- System & Cache Cleaner Tab (CCleaner Style) -->
+            <TabItem Header="🧹 System Cleaner">
+                <views:CleanerView DataContext="{Binding CleanerVM}"/>
+            </TabItem>
         </TabControl>
     </Grid>
 </ui:FluentWindow>

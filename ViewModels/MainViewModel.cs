@@ -11,6 +11,7 @@ public partial class MainViewModel : ObservableObject
     public OptimizerViewModel OptimizerVM { get; }
     public DriversViewModel DriversVM { get; }
     public WindowsUpdateViewModel WindowsUpdateVM { get; }
+    public CleanerViewModel CleanerVM { get; }
 
     [ObservableProperty]
     private int _selectedNavigationIndex = 0;
@@ -30,12 +31,14 @@ public partial class MainViewModel : ObservableObject
         AppsViewModel appsVM,
         OptimizerViewModel optimizerVM,
         DriversViewModel driversVM,
-        WindowsUpdateViewModel windowsUpdateVM)
+        WindowsUpdateViewModel windowsUpdateVM,
+        CleanerViewModel cleanerVM)
     {
         AppsVM = appsVM;
         OptimizerVM = optimizerVM;
         DriversVM = driversVM;
         WindowsUpdateVM = windowsUpdateVM;
+        CleanerVM = cleanerVM;
 
         CheckPrivilegesAndSystem();
     }

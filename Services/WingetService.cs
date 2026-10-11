@@ -396,4 +396,195 @@ public partial class WingetService
             }
         });
     }
+
+    /// <summary>
+    /// Scans installed applications for available updates using winget upgrade.
+    /// </summary>
+    public async Task<List<AppUpgradeItem>> ScanUpgradesAsync(Action<string>? onLog = null, CancellationToken cancellationToken = default)
+    {
+        onLog?.Invoke("Querying installed applications for updates...");
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "winget",
+            Arguments = "upgrade --include-unknown",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8
+        };
+
+        using var process = new Process { StartInfo = startInfo };
+        var outputLines = new List<string>();
+
+        process.OutputDataReceived += (_, e) =>
+        {
+            if (!string.IsNullOrWhiteSpace(e.Data))
+            {
+                outputLines.Add(e.Data);
+            }
+        };
+
+        process.Start();
+        process.BeginOutputReadLine();
+
+        await process.WaitForExitAsync(cancellationToken);
+
+        var list = new List<AppUpgradeItem>();
+        int separatorIndex = -1;
+
+        for (int i = 0; i < outputLines.Count; i++)
+        {
+            var line = outputLines[i];
+            if (line.StartsWith("---") || line.Contains("------"))
+            {
+                separatorIndex = i;
+                break;
+            }
+        }
+
+        if (separatorIndex != -1 && separatorIndex + 1 < outputLines.Count)
+        {
+            for (int i = separatorIndex + 1; i < outputLines.Count; i++)
+            {
+                var line = outputLines[i];
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                if (line.Contains("upgrades available") || line.Contains("package(s) have version")) continue;
+
+                // Typical line format: Name (can have spaces) | Id | Version | Available | Source
+                // Match multiple whitespace separators
+                var parts = Regex.Split(line.Trim(), @"\s{2,}");
+                if (parts.Length >= 4)
+                {
+                    var name = parts[0].Trim();
+                    var id = parts[1].Trim();
+                    var installedVer = parts[2].Trim();
+                    var availableVer = parts[3].Trim();
+                    var source = parts.Length > 4 ? parts[4].Trim() : "winget";
+
+                    list.Add(new AppUpgradeItem
+                    {
+                        Name = name,
+                        PackageId = id,
+                        InstalledVersion = installedVer,
+                        AvailableVersion = availableVer,
+                        Source = source
+                    });
+                }
+            }
+        }
+
+        onLog?.Invoke(list.Count > 0 
+            ? $"Found {list.Count} installed application(s) with newer versions available."
+            : "All installed applications are up to date!");
+
+        return list;
+    }
+
+    /// <summary>
+    /// Upgrades an individual application silently using winget upgrade.
+    /// </summary>
+    public async Task<bool> UpgradeAppAsync(
+        AppUpgradeItem item,
+        Action<string>? onLog = null,
+        CancellationToken cancellationToken = default)
+    {
+        item.StatusMessage = "Starting upgrade...";
+        item.IsBusy = true;
+        item.IsSuccess = false;
+        item.IsFailed = false;
+        item.Progress = 10;
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "winget",
+            Arguments = $"upgrade --id \"{item.PackageId}\" --exact --silent --accept-package-agreements --accept-source-agreements --disable-interactivity",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8
+        };
+
+        using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+
+        process.OutputDataReceived += (_, e) =>
+        {
+            if (string.IsNullOrWhiteSpace(e.Data)) return;
+
+            onLog?.Invoke($"[{item.Name}] {e.Data}");
+
+            var match = ProgressRegex.Match(e.Data);
+            if (match.Success && double.TryParse(match.Groups[1].Value, out var percent))
+            {
+                item.Progress = percent;
+                if (percent >= 100)
+                {
+                    item.StatusMessage = "Applying upgrade...";
+                }
+                else
+                {
+                    item.StatusMessage = $"Downloading: {percent}%";
+                }
+            }
+        };
+
+        try
+        {
+            process.Start();
+            process.BeginOutputReadLine();
+
+            using (cancellationToken.Register(() =>
+            {
+                try
+                {
+                    if (!process.HasExited) process.Kill(true);
+                }
+                catch { }
+            }))
+            {
+                await process.WaitForExitAsync(cancellationToken);
+            }
+
+            var success = process.ExitCode == 0;
+            item.IsBusy = false;
+            item.Progress = 100;
+
+            if (success)
+            {
+                item.StatusMessage = "Updated to " + item.AvailableVersion;
+                item.IsSuccess = true;
+                item.IsFailed = false;
+                onLog?.Invoke($"[{item.Name}] Updated successfully!");
+            }
+            else
+            {
+                item.StatusMessage = "Upgrade Failed";
+                item.IsSuccess = false;
+                item.IsFailed = true;
+                item.ErrorMessage = $"Exit code: {process.ExitCode}";
+                onLog?.Invoke($"[{item.Name}] Upgrade ended with exit code {process.ExitCode}");
+            }
+
+            return success;
+        }
+        catch (OperationCanceledException)
+        {
+            item.IsBusy = false;
+            item.StatusMessage = "Cancelled";
+            return false;
+        }
+        catch (Exception ex)
+        {
+            item.IsBusy = false;
+            item.StatusMessage = "Error: " + ex.Message;
+            item.IsFailed = true;
+            item.ErrorMessage = ex.Message;
+            onLog?.Invoke($"[{item.Name}] Error: {ex.Message}");
+            return false;
+        }
+    }
 }

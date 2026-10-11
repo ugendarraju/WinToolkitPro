@@ -74,64 +74,218 @@
             </Grid>
         </Border>
 
-        <!-- Ninite-Style Multi-Column Grid View -->
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,8">
-            <ItemsControl ItemsSource="{Binding GroupedApps}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel Orientation="Horizontal" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Width="215" Margin="0,0,12,14" VerticalAlignment="Top"
-                                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
-                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                                BorderThickness="1" 
-                                CornerRadius="6" 
-                                Padding="10,8">
-                            <StackPanel>
-                                <!-- Category Title Header -->
-                                <Border BorderBrush="{DynamicResource AccentFillColorDefaultBrush}" 
-                                        BorderThickness="0,0,0,2" Padding="0,0,0,5" Margin="0,0,0,6">
-                                    <TextBlock Text="{Binding CategoryName}" FontWeight="Bold" FontSize="13" 
-                                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                                </Border>
+        <!-- Sub Tabs: Install Software vs Update Installed Apps -->
+        <TabControl Grid.Row="2" Margin="0,0,0,8">
+            <!-- Tab 1: Install New Apps (Ninite-style) -->
+            <TabItem Header="📦 Software Catalog (Ninite Style)">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,8,0,0">
+                    <ItemsControl ItemsSource="{Binding GroupedApps}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="215" Margin="0,0,12,14" VerticalAlignment="Top"
+                                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                                        BorderThickness="1" 
+                                        CornerRadius="6" 
+                                        Padding="10,8">
+                                    <StackPanel>
+                                        <!-- Category Title Header -->
+                                        <Border BorderBrush="{DynamicResource AccentFillColorDefaultBrush}" 
+                                                BorderThickness="0,0,0,2" Padding="0,0,0,5" Margin="0,0,0,6">
+                                            <TextBlock Text="{Binding CategoryName}" FontWeight="Bold" FontSize="13" 
+                                                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                        </Border>
 
-                                <!-- Compact App Checkboxes List -->
-                                <ItemsControl ItemsSource="{Binding Apps}">
+                                        <!-- Compact App Checkboxes List -->
+                                        <ItemsControl ItemsSource="{Binding Apps}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Margin="0,2" ToolTip="{Binding Description}">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <!-- Checkbox with Name -->
+                                                        <CheckBox IsChecked="{Binding IsSelected}" 
+                                                                  Content="{Binding Name}" 
+                                                                  FontSize="12"
+                                                                  VerticalAlignment="Center"/>
+
+                                                        <!-- Status Badge (only shown during/after install) -->
+                                                        <Border Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0"
+                                                                CornerRadius="3" Padding="4,1"
+                                                                Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                                                                Visibility="{Binding HasActiveStatus, Converter={StaticResource BoolToVis}}">
+                                                            <TextBlock Text="{Binding StatusMessage}" FontSize="9" 
+                                                                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                                        </Border>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Tab 2: Update Installed Apps -->
+            <TabItem Header="🚀 Update Installed Apps">
+                <Grid Margin="0,8,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Top Bar for Updater -->
+                    <Border Grid.Row="0" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                            BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Scan and update your existing installed software to their latest versions." 
+                                           FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2" Margin="10,0,0,0"
+                                        Visibility="{Binding UpgradeCount, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock FontSize="11" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+                                        <Run Text="Available Updates: "/>
+                                        <Run Text="{Binding UpgradeCount}" FontWeight="Bold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                        <Run Text=" | Selected: "/>
+                                        <Run Text="{Binding SelectedUpgradeCount}" FontWeight="Bold"/>
+                                    </TextBlock>
+                                </Border>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Button Content="🔍 Scan Installed Apps" Command="{Binding ScanUpgradesCommand}" 
+                                        Margin="0,0,6,0" Padding="12,5" FontSize="12"/>
+                                <Button Content="Select All" Command="{Binding SelectAllUpgradesCommand}" 
+                                        Margin="0,0,6,0" Padding="10,5" FontSize="12"/>
+                                <Button Content="Clear" Command="{Binding DeselectAllUpgradesCommand}" 
+                                        Margin="0,0,8,0" Padding="10,5" FontSize="12"/>
+                                <Button Content="{Binding SelectedUpgradeCount, StringFormat='⚡ Update Selected ({0})'}" 
+                                        Command="{Binding UpgradeSelectedCommand}"
+                                        Background="{DynamicResource AccentFillColorDefaultBrush}"
+                                        Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                                        FontWeight="SemiBold"
+                                        Padding="14,6" FontSize="12"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Empty Prompt or List -->
+                    <Border Grid.Row="1" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                            BorderThickness="1" CornerRadius="6" Padding="8">
+                        <Grid>
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" 
+                                        Visibility="{Binding AvailableUpgrades.Count, Converter={StaticResource ZeroToVis}}">
+                                <TextBlock Text="🔍 Click 'Scan Installed Apps' above to detect outdated applications." 
+                                           FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <TextBlock Text="Queries your installed software via Windows Package Manager and checks for updates." 
+                                           FontSize="12" HorizontalAlignment="Center" Margin="0,4,0,0"
+                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                            </StackPanel>
+
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding AvailableUpgrades}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Grid Margin="0,2" ToolTip="{Binding Description}">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
+                                            <Border Margin="0,0,0,6" 
+                                                    Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
+                                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                                                    BorderThickness="1" 
+                                                    CornerRadius="6" 
+                                                    Padding="12,8">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
 
-                                                <!-- Checkbox with Name -->
-                                                <CheckBox IsChecked="{Binding IsSelected}" 
-                                                          Content="{Binding Name}" 
-                                                          FontSize="12"
-                                                          VerticalAlignment="Center"/>
+                                                    <CheckBox Grid.Row="0" Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
-                                                <!-- Status Badge (only shown during/after install) -->
-                                                <Border Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0"
-                                                        CornerRadius="3" Padding="4,1"
-                                                        Background="{DynamicResource SubtleFillColorSecondaryBrush}"
-                                                        Visibility="{Binding HasActiveStatus, Converter={StaticResource BoolToVis}}">
-                                                    <TextBlock Text="{Binding StatusMessage}" FontSize="9" 
-                                                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                                                </Border>
-                                            </Grid>
+                                                    <StackPanel Grid.Row="0" Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13" 
+                                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                            <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" CornerRadius="3" Padding="6,1" Margin="0,0,6,0">
+                                                                <TextBlock FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                                                    <Run Text="Installed: "/>
+                                                                    <Run Text="{Binding InstalledVersion}" FontWeight="Medium"/>
+                                                                </TextBlock>
+                                                            </Border>
+                                                            <Border Background="#1e3a5f" CornerRadius="3" Padding="6,1" Margin="0,0,6,0">
+                                                                <TextBlock FontSize="11" Foreground="#38bdf8" FontWeight="SemiBold">
+                                                                    <Run Text="Available: "/>
+                                                                    <Run Text="{Binding AvailableVersion}"/>
+                                                                </TextBlock>
+                                                            </Border>
+                                                            <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" CornerRadius="3" Padding="6,1">
+                                                                <TextBlock Text="{Binding PackageId}" FontSize="10" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                            </Border>
+                                                        </StackPanel>
+
+                                                        <TextBlock Text="{Binding StatusMessage}" FontSize="11" FontWeight="Medium"
+                                                                   Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,3,0,0"/>
+                                                    </StackPanel>
+
+                                                    <!-- Status badge -->
+                                                    <Border Grid.Row="0" Grid.Column="2" CornerRadius="4" Padding="10,4" VerticalAlignment="Center">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Background" Value="#1e3a5f"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsSuccess}" Value="True">
+                                                                        <Setter Property="Background" Value="#16a34a"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding IsFailed}" Value="True">
+                                                                        <Setter Property="Background" Value="#dc2626"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                                                        <Setter Property="Background" Value="#d97706"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="White" FontWeight="SemiBold"/>
+                                                    </Border>
+
+                                                    <!-- Progress Bar -->
+                                                    <ProgressBar Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" 
+                                                                 Value="{Binding Progress}" Maximum="100" Height="4" Margin="0,6,0,0"
+                                                                 Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"
+                                                                 Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
+                                                </Grid>
+                                            </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                            </StackPanel>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
 
         <!-- Overall Progress Bar (Visible while installing) -->
         <ProgressBar Grid.Row="3" Value="{Binding OverallProgress}" Maximum="100" Height="5" 
