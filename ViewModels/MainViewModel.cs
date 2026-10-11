@@ -57,6 +57,7 @@ public partial class MainViewModel : ObservableObject
         await AppsVM.InitializeAsync();
         await OptimizerVM.InitializeAsync();
         await SystemToolsVM.InitializeAsync();
+        await DriversVM.InitializeAsync();
     }
 
     private void CheckPrivilegesAndSystem()

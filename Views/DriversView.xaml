@@ -10,216 +10,297 @@
     <Grid Margin="16,12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="110"/>
         </Grid.RowDefinitions>
 
-        <!-- Top Header & Controls -->
+        <!-- Top Header -->
         <Grid Grid.Row="0" Margin="0,0,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
             <StackPanel Orientation="Vertical">
-                <TextBlock Text="Hardware &amp; Driver Manager" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                <TextBlock Text="Detect hardware devices, query certified Microsoft driver updates online, and install them automatically." 
+                <TextBlock Text="Hardware Specifications &amp; Driver Center" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                <TextBlock Text="Hardware components dashboard, laptop battery health reports, and certified driver update servicing." 
                            FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
-            </StackPanel>
-
-            <!-- Action Buttons -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button Content="🔍 Scan Hardware" Command="{Binding ScanHardwareCommand}" 
-                        Margin="0,0,6,0" Padding="12,5" FontSize="12"/>
-
-                <Button Content="🌐 Check Online Drivers" Command="{Binding CheckOnlineUpdatesCommand}" 
-                        Margin="0,0,6,0" Padding="12,5" FontSize="12"/>
-                
-                <Button Content="⚡ Install Driver Updates" 
-                        Command="{Binding InstallDriverUpdatesCommand}"
-                        Background="{DynamicResource AccentFillColorDefaultBrush}"
-                        Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
-                        FontWeight="SemiBold"
-                        Padding="16,6"
-                        FontSize="13"/>
             </StackPanel>
         </Grid>
 
-        <!-- Status & Filter Bar -->
-        <Border Grid.Row="1" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
-                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                BorderThickness="1" CornerRadius="6" Padding="8,6" Margin="0,0,0,8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" FontWeight="Medium" FontSize="12"
-                           Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-
-                <ProgressBar Grid.Column="1" IsIndeterminate="{Binding IsScanning}" Width="150" Height="5"
-                             Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}"
-                             Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
-            </Grid>
-        </Border>
-
-        <!-- Completion Summary Banner -->
-        <Border Grid.Row="2" Margin="0,0,0,8" 
-                Background="#064e3b" BorderBrush="#059669" BorderThickness="1" 
-                CornerRadius="6" Padding="10,8"
-                Visibility="{Binding HasSummary, Converter={StaticResource BoolToVis}}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="{Binding SummaryMessage}" FontWeight="SemiBold" FontSize="13" Foreground="#ecfdf5" VerticalAlignment="Center"/>
-                <Button Grid.Column="1" Content="🔄 Check Again" Command="{Binding CheckOnlineUpdatesCommand}" 
-                        Padding="10,3" FontSize="11" Margin="8,0,0,0"/>
-            </Grid>
-        </Border>
-
-        <!-- Two Tabs / Split for Updates & Hardware -->
-        <TabControl Grid.Row="3" Margin="0,0,0,8">
-            <!-- Online Driver Updates Tab -->
-            <TabItem Header="Online Driver Updates">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,6,0,0">
-                    <StackPanel>
-                        <!-- Instructions card -->
+        <!-- Main Content SubTabs -->
+        <TabControl Grid.Row="1" Margin="0,0,0,8">
+            <!-- SubTab 1: System Specs & Battery Health -->
+            <TabItem Header="📊 System Specs &amp; Battery Health">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+                    <StackPanel MaxWidth="1050" HorizontalAlignment="Left">
+                        <!-- Toolbar -->
                         <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
                                 BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                                BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,8">
-                            <TextBlock Text="💡 Click 'Check Online Drivers' to scan Microsoft's certified catalog. Administrator privileges are required to install driver packages." 
-                                       FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Detected Hardware Configuration" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <Button Content="🔄 Refresh Specs" Command="{Binding LoadSystemSpecsCommand}" Padding="12,5" FontSize="11" Margin="0,0,8,0"/>
+                                    <Button Command="{Binding GenerateBatteryReportCommand}" 
+                                            Visibility="{Binding Hardware.HasBattery, Converter={StaticResource BoolToVis}}"
+                                            Background="#0284c7" Foreground="White" FontWeight="SemiBold" Padding="12,5" FontSize="11">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="📄 "/>
+                                            <TextBlock Text="Open Full Battery Report (HTML)"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
                         </Border>
 
-                        <ItemsControl ItemsSource="{Binding PendingUpdates}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Margin="0,0,0,6" 
-                                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
-                                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                                            BorderThickness="1" 
-                                            CornerRadius="6" 
-                                            Padding="12,10">
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
+                        <!-- Hardware Spec Cards Grid -->
+                        <WrapPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <!-- CPU Card -->
+                            <Border Width="330" Margin="0,0,12,12" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="⚡ " FontSize="16"/>
+                                        <TextBlock Text="Processor (CPU)" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Hardware.CpuName}" FontWeight="SemiBold" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <TextBlock Text="Cores / Threads: " FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding Hardware.CpuCores}" FontWeight="SemiBold" FontSize="11"/>
+                                        <TextBlock Text=" Cores, " FontSize="11"/>
+                                        <TextBlock Text="{Binding Hardware.CpuThreads}" FontWeight="SemiBold" FontSize="11"/>
+                                        <TextBlock Text=" Threads" FontSize="11"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <TextBlock Text="Clock / Arch: " FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding Hardware.CpuClockSpeed}" FontWeight="SemiBold" FontSize="11"/>
+                                        <TextBlock Text=" (" FontSize="11"/>
+                                        <TextBlock Text="{Binding Hardware.CpuArchitecture}" FontSize="11"/>
+                                        <TextBlock Text=")" FontSize="11"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
 
-                                            <CheckBox Grid.Row="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <!-- GPU Card -->
+                            <Border Width="330" Margin="0,0,12,12" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="🎮 " FontSize="16"/>
+                                        <TextBlock Text="Graphics (GPU)" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Hardware.GpuName}" FontWeight="SemiBold" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <TextBlock Text="VRAM: " FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding Hardware.GpuVram}" FontWeight="SemiBold" FontSize="11"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <TextBlock Text="Driver Version: " FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding Hardware.GpuDriverVersion}" FontSize="11"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
 
-                                            <!-- Driver details -->
-                                            <StackPanel Grid.Row="0" Grid.Column="1">
-                                                <TextBlock Text="{Binding DeviceName}" FontWeight="SemiBold" FontSize="13" 
-                                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                                <TextBlock Text="{Binding Manufacturer, StringFormat='Provider: {0}'}" FontSize="11" 
-                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,1,0,0"/>
-                                                
-                                                <!-- Dynamic live status text -->
-                                                <TextBlock Text="{Binding StatusMessage}" FontSize="11" FontWeight="Medium"
-                                                           Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" 
-                                                           Margin="0,3,0,0"/>
-                                            </StackPanel>
+                            <!-- RAM Card -->
+                            <Border Width="330" Margin="0,0,12,12" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="💾 " FontSize="16"/>
+                                        <TextBlock Text="Memory (RAM)" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Hardware.RamTotal}" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,6"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <TextBlock Text="Status: " FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding Hardware.RamAvailable}" FontSize="11"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <TextBlock Text="Speed / Modules: " FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding Hardware.RamSpeed}" FontWeight="SemiBold" FontSize="11"/>
+                                        <TextBlock Text=" - " FontSize="11"/>
+                                        <TextBlock Text="{Binding Hardware.RamSlots}" FontSize="11"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
 
-                                            <!-- Dynamic Status Badge -->
-                                            <Border Grid.Row="0" Grid.Column="2" CornerRadius="4" Padding="10,4" VerticalAlignment="Center">
-                                                <Border.Style>
-                                                    <Style TargetType="Border">
-                                                        <Setter Property="Background" Value="#1e3a5f"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsSuccess}" Value="True">
-                                                                <Setter Property="Background" Value="#16a34a"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding IsFailed}" Value="True">
-                                                                <Setter Property="Background" Value="#dc2626"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding IsBusy}" Value="True">
-                                                                <Setter Property="Background" Value="#d97706"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Border.Style>
-                                                <TextBlock Text="{Binding Status}" FontSize="11" Foreground="White" FontWeight="SemiBold"/>
+                            <!-- Motherboard Card -->
+                            <Border Width="330" Margin="0,0,12,12" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="🖥️ " FontSize="16"/>
+                                        <TextBlock Text="Motherboard &amp; BIOS" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Hardware.MotherboardModel}" FontWeight="SemiBold" FontSize="12" Margin="0,0,0,4"/>
+                                    <TextBlock Text="{Binding Hardware.MotherboardManufacturer}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,6"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <TextBlock Text="BIOS Version: " FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding Hardware.BiosVersion}" FontWeight="SemiBold" FontSize="11"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Battery Health Card (Only shown if laptop has battery) -->
+                            <Border Width="330" Margin="0,0,12,12" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="14"
+                                    Visibility="{Binding Hardware.HasBattery, Converter={StaticResource BoolToVis}}">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                        <TextBlock Text="🔋 " FontSize="16"/>
+                                        <TextBlock Text="Battery Health" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                        <TextBlock Text="Charge: " FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding Hardware.BatteryPercentage, StringFormat='{}{0}%'}" FontWeight="Bold" FontSize="13" Foreground="#10b981"/>
+                                        <TextBlock Text=" | Health: " FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding Hardware.BatteryHealthPercent, StringFormat='{}{0}%'}" FontWeight="Bold" FontSize="13" Foreground="#38bdf8"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <TextBlock Text="Grade: " FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding Hardware.BatteryHealthGrade}" FontWeight="SemiBold" FontSize="11"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <TextBlock Text="Capacity: " FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding Hardware.BatteryFullChargeCapacity}" FontSize="11"/>
+                                        <TextBlock Text=" / " FontSize="11"/>
+                                        <TextBlock Text="{Binding Hardware.BatteryDesignCapacity}" FontSize="11"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </WrapPanel>
+
+                        <!-- Storage Drives Table -->
+                        <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                                BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Storage Disks &amp; Partitions" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
+                                <ItemsControl ItemsSource="{Binding Hardware.Disks}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,0,0,8" Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
+                                                    CornerRadius="6" Padding="10,8">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="60"/>
+                                                        <ColumnDefinition Width="180"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="150"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Model}" FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                    
+                                                    <!-- Capacity Bar -->
+                                                    <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="10,0">
+                                                        <ProgressBar Value="{Binding UsedPercent}" Maximum="100" Height="8"
+                                                                     Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding FreeSize, StringFormat='{}{0} Free'}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                                        <TextBlock Text="{Binding TotalSize, StringFormat='{}of {0}'}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Right"/>
+                                                    </StackPanel>
+                                                </Grid>
                                             </Border>
-
-                                            <!-- Progress bar during download/install -->
-                                            <ProgressBar Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" 
-                                                         Value="{Binding Progress}" Maximum="100" Height="4" Margin="0,6,0,0"
-                                                         Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"
-                                                         Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
-            <!-- Hardware Inventory Tab -->
-            <TabItem Header="Detected Hardware Devices">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,6,0,0">
-                    <ItemsControl ItemsSource="{Binding Devices}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Margin="0,0,0,5" 
-                                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
-                                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                                        BorderThickness="1" 
-                                        CornerRadius="5" 
-                                        Padding="10,6">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
+            <!-- SubTab 2: Drivers & Windows Update Catalog -->
+            <TabItem Header="🚗 Hardware Drivers &amp; Updates">
+                <Grid Margin="0,8,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding DeviceName}" FontWeight="SemiBold" FontSize="12" 
-                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                            <TextBlock Text="{Binding HardwareId}" FontSize="10" 
-                                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}" Margin="0,1,0,0"/>
-                                        </StackPanel>
+                    <!-- Driver Actions Bar -->
+                    <Border Grid.Row="0" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                            BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                                        <Border Grid.Column="1" Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
-                                                CornerRadius="4" Padding="6,2" Margin="10,0" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding DeviceClass}" FontSize="11" 
-                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" FontWeight="Medium" FontSize="12"
+                                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Button Content="🔍 Scan Hardware" Command="{Binding ScanHardwareCommand}" Margin="0,0,6,0" Padding="12,5" FontSize="11"/>
+                                <Button Content="🌐 Check Online Drivers" Command="{Binding CheckOnlineUpdatesCommand}" Margin="0,0,6,0" Padding="12,5" FontSize="11"/>
+                                <Button Content="⚡ Install Driver Updates" Command="{Binding InstallDriverUpdatesCommand}"
+                                        Background="{DynamicResource AccentFillColorDefaultBrush}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                                        FontWeight="SemiBold" Padding="14,5" FontSize="12"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Summary Banner -->
+                    <Border Grid.Row="1" Margin="0,0,0,8" 
+                            Visibility="{Binding HasSummary, Converter={StaticResource BoolToVis}}"
+                            Background="#1e3a5f" BorderBrush="#0284c7" BorderThickness="1" CornerRadius="6" Padding="10,8">
+                        <TextBlock Text="{Binding SummaryMessage}" FontWeight="SemiBold" FontSize="12" Foreground="#38bdf8"/>
+                    </Border>
+
+                    <!-- Device List -->
+                    <Border Grid.Row="2" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                            BorderThickness="1" CornerRadius="6" Padding="6">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Devices}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,0,0,4" Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
+                                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="4" Padding="10,6">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock Grid.Column="0" Text="🚗 " FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
+
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="12"/>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                        <TextBlock Text="Manufacturer: " FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        <TextBlock Text="{Binding Manufacturer}" FontSize="10" Margin="0,0,10,0"/>
+                                                        <TextBlock Text="Driver Version: " FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        <TextBlock Text="{Binding DriverVersion}" FontSize="10"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+
+                                                <Border Grid.Column="2" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" CornerRadius="3" Padding="6,2" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Status}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                </Border>
+                                            </Grid>
                                         </Border>
-
-                                        <Border Grid.Column="2" CornerRadius="4" Padding="8,2" VerticalAlignment="Center"
-                                                Background="{DynamicResource SubtleFillColorTertiaryBrush}">
-                                            <TextBlock Text="{Binding Status}" FontSize="11" FontWeight="Medium" 
-                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                        </Border>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
             </TabItem>
         </TabControl>
 
-        <!-- Live Output Terminal -->
-        <Border Grid.Row="4" Background="#111116" BorderBrush="#33333e" BorderThickness="1" CornerRadius="6" Padding="6">
+        <!-- Log Console -->
+        <Border Grid.Row="2" Background="#111116" BorderBrush="#33333e" BorderThickness="1" CornerRadius="6" Padding="6">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Text="Hardware &amp; Driver Diagnostics Log" FontSize="11" FontWeight="SemiBold" Foreground="#888899" Margin="2,0,0,2"/>
+                <TextBlock Text="Hardware &amp; Driver Event Logs" FontSize="11" FontWeight="SemiBold" Foreground="#888899" Margin="2,0,0,2"/>
                 <ListBox Grid.Row="1" ItemsSource="{Binding Logs}" 
                          Background="Transparent" BorderThickness="0" 
                          FontFamily="Consolas, Cascadia Code, Courier New" FontSize="11" Foreground="#c0caf5"/>

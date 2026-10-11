@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using WinToolkit.Models;
 
@@ -451,5 +452,364 @@ public class SystemToolsService
         {
             onLog($"Execution error for {filename}: {ex.Message}");
         }
+    }
+
+    // ==========================================
+    // 1. Startup Applications Management
+    // ==========================================
+    public async Task<List<StartupItem>> GetStartupItemsAsync()
+    {
+        var items = new List<StartupItem>();
+
+        var script = @"
+            $results = @()
+
+            # HKCU Run
+            $hkcu = Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -ErrorAction SilentlyContinue
+            if ($hkcu) {
+                $hkcu.PSObject.Properties | Where-Object { $_.Name -notmatch '^PS' } | ForEach-Object {
+                    $results += [PSCustomObject]@{ Name = $_.Name; Command = $_.Value; Location = 'HKCU Run'; RegKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' }
+                }
+            }
+
+            # HKLM Run
+            $hklm = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' -ErrorAction SilentlyContinue
+            if ($hklm) {
+                $hklm.PSObject.Properties | Where-Object { $_.Name -notmatch '^PS' } | ForEach-Object {
+                    $results += [PSCustomObject]@{ Name = $_.Name; Command = $_.Value; Location = 'HKLM Run'; RegKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' }
+                }
+            }
+
+            # Startup Folder
+            $startupFolder = [Environment]::GetFolderPath('Startup')
+            if (Test-Path $startupFolder) {
+                Get-ChildItem -Path $startupFolder -Filter '*.lnk' -ErrorAction SilentlyContinue | ForEach-Object {
+                    $results += [PSCustomObject]@{ Name = $_.BaseName; Command = $_.FullName; Location = 'Startup Folder'; RegKey = '' }
+                }
+            }
+
+            $results | ConvertTo-Json -Compress
+        ";
+
+        var res = await _powerShellService.ExecuteCommandAsync(script);
+        if (res.Success && !string.IsNullOrWhiteSpace(res.Output))
+        {
+            try
+            {
+                var raw = res.Output.Trim();
+                using var doc = System.Text.Json.JsonDocument.Parse(raw.StartsWith("[") ? raw : $"[{raw}]");
+                foreach (var el in doc.RootElement.EnumerateArray())
+                {
+                    var name = el.TryGetProperty("Name", out var n) ? n.GetString() ?? "" : "";
+                    var cmd = el.TryGetProperty("Command", out var c) ? c.GetString() ?? "" : "";
+                    var loc = el.TryGetProperty("Location", out var l) ? l.GetString() ?? "" : "";
+                    var reg = el.TryGetProperty("RegKey", out var r) ? r.GetString() ?? "" : "";
+
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        items.Add(new StartupItem
+                        {
+                            Name = name,
+                            Command = cmd,
+                            Location = loc,
+                            RegistryKey = reg,
+                            IsEnabled = true,
+                            Impact = "Active"
+                        });
+                    }
+                }
+            }
+            catch { }
+        }
+
+        return items;
+    }
+
+    public async Task<bool> RemoveStartupItemAsync(StartupItem item)
+    {
+        if (item.Location == "Startup Folder")
+        {
+            try
+            {
+                if (File.Exists(item.Command))
+                {
+                    File.Delete(item.Command);
+                    return true;
+                }
+            }
+            catch { }
+        }
+        else if (!string.IsNullOrWhiteSpace(item.RegistryKey))
+        {
+            var script = $"Remove-ItemProperty -Path '{item.RegistryKey}' -Name '{item.Name}' -ErrorAction SilentlyContinue";
+            var res = await _powerShellService.ExecuteCommandAsync(script);
+            return res.Success;
+        }
+
+        return false;
+    }
+
+    // ==========================================
+    // 2. Windows Background Services Management
+    // ==========================================
+    public async Task<List<ServiceItem>> GetServicesAsync(bool nonMicrosoftOnly = true)
+    {
+        var list = new List<ServiceItem>();
+
+        var script = @"
+            Get-CimInstance Win32_Service | Select-Object Name, DisplayName, State, StartMode, Description |
+                ConvertTo-Json -Compress
+        ";
+
+        var res = await _powerShellService.ExecuteCommandAsync(script);
+        if (res.Success && !string.IsNullOrWhiteSpace(res.Output))
+        {
+            try
+            {
+                var raw = res.Output.Trim();
+                using var doc = System.Text.Json.JsonDocument.Parse(raw.StartsWith("[") ? raw : $"[{raw}]");
+                foreach (var el in doc.RootElement.EnumerateArray())
+                {
+                    var name = el.TryGetProperty("Name", out var n) ? n.GetString() ?? "" : "";
+                    var disp = el.TryGetProperty("DisplayName", out var d) ? d.GetString() ?? "" : "";
+                    var state = el.TryGetProperty("State", out var s) ? s.GetString() ?? "" : "";
+                    var mode = el.TryGetProperty("StartMode", out var m) ? m.GetString() ?? "" : "";
+                    var desc = el.TryGetProperty("Description", out var ds) ? ds.GetString() ?? "" : "";
+
+                    if (string.IsNullOrWhiteSpace(name)) continue;
+
+                    list.Add(new ServiceItem
+                    {
+                        Name = name,
+                        DisplayName = string.IsNullOrWhiteSpace(disp) ? name : disp,
+                        Status = state,
+                        StartupType = mode,
+                        IsRunning = state.Equals("Running", StringComparison.OrdinalIgnoreCase),
+                        Description = desc
+                    });
+                }
+            }
+            catch { }
+        }
+
+        return list;
+    }
+
+    public async Task<bool> SetServiceStartupTypeAsync(ServiceItem item, string startupType)
+    {
+        item.IsBusy = true;
+        var script = $"Set-Service -Name '{item.Name}' -StartupType {startupType} -ErrorAction SilentlyContinue";
+        var res = await _powerShellService.ExecuteCommandAsync(script);
+        item.IsBusy = false;
+
+        if (res.Success)
+        {
+            item.StartupType = startupType;
+            return true;
+        }
+        return false;
+    }
+
+    public async Task<bool> StartOrStopServiceAsync(ServiceItem item, bool start)
+    {
+        item.IsBusy = true;
+        var cmd = start ? $"Start-Service -Name '{item.Name}'" : $"Stop-Service -Name '{item.Name}' -Force";
+        var res = await _powerShellService.ExecuteCommandAsync(cmd);
+        item.IsBusy = false;
+
+        if (res.Success)
+        {
+            item.IsRunning = start;
+            item.Status = start ? "Running" : "Stopped";
+            return true;
+        }
+        return false;
+    }
+
+    // ==========================================
+    // 3. Disk Space Analyzer
+    // ==========================================
+    public Task<List<DiskFolderItem>> AnalyzeDiskSpaceAsync(string rootPath, CancellationToken ct = default)
+    {
+        return Task.Run(() =>
+        {
+            var results = new List<DiskFolderItem>();
+            if (!Directory.Exists(rootPath)) return results;
+
+            var dirInfo = new DirectoryInfo(rootPath);
+            long totalScannedBytes = 0;
+
+            try
+            {
+                // Top subdirectories
+                var subDirs = dirInfo.EnumerateDirectories().ToList();
+                foreach (var dir in subDirs)
+                {
+                    if (ct.IsCancellationRequested) break;
+
+                    long size = 0;
+                    int count = 0;
+                    try
+                    {
+                        foreach (var f in dir.EnumerateFiles("*", new EnumerationOptions { IgnoreInaccessible = true, RecurseSubdirectories = true, MaxRecursionDepth = 4 }))
+                        {
+                            if (ct.IsCancellationRequested) break;
+                            size += f.Length;
+                            count++;
+                        }
+                    }
+                    catch { }
+
+                    if (size > 0)
+                    {
+                        totalScannedBytes += size;
+                        results.Add(new DiskFolderItem
+                        {
+                            Path = dir.FullName,
+                            Name = dir.Name,
+                            SizeBytes = size,
+                            FormattedSize = FormatBytes(size),
+                            IsDirectory = true,
+                            FileCount = count
+                        });
+                    }
+                }
+
+                // Top large root files
+                foreach (var f in dirInfo.EnumerateFiles("*", new EnumerationOptions { IgnoreInaccessible = true }))
+                {
+                    if (ct.IsCancellationRequested) break;
+                    totalScannedBytes += f.Length;
+                    results.Add(new DiskFolderItem
+                    {
+                        Path = f.FullName,
+                        Name = f.Name,
+                        SizeBytes = f.Length,
+                        FormattedSize = FormatBytes(f.Length),
+                        IsDirectory = false,
+                        FileCount = 1
+                    });
+                }
+
+                // Calculate percentages and sort descending
+                var sorted = results.OrderByDescending(r => r.SizeBytes).ToList();
+                if (totalScannedBytes > 0)
+                {
+                    foreach (var item in sorted)
+                    {
+                        item.Percentage = Math.Round((double)item.SizeBytes / totalScannedBytes * 100.0, 1);
+                    }
+                }
+
+                return sorted;
+            }
+            catch
+            {
+                return results;
+            }
+        }, ct);
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes >= 1024L * 1024L * 1024L)
+            return $"{bytes / 1024.0 / 1024.0 / 1024.0:0.1} GB";
+        if (bytes >= 1024L * 1024L)
+            return $"{bytes / 1024.0 / 1024.0:0.1} MB";
+        if (bytes >= 1024L)
+            return $"{bytes / 1024.0:0.1} KB";
+        return $"{bytes} B";
+    }
+
+    // ==========================================
+    // 4. Windows Optional Features Management
+    // ==========================================
+    private static readonly List<(string Feature, string Display, string Desc, string Cat)> CuratedFeatures = new()
+    {
+        ("Microsoft-Windows-Subsystem-Linux", "Windows Subsystem for Linux (WSL 2)", "Run native Linux distributions (Ubuntu, Debian, Fedora) directly inside Windows without virtual machine overhead.", "Virtualization & Developer"),
+        ("VirtualMachinePlatform", "Virtual Machine Platform", "Core hypervisor support required for WSL 2, Android subsystem, and secure VM containers.", "Virtualization & Developer"),
+        ("Containers-DisposableClientVM", "Windows Sandbox", "Isolated, temporary desktop environment to run untrusted software safely without affecting your host OS.", "Virtualization & Developer"),
+        ("Microsoft-Hyper-V-All", "Hyper-V Virtualization", "Hardware-accelerated enterprise hypervisor to create and run virtual machines.", "Virtualization & Developer"),
+        ("HypervisorPlatform", "Windows Hypervisor Platform", "Enables third-party virtualization software (VirtualBox, VMware) to utilize Windows hypervisor API.", "Virtualization & Developer"),
+        ("DirectPlay", "DirectPlay (Legacy DirectX)", "Required for running classic 1990s and early 2000s PC games and legacy DirectX titles.", "Gaming & Legacy"),
+        ("TelnetClient", "Telnet Client", "Command-line tool for testing network connectivity, open TCP ports, and communicating with servers.", "Networking & Admin"),
+        ("TFTP", "TFTP Client", "Trivial File Transfer Protocol client used to transfer firmware or bootstrap files over UDP.", "Networking & Admin"),
+        ("SMB1Protocol", "SMB 1.0 File Sharing Support", "Legacy file sharing protocol for connecting to very old NAS units or legacy Windows XP shares.", "Networking & Admin")
+    };
+
+    public async Task<List<OptionalFeatureItem>> GetOptionalFeaturesAsync()
+    {
+        var list = new List<OptionalFeatureItem>();
+
+        var script = @"
+            $features = Get-WindowsOptionalFeature -Online -ErrorAction SilentlyContinue
+            if ($features) {
+                $features | Select-Object FeatureName, State | ConvertTo-Json -Compress
+            }
+        ";
+
+        var res = await _powerShellService.ExecuteCommandAsync(script);
+        var stateMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        if (res.Success && !string.IsNullOrWhiteSpace(res.Output))
+        {
+            try
+            {
+                var raw = res.Output.Trim();
+                using var doc = System.Text.Json.JsonDocument.Parse(raw.StartsWith("[") ? raw : $"[{raw}]");
+                foreach (var el in doc.RootElement.EnumerateArray())
+                {
+                    var fn = el.TryGetProperty("FeatureName", out var f) ? f.GetString() ?? "" : "";
+                    var st = el.TryGetProperty("State", out var s) ? s.GetString() ?? "" : "";
+                    if (!string.IsNullOrWhiteSpace(fn)) stateMap[fn] = st;
+                }
+            }
+            catch { }
+        }
+
+        foreach (var (feature, display, desc, cat) in CuratedFeatures)
+        {
+            stateMap.TryGetValue(feature, out var state);
+            bool isEnabled = state?.Equals("Enabled", StringComparison.OrdinalIgnoreCase) == true;
+
+            list.Add(new OptionalFeatureItem
+            {
+                FeatureName = feature,
+                DisplayName = display,
+                Description = desc,
+                Category = cat,
+                IsEnabled = isEnabled,
+                State = isEnabled ? "Enabled" : "Disabled"
+            });
+        }
+
+        return list;
+    }
+
+    public async Task<bool> ToggleOptionalFeatureAsync(OptionalFeatureItem item, Action<string> onLog)
+    {
+        item.IsBusy = true;
+        var willEnable = !item.IsEnabled;
+        var actionText = willEnable ? "Enabling" : "Disabling";
+
+        onLog($"{actionText} Windows feature '{item.DisplayName}'...");
+
+        var script = willEnable
+            ? $"Enable-WindowsOptionalFeature -Online -FeatureName '{item.FeatureName}' -All -NoRestart -ErrorAction Stop"
+            : $"Disable-WindowsOptionalFeature -Online -FeatureName '{item.FeatureName}' -NoRestart -ErrorAction Stop";
+
+        var res = await _powerShellService.ExecuteCommandAsync(script);
+        item.IsBusy = false;
+
+        if (res.Success)
+        {
+            item.IsEnabled = willEnable;
+            item.State = willEnable ? "Enabled" : "Disabled";
+            onLog($"✅ Feature '{item.DisplayName}' is now {item.State}.");
+            return true;
+        }
+
+        onLog($"❌ Failed to configure '{item.DisplayName}': {res.Error}");
+        return false;
     }
 }

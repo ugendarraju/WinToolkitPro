@@ -124,5 +124,32 @@
     "Impact": "Safe",
     "ApplyScript": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'Hidden' -Type DWord -Value 1 -Force; Stop-Process -Name explorer -Force",
     "RevertScript": "Set-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' -Name 'Hidden' -Type DWord -Value 2 -Force; Stop-Process -Name explorer -Force"
+  },
+  {
+    "Id": "disable_nagle_algorithm",
+    "Title": "Disable Nagle's Algorithm (TcpAckFrequency & TCPNoDelay)",
+    "Category": "Performance",
+    "Description": "Eliminates network buffering delays for TCP packets to minimize packet ping latency in online multiplayer games.",
+    "Impact": "Safe",
+    "ApplyScript": "$adapters = Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces\\*'; foreach ($a in $adapters) { Set-ItemProperty -Path $a.PSPath -Name 'TcpAckFrequency' -Type DWord -Value 1 -Force; Set-ItemProperty -Path $a.PSPath -Name 'TCPNoDelay' -Type DWord -Value 1 -Force }",
+    "RevertScript": "$adapters = Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters\\Interfaces\\*'; foreach ($a in $adapters) { Remove-ItemProperty -Path $a.PSPath -Name 'TcpAckFrequency' -ErrorAction SilentlyContinue; Remove-ItemProperty -Path $a.PSPath -Name 'TCPNoDelay' -ErrorAction SilentlyContinue }"
+  },
+  {
+    "Id": "disable_sticky_keys",
+    "Title": "Disable Sticky Keys 5x Shift Shortcut Popup",
+    "Category": "UI & Customization",
+    "Description": "Prevents the annoying accessibility Sticky Keys popup from interrupting fullscreen games when pressing the Shift key rapidly.",
+    "Impact": "Safe",
+    "ApplyScript": "Set-ItemProperty -Path 'HKCU:\\Control Panel\\Accessibility\\StickyKeys' -Name 'Flags' -Value '506' -Force",
+    "RevertScript": "Set-ItemProperty -Path 'HKCU:\\Control Panel\\Accessibility\\StickyKeys' -Name 'Flags' -Value '510' -Force"
+  },
+  {
+    "Id": "disable_telemetry_tasks",
+    "Title": "Disable Windows Telemetry Scheduled Tasks",
+    "Category": "Privacy & Telemetry",
+    "Description": "Disables background scheduled tasks that gather hardware metrics, CEIP telemetry, and application experience data.",
+    "Impact": "Recommended",
+    "ApplyScript": "$tasks = @('\\Microsoft\\Windows\\Application Experience\\Microsoft Compatibility Appraiser', '\\Microsoft\\Windows\\Application Experience\\ProgramDataUpdater', '\\Microsoft\\Windows\\Autochk\\Proxy', '\\Microsoft\\Windows\\Customer Experience Improvement Program\\Consolidator', '\\Microsoft\\Windows\\Customer Experience Improvement Program\\UsbCeip', '\\Microsoft\\Windows\\DiskDiagnostic\\Microsoft-Windows-DiskDiagnosticDataCollector'); foreach ($t in $tasks) { Disable-ScheduledTask -TaskName $t -ErrorAction SilentlyContinue }",
+    "RevertScript": "$tasks = @('\\Microsoft\\Windows\\Application Experience\\Microsoft Compatibility Appraiser', '\\Microsoft\\Windows\\Application Experience\\ProgramDataUpdater', '\\Microsoft\\Windows\\Autochk\\Proxy', '\\Microsoft\\Windows\\Customer Experience Improvement Program\\Consolidator', '\\Microsoft\\Windows\\Customer Experience Improvement Program\\UsbCeip', '\\Microsoft\\Windows\\DiskDiagnostic\\Microsoft-Windows-DiskDiagnosticDataCollector'); foreach ($t in $tasks) { Enable-ScheduledTask -TaskName $t -ErrorAction SilentlyContinue }"
   }
 ]

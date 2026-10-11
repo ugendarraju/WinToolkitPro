@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WinToolkit.Models;
@@ -17,6 +19,7 @@ public partial class SystemToolsViewModel : ObservableObject
     [ObservableProperty]
     private bool _isBusy;
 
+    // Bloatware tab properties
     [ObservableProperty]
     private string _searchQuery = string.Empty;
 
@@ -35,18 +38,47 @@ public partial class SystemToolsViewModel : ObservableObject
     [ObservableProperty]
     private string _currentDnsSelection = "Cloudflare";
 
+    // Disk Analyzer properties
+    [ObservableProperty]
+    private string _selectedDrive = "C:\\";
+
+    [ObservableProperty]
+    private bool _isDiskScanning;
+
+    // Collections
     public ObservableCollection<UwpAppItem> AllApps { get; } = new();
     public ObservableCollection<UwpAppItem> FilteredApps { get; } = new();
+    public ObservableCollection<StartupItem> StartupApps { get; } = new();
+    public ObservableCollection<ServiceItem> ServicesList { get; } = new();
+    public ObservableCollection<DiskFolderItem> DiskFolders { get; } = new();
+    public ObservableCollection<OptionalFeatureItem> OptionalFeatures { get; } = new();
+    public ObservableCollection<string> AvailableDrives { get; } = new();
     public ObservableCollection<string> Logs { get; } = new();
 
     public SystemToolsViewModel(SystemToolsService systemToolsService)
     {
         _systemToolsService = systemToolsService;
+
+        // Populate available drives
+        try
+        {
+            foreach (var d in DriveInfo.GetDrives().Where(d => d.IsReady))
+            {
+                AvailableDrives.Add(d.Name);
+            }
+            if (AvailableDrives.Count > 0)
+            {
+                SelectedDrive = AvailableDrives[0];
+            }
+        }
+        catch { }
     }
 
     public async Task InitializeAsync()
     {
         await ScanApps();
+        await LoadStartupApps();
+        await LoadOptionalFeatures();
     }
 
     partial void OnSearchQueryChanged(string value) => ApplyFilter();
@@ -73,6 +105,9 @@ public partial class SystemToolsViewModel : ObservableObject
         foreach (var item in matches) FilteredApps.Add(item);
     }
 
+    // ========================================================
+    // Bloatware Uninstaller Commands
+    // ========================================================
     [RelayCommand]
     public async Task ScanApps()
     {
@@ -182,7 +217,6 @@ public partial class SystemToolsViewModel : ObservableObject
             StatusMessage = $"Debloat complete. Successfully removed {successCount} of {targets.Count} packages.";
             AddLog($"[Debloat] Finished: {successCount}/{targets.Count} removed.");
             
-            // Remove uninstalled items from AllApps and re-filter
             var removed = AllApps.Where(a => a.IsRemoved).ToList();
             foreach (var r in removed) AllApps.Remove(r);
             ApplyFilter();
@@ -196,6 +230,189 @@ public partial class SystemToolsViewModel : ObservableObject
         }
     }
 
+    // ========================================================
+    // Startup Applications Commands
+    // ========================================================
+    [RelayCommand]
+    public async Task LoadStartupApps()
+    {
+        StartupApps.Clear();
+        AddLog("Scanning Windows startup applications...");
+
+        try
+        {
+            var apps = await _systemToolsService.GetStartupItemsAsync();
+            foreach (var item in apps)
+            {
+                StartupApps.Add(item);
+            }
+            AddLog($"Loaded {StartupApps.Count} startup programs from registry and folders.");
+        }
+        catch (Exception ex)
+        {
+            AddLog($"Error scanning startup apps: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task RemoveStartupApp(StartupItem item)
+    {
+        AddLog($"Removing startup item '{item.Name}'...");
+        var ok = await _systemToolsService.RemoveStartupItemAsync(item);
+        if (ok)
+        {
+            StartupApps.Remove(item);
+            AddLog($"✅ Removed '{item.Name}' from startup.");
+        }
+        else
+        {
+            AddLog($"❌ Could not remove '{item.Name}'.");
+        }
+    }
+
+    // ========================================================
+    // Services Management Commands
+    // ========================================================
+    [RelayCommand]
+    public async Task LoadServices()
+    {
+        ServicesList.Clear();
+        AddLog("Scanning Windows background services...");
+
+        try
+        {
+            var services = await _systemToolsService.GetServicesAsync();
+            foreach (var s in services.OrderBy(x => x.DisplayName))
+            {
+                ServicesList.Add(s);
+            }
+            AddLog($"Loaded {ServicesList.Count} background services.");
+        }
+        catch (Exception ex)
+        {
+            AddLog($"Error scanning services: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task ToggleServiceState(ServiceItem item)
+    {
+        var targetStart = !item.IsRunning;
+        var action = targetStart ? "Starting" : "Stopping";
+        AddLog($"{action} service '{item.DisplayName}'...");
+
+        var ok = await _systemToolsService.StartOrStopServiceAsync(item, targetStart);
+        if (ok)
+        {
+            AddLog($"✅ Service '{item.DisplayName}' is now {item.Status}.");
+        }
+        else
+        {
+            AddLog($"❌ Failed to change state of '{item.DisplayName}'.");
+        }
+    }
+
+    [RelayCommand]
+    private async Task SetServiceStartup(object[] args)
+    {
+        if (args?.Length == 2 && args[0] is ServiceItem item && args[1] is string startupType)
+        {
+            AddLog($"Setting '{item.DisplayName}' startup type to {startupType}...");
+            var ok = await _systemToolsService.SetServiceStartupTypeAsync(item, startupType);
+            if (ok)
+            {
+                AddLog($"✅ '{item.DisplayName}' set to {startupType}.");
+            }
+        }
+    }
+
+    // ========================================================
+    // Disk Space Analyzer Commands
+    // ========================================================
+    [RelayCommand]
+    public async Task AnalyzeDiskSpace()
+    {
+        if (IsDiskScanning) return;
+        IsDiskScanning = true;
+        DiskFolders.Clear();
+        _activeCts = new CancellationTokenSource();
+
+        AddLog($"Starting Disk Space Analysis on {SelectedDrive}...");
+        StatusMessage = $"Analyzing storage on {SelectedDrive}...";
+
+        try
+        {
+            var items = await _systemToolsService.AnalyzeDiskSpaceAsync(SelectedDrive, _activeCts.Token);
+            foreach (var item in items)
+            {
+                DiskFolders.Add(item);
+            }
+            StatusMessage = $"Analysis complete: {DiskFolders.Count} largest directories/files identified.";
+            AddLog($"✅ Disk analysis finished: found {DiskFolders.Count} entries.");
+        }
+        catch (Exception ex)
+        {
+            AddLog($"Disk scan error: {ex.Message}");
+        }
+        finally
+        {
+            IsDiskScanning = false;
+            _activeCts = null;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenInExplorer(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+        try
+        {
+            if (Directory.Exists(path))
+            {
+                Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+            }
+            else if (File.Exists(path))
+            {
+                Process.Start("explorer.exe", $"/select,\"{path}\"");
+            }
+        }
+        catch { }
+    }
+
+    // ========================================================
+    // Windows Optional Features Commands
+    // ========================================================
+    [RelayCommand]
+    public async Task LoadOptionalFeatures()
+    {
+        OptionalFeatures.Clear();
+        AddLog("Scanning Windows Optional Features...");
+
+        try
+        {
+            var features = await _systemToolsService.GetOptionalFeaturesAsync();
+            foreach (var f in features)
+            {
+                OptionalFeatures.Add(f);
+            }
+            AddLog($"Loaded {OptionalFeatures.Count} optional features.");
+        }
+        catch (Exception ex)
+        {
+            AddLog($"Error querying optional features: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task ToggleOptionalFeature(OptionalFeatureItem item)
+    {
+        AddLog($"Toggling feature '{item.DisplayName}'...");
+        await _systemToolsService.ToggleOptionalFeatureAsync(item, AddLog);
+    }
+
+    // ========================================================
+    // System Health & Maintenance Commands
+    // ========================================================
     [RelayCommand]
     private async Task RunSfc()
     {

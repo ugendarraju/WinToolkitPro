@@ -18,6 +18,7 @@ public partial class MainWindow : FluentWindow
         var wingetService = new WingetService();
         var catalogService = new CatalogService();
         var tweakService = new TweakService(powerShellService);
+        var hardwareService = new HardwareService(powerShellService);
         var driverService = new DriverService(powerShellService);
         var updateService = new WindowsUpdateService(powerShellService);
         var cleanerService = new SystemCleanerService(powerShellService);
@@ -27,7 +28,7 @@ public partial class MainWindow : FluentWindow
         var appsVM = new AppsViewModel(wingetService, catalogService);
         var appUpdaterVM = new AppUpdaterViewModel(wingetService);
         var optimizerVM = new OptimizerViewModel(tweakService, catalogService);
-        var driversVM = new DriversViewModel(driverService);
+        var driversVM = new DriversViewModel(driverService, hardwareService);
         var updateVM = new WindowsUpdateViewModel(updateService, powerShellService);
         var cleanerVM = new CleanerViewModel(cleanerService);
         var systemToolsVM = new SystemToolsViewModel(systemToolsService);

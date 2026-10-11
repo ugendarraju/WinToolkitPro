@@ -9,6 +9,7 @@ namespace WinToolkit.ViewModels;
 public partial class DriversViewModel : ObservableObject
 {
     private readonly DriverService _driverService;
+    private readonly HardwareService _hardwareService;
     private CancellationTokenSource? _driverCts;
 
     [ObservableProperty]
@@ -19,6 +20,9 @@ public partial class DriversViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _hasScanned;
+
+    [ObservableProperty]
+    private bool _isSpecsLoading;
 
     [ObservableProperty]
     private string _statusText = "Ready to scan for hardware drivers";
@@ -32,13 +36,58 @@ public partial class DriversViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasSummary;
 
+    [ObservableProperty]
+    private HardwareInfo _hardware = new();
+
     public ObservableCollection<DriverItem> Devices { get; } = new();
     public ObservableCollection<DriverItem> PendingUpdates { get; } = new();
     public ObservableCollection<string> Logs { get; } = new();
 
-    public DriversViewModel(DriverService driverService)
+    public DriversViewModel(DriverService driverService, HardwareService hardwareService)
     {
         _driverService = driverService;
+        _hardwareService = hardwareService;
+    }
+
+    public async Task InitializeAsync()
+    {
+        await LoadSystemSpecs();
+    }
+
+    [RelayCommand]
+    public async Task LoadSystemSpecs()
+    {
+        if (IsSpecsLoading) return;
+        IsSpecsLoading = true;
+
+        try
+        {
+            Hardware = await _hardwareService.GetHardwareInfoAsync();
+            AddLog($"System specs loaded: {Hardware.CpuName}, {Hardware.RamTotal} RAM, {Hardware.GpuName}");
+        }
+        catch (Exception ex)
+        {
+            AddLog($"Error reading hardware specs: {ex.Message}");
+        }
+        finally
+        {
+            IsSpecsLoading = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task GenerateBatteryReport()
+    {
+        AddLog("Generating detailed Windows Battery Life Report...");
+        var path = await _hardwareService.GenerateAndOpenBatteryReportAsync();
+        if (!string.IsNullOrEmpty(path))
+        {
+            AddLog($"✅ Battery report generated and opened: {path}");
+        }
+        else
+        {
+            AddLog("⚠️ Could not generate battery report (device may not have a battery).");
+        }
     }
 
     [RelayCommand]
@@ -78,97 +127,66 @@ public partial class DriversViewModel : ObservableObject
 
         UpdateCount = PendingUpdates.Count;
         IsScanning = false;
-        StatusText = UpdateCount > 0 
-            ? $"Found {UpdateCount} certified driver update(s) online." 
-            : "All drivers are up to date in the Windows Update Catalog.";
+
+        if (UpdateCount > 0)
+        {
+            StatusText = $"Found {UpdateCount} certified driver update(s) ready to install.";
+            SummaryMessage = $"{UpdateCount} driver updates available.";
+            HasSummary = true;
+        }
+        else
+        {
+            StatusText = "All drivers are up to date.";
+            SummaryMessage = "No driver updates required. Your system hardware is fully up to date.";
+            HasSummary = true;
+        }
     }
 
     [RelayCommand]
     private async Task InstallDriverUpdates()
     {
-        if (PendingUpdates.Count == 0) return;
-
-        IsInstalling = true;
-        HasSummary = false;
-        SummaryMessage = string.Empty;
-        StatusText = "Downloading and installing driver updates sequentially...";
-        _driverCts = new CancellationTokenSource();
-
-        // Mark all as queued
-        foreach (var driver in PendingUpdates)
+        if (PendingUpdates.Count == 0)
         {
-            driver.Status = "Queued";
-            driver.StatusMessage = "Waiting in queue...";
-            driver.IsBusy = false;
-            driver.IsSuccess = false;
-            driver.IsFailed = false;
-            driver.Progress = 0;
+            StatusText = "No driver updates selected.";
+            return;
         }
 
-        var success = await _driverService.InstallDriverUpdatesAsync(
-            onLog: AddLog,
-            onDriverEvent: (idx, stage, detail) =>
-            {
-                System.Windows.Application.Current?.Dispatcher.Invoke(() =>
-                {
-                    if (idx >= 0 && idx < PendingUpdates.Count)
-                    {
-                        var driver = PendingUpdates[idx];
-                        switch (stage)
-                        {
-                            case "DOWNLOADING":
-                                driver.Status = "Downloading...";
-                                driver.StatusMessage = "Downloading package from Microsoft Catalog...";
-                                driver.IsBusy = true;
-                                driver.Progress = 35;
-                                break;
+        IsInstalling = true;
+        StatusText = "Downloading and installing certified drivers...";
+        _driverCts = new CancellationTokenSource();
 
-                            case "INSTALLING":
-                                driver.Status = "Installing...";
-                                driver.StatusMessage = "Installing driver silently into Windows...";
-                                driver.Progress = 70;
-                                break;
-
-                            case "SUCCESS":
-                                driver.Status = "Installed ✓";
-                                driver.StatusMessage = "Installed successfully!";
-                                driver.IsBusy = false;
-                                driver.IsSuccess = true;
-                                driver.Progress = 100;
-                                break;
-
-                            case "FAILED":
-                                driver.Status = "Failed ✗";
-                                driver.StatusMessage = string.IsNullOrWhiteSpace(detail) ? "Installation failed" : detail;
-                                driver.ErrorMessage = detail;
-                                driver.IsBusy = false;
-                                driver.IsFailed = true;
-                                break;
-                        }
-                    }
-                });
-            },
-            cancellationToken: _driverCts.Token);
+        var success = await _driverService.InstallDriverUpdatesAsync(AddLog, cancellationToken: _driverCts.Token);
 
         IsInstalling = false;
-
-        var succeeded = PendingUpdates.Count(d => d.IsSuccess);
-        var failed = PendingUpdates.Count(d => d.IsFailed);
-
-        SummaryMessage = failed == 0 && succeeded > 0
-            ? $"🎉 Success! All {succeeded} driver updates were installed successfully."
-            : $"Installation finished: {succeeded} succeeded, {failed} failed. See details below.";
-
-        HasSummary = true;
-        StatusText = SummaryMessage;
-        AddLog($"[Status] {SummaryMessage}");
+        if (success)
+        {
+            StatusText = $"Driver installation completed!";
+            SummaryMessage = $"Successfully processed driver updates. A reboot may be recommended.";
+            HasSummary = true;
+            PendingUpdates.Clear();
+            UpdateCount = 0;
+        }
+        else
+        {
+            StatusText = "Driver update process encountered issues. Check log.";
+        }
     }
 
-    private void AddLog(string message)
+    [RelayCommand]
+    private void CancelOperation()
+    {
+        _driverCts?.Cancel();
+        StatusText = "Operation cancelled.";
+        AddLog("User cancelled driver operation.");
+        IsScanning = false;
+        IsInstalling = false;
+    }
+
+    private void AddLog(string msg)
     {
         System.Windows.Application.Current?.Dispatcher.Invoke(() =>
         {
-            var line = $"[{DateTime.Now:HH:mm:ss}] {message}";
+            var line = $"[{DateTime.Now:HH:mm:ss}] {msg}";
             Logs.Insert(0, line);
             if (Logs.Count > 200) Logs.RemoveAt(Logs.Count - 1);
         });
