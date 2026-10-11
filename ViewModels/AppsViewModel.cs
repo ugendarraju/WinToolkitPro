@@ -39,23 +39,10 @@ public partial class AppsViewModel : ObservableObject
     [ObservableProperty]
     private double _overallProgress;
 
-    [ObservableProperty]
-    private bool _isScanningUpgrades;
-
-    [ObservableProperty]
-    private bool _isUpgrading;
-
-    [ObservableProperty]
-    private int _upgradeCount;
-
-    [ObservableProperty]
-    private int _selectedUpgradeCount;
-
     public ObservableCollection<AppItem> AllApps { get; } = new();
     public ObservableCollection<AppItem> FilteredApps { get; } = new();
     public ObservableCollection<AppCategoryGroup> GroupedApps { get; } = new();
     public ObservableCollection<string> Categories { get; } = new();
-    public ObservableCollection<AppUpgradeItem> AvailableUpgrades { get; } = new();
     public ObservableCollection<string> Logs { get; } = new();
 
     public AppsViewModel(WingetService wingetService, CatalogService catalogService)
@@ -218,98 +205,6 @@ public partial class AppsViewModel : ObservableObject
             // Automatically clean up all temporary download and extraction files from OS Temp
             await _wingetService.CleanTempFilesAsync(AddLog);
             IsInstalling = false;
-        }
-    }
-
-    [RelayCommand]
-    private async Task ScanUpgrades()
-    {
-        IsScanningUpgrades = true;
-        StatusText = "Scanning installed applications for updates...";
-        AvailableUpgrades.Clear();
-        _installCts = new CancellationTokenSource();
-
-        var upgrades = await _wingetService.ScanUpgradesAsync(AddLog, _installCts.Token);
-        foreach (var u in upgrades)
-        {
-            u.PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName == nameof(AppUpgradeItem.IsSelected))
-                {
-                    UpdateUpgradeSelectionCount();
-                }
-            };
-            AvailableUpgrades.Add(u);
-        }
-
-        UpgradeCount = AvailableUpgrades.Count;
-        UpdateUpgradeSelectionCount();
-        IsScanningUpgrades = false;
-        StatusText = UpgradeCount > 0 
-            ? $"Found {UpgradeCount} installed application(s) that can be updated." 
-            : "All installed applications are up to date!";
-    }
-
-    [RelayCommand]
-    private void SelectAllUpgrades()
-    {
-        foreach (var u in AvailableUpgrades) u.IsSelected = true;
-        UpdateUpgradeSelectionCount();
-    }
-
-    [RelayCommand]
-    private void DeselectAllUpgrades()
-    {
-        foreach (var u in AvailableUpgrades) u.IsSelected = false;
-        UpdateUpgradeSelectionCount();
-    }
-
-    private void UpdateUpgradeSelectionCount()
-    {
-        SelectedUpgradeCount = AvailableUpgrades.Count(u => u.IsSelected);
-    }
-
-    [RelayCommand]
-    private async Task UpgradeSelected()
-    {
-        var targets = AvailableUpgrades.Where(u => u.IsSelected).ToList();
-        if (targets.Count == 0)
-        {
-            StatusText = "Please select at least one application to update.";
-            return;
-        }
-
-        IsUpgrading = true;
-        _installCts = new CancellationTokenSource();
-        var ct = _installCts.Token;
-
-        var total = targets.Count;
-        var current = 0;
-
-        AddLog($"Starting batch upgrade of {total} application(s)...");
-
-        try
-        {
-            foreach (var item in targets)
-            {
-                if (ct.IsCancellationRequested) break;
-
-                current++;
-                StatusText = $"Updating {item.Name} ({current}/{total})...";
-                OverallProgress = ((double)(current - 1) / total) * 100.0;
-
-                await _wingetService.UpgradeAppAsync(item, AddLog, ct);
-
-                OverallProgress = ((double)current / total) * 100.0;
-            }
-
-            StatusText = ct.IsCancellationRequested ? "App update cancelled." : "Batch app upgrade completed!";
-            AddLog(StatusText);
-        }
-        finally
-        {
-            await _wingetService.CleanTempFilesAsync(AddLog);
-            IsUpgrading = false;
         }
     }
 

@@ -47,9 +47,14 @@
         <!-- Main Navigation TabControl -->
         <TabControl Grid.Row="1" Margin="12,4,12,12" 
                     SelectedIndex="{Binding SelectedNavigationIndex}">
-            <!-- Apps Tab -->
+            <!-- Software Catalog Installer Tab -->
             <TabItem Header="📦 Software Installer">
                 <views:AppsView DataContext="{Binding AppsVM}"/>
+            </TabItem>
+
+            <!-- App Updater Tab -->
+            <TabItem Header="🚀 App Updater">
+                <views:AppUpdaterView DataContext="{Binding AppUpdaterVM}"/>
             </TabItem>
 
             <!-- Optimizer Tab -->
@@ -70,6 +75,11 @@
             <!-- System & Cache Cleaner Tab (CCleaner Style) -->
             <TabItem Header="🧹 System Cleaner">
                 <views:CleanerView DataContext="{Binding CleanerVM}"/>
+            </TabItem>
+
+            <!-- Windows & Office Activation Tab -->
+            <TabItem Header="🔑 Activation">
+                <views:ActivationView DataContext="{Binding ActivationVM}"/>
             </TabItem>
         </TabControl>
     </Grid>

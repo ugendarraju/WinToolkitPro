@@ -24,12 +24,14 @@ public partial class MainWindow : FluentWindow
 
         // Initialize ViewModels
         var appsVM = new AppsViewModel(wingetService, catalogService);
+        var appUpdaterVM = new AppUpdaterViewModel(wingetService);
         var optimizerVM = new OptimizerViewModel(tweakService, catalogService);
         var driversVM = new DriversViewModel(driverService);
         var updateVM = new WindowsUpdateViewModel(updateService, powerShellService);
         var cleanerVM = new CleanerViewModel(cleanerService);
+        var activationVM = new ActivationViewModel();
 
-        _viewModel = new MainViewModel(appsVM, optimizerVM, driversVM, updateVM, cleanerVM);
+        _viewModel = new MainViewModel(appsVM, appUpdaterVM, optimizerVM, driversVM, updateVM, cleanerVM, activationVM);
         DataContext = _viewModel;
 
         Loaded += MainWindow_Loaded;

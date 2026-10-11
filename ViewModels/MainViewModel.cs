@@ -8,10 +8,12 @@ namespace WinToolkit.ViewModels;
 public partial class MainViewModel : ObservableObject
 {
     public AppsViewModel AppsVM { get; }
+    public AppUpdaterViewModel AppUpdaterVM { get; }
     public OptimizerViewModel OptimizerVM { get; }
     public DriversViewModel DriversVM { get; }
     public WindowsUpdateViewModel WindowsUpdateVM { get; }
     public CleanerViewModel CleanerVM { get; }
+    public ActivationViewModel ActivationVM { get; }
 
     [ObservableProperty]
     private int _selectedNavigationIndex = 0;
@@ -29,16 +31,20 @@ public partial class MainViewModel : ObservableObject
 
     public MainViewModel(
         AppsViewModel appsVM,
+        AppUpdaterViewModel appUpdaterVM,
         OptimizerViewModel optimizerVM,
         DriversViewModel driversVM,
         WindowsUpdateViewModel windowsUpdateVM,
-        CleanerViewModel cleanerVM)
+        CleanerViewModel cleanerVM,
+        ActivationViewModel activationVM)
     {
         AppsVM = appsVM;
+        AppUpdaterVM = appUpdaterVM;
         OptimizerVM = optimizerVM;
         DriversVM = driversVM;
         WindowsUpdateVM = windowsUpdateVM;
         CleanerVM = cleanerVM;
+        ActivationVM = activationVM;
 
         CheckPrivilegesAndSystem();
     }
