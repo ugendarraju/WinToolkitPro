@@ -445,32 +445,68 @@ public partial class WingetService
             }
         }
 
-        if (separatorIndex != -1 && separatorIndex + 1 < outputLines.Count)
+        if (separatorIndex > 0 && separatorIndex + 1 < outputLines.Count)
         {
+            var headerLine = outputLines[separatorIndex - 1];
+            int idCol = headerLine.IndexOf("Id", StringComparison.Ordinal);
+            int verCol = headerLine.IndexOf("Version", StringComparison.Ordinal);
+            int availCol = headerLine.IndexOf("Available", StringComparison.Ordinal);
+            int srcCol = headerLine.IndexOf("Source", StringComparison.Ordinal);
+
             for (int i = separatorIndex + 1; i < outputLines.Count; i++)
             {
                 var line = outputLines[i];
                 if (string.IsNullOrWhiteSpace(line)) continue;
                 if (line.Contains("upgrades available") || line.Contains("package(s) have version")) continue;
 
-                // Typical line format: Name (can have spaces) | Id | Version | Available | Source
-                // Match multiple whitespace separators
-                var parts = Regex.Split(line.Trim(), @"\s{2,}");
-                if (parts.Length >= 4)
-                {
-                    var name = parts[0].Trim();
-                    var id = parts[1].Trim();
-                    var installedVer = parts[2].Trim();
-                    var availableVer = parts[3].Trim();
-                    var source = parts.Length > 4 ? parts[4].Trim() : "winget";
+                string name, id, installedVer, availableVer, source = "winget";
 
+                if (idCol != -1 && verCol != -1 && availCol != -1 && line.Length >= verCol)
+                {
+                    name = (line.Length > idCol ? line.Substring(0, idCol) : line).Trim();
+                    id = (line.Length >= verCol ? line.Substring(idCol, verCol - idCol) : line.Substring(idCol)).Trim();
+                    installedVer = (line.Length >= availCol ? line.Substring(verCol, availCol - verCol) : line.Substring(verCol)).Trim();
+
+                    if (srcCol != -1 && line.Length >= srcCol)
+                    {
+                        availableVer = line.Substring(availCol, srcCol - availCol).Trim();
+                        source = line.Substring(srcCol).Trim();
+                    }
+                    else if (line.Length > availCol)
+                    {
+                        availableVer = line.Substring(availCol).Trim();
+                    }
+                    else
+                    {
+                        availableVer = string.Empty;
+                    }
+                }
+                else
+                {
+                    var parts = Regex.Split(line.Trim(), @"\s{2,}");
+                    if (parts.Length < 4) continue;
+                    name = parts[0].Trim();
+                    id = parts[1].Trim();
+                    installedVer = parts[2].Trim();
+                    availableVer = parts[3].Trim();
+                    if (parts.Length > 4) source = parts[4].Trim();
+                }
+
+                // Clean any stray tokens or whitespace from Package ID
+                if (id.Contains(' '))
+                {
+                    id = id.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0].Trim();
+                }
+
+                if (!string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(id))
+                {
                     list.Add(new AppUpgradeItem
                     {
                         Name = name,
                         PackageId = id,
                         InstalledVersion = installedVer,
                         AvailableVersion = availableVer,
-                        Source = source
+                        Source = string.IsNullOrWhiteSpace(source) ? "winget" : source
                     });
                 }
             }
@@ -498,6 +534,54 @@ public partial class WingetService
                exitCode == -1978335215;     // WINGET_INSTALLED_STATUS_INSTALL_NOT_APPLICABLE
     }
 
+    private static readonly Dictionary<string, string[]> KnownProcessMap = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { "OBSProject.OBSStudio", new[] { "obs64", "obs32", "obs" } },
+        { "Google.Chrome", new[] { "chrome" } },
+        { "Opera.Opera", new[] { "opera" } },
+        { "Mozilla.Firefox", new[] { "firefox" } },
+        { "Zoom.Zoom.EXE", new[] { "Zoom" } },
+        { "Microsoft.Teams", new[] { "ms-teams", "Teams" } },
+        { "Microsoft.VisualStudioCode", new[] { "Code" } },
+        { "OpenJS.NodeJS", new[] { "node" } },
+        { "CodecGuide.K-LiteCodecPack.Full", new[] { "mpc-hc64", "mpc-hc", "K-Lite_Codec_Pack" } },
+        { "PuTTY.PuTTY", new[] { "putty", "pageant", "pscp", "psftp", "puttygen" } },
+        { "Mega.MEGASync", new[] { "MEGAsync" } },
+        { "Wondershare.Filmora", new[] { "Filmora" } }
+    };
+
+    private void TryCloseLockingProcesses(string packageId, string name, Action<string>? onLog)
+    {
+        if (!KnownProcessMap.TryGetValue(packageId, out var procNames))
+        {
+            var parts = packageId.Split('.');
+            var candidate = parts.Length > 1 ? parts[^1] : packageId;
+            procNames = new[] { candidate };
+        }
+
+        foreach (var pName in procNames)
+        {
+            try
+            {
+                var procs = Process.GetProcessesByName(pName);
+                foreach (var p in procs)
+                {
+                    try
+                    {
+                        onLog?.Invoke($"[{name}] Closing active application process {p.ProcessName} (PID {p.Id}) to release file locks...");
+                        p.CloseMainWindow();
+                        if (!p.WaitForExit(1500))
+                        {
+                            p.Kill();
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
+    }
+
     /// <summary>
     /// Translates numeric installer exit codes into descriptive, user-friendly messages.
     /// </summary>
@@ -512,10 +596,11 @@ public partial class WingetService
             -1978335189 => "Installed successfully",
             -1978335175 => "Already up to date",
             -1978335188 => "Already up to date",
+            -1978334959 => "Application in use (Process active in background)",
             1603 => "Access Denied / UAC required (Install requires Administrator privileges)",
             1618 => "Another installer is currently busy (Wait a moment and retry)",
             -1978334967 => "Hash verification mismatch (Manifest checksum differs from CDN)",
-            -1978335212 => "Package dependency check failed",
+            -1978335212 => "Package not found in configured sources",
             -1978335120 => "Package not found in configured source",
             _ => $"Exit code {exitCode}"
         };
@@ -539,8 +624,8 @@ public partial class WingetService
             ? $"--source \"{item.Source}\""
             : "";
 
-        // Phase 1: Silent upgrade with agreements, source isolation, and unknown versions enabled
-        var args1 = $"upgrade --id \"{item.PackageId}\" --exact {sourceArg} --silent --accept-package-agreements --accept-source-agreements --include-unknown --disable-interactivity";
+        // Phase 1: Silent upgrade with agreements, source isolation, dependencies skipped, and unknown versions enabled
+        var args1 = $"upgrade --id \"{item.PackageId}\" --exact {sourceArg} --silent --accept-package-agreements --accept-source-agreements --include-unknown --include-pinned --skip-dependencies --disable-interactivity";
         onLog?.Invoke($"[{item.Name}] Executing silent upgrade: winget {args1}");
 
         var (exitCode1, lastOutput1) = await RunWingetUpgradeProcessAsync(args1, item, onLog, cancellationToken);
@@ -563,13 +648,21 @@ public partial class WingetService
             return false;
         }
 
+        // If locked by running application, close it automatically before retry
+        if (exitCode1 == -1978334959 || lastOutput1.Contains("in use by application", StringComparison.OrdinalIgnoreCase))
+        {
+            onLog?.Invoke($"[{item.Name}] Detected file lock. Terminating active background application process...");
+            TryCloseLockingProcesses(item.PackageId, item.Name, onLog);
+            await Task.Delay(1000, cancellationToken);
+        }
+
         // Phase 2: Self-healing retry with --force (bypasses hash mismatches, pinned locks, and strict silent failures)
         var reason1 = GetExitCodeExplanation(exitCode1);
         onLog?.Invoke($"[{item.Name}] Notice: Silent attempt exited ({reason1}). Executing self-healing retry with --force...");
         item.StatusMessage = "Retrying with --force...";
         item.Progress = 25;
 
-        var args2 = $"upgrade --id \"{item.PackageId}\" --exact {sourceArg} --force --include-unknown --accept-package-agreements --accept-source-agreements";
+        var args2 = $"upgrade --id \"{item.PackageId}\" --exact {sourceArg} --force --include-unknown --include-pinned --skip-dependencies --accept-package-agreements --accept-source-agreements";
         var (exitCode2, lastOutput2) = await RunWingetUpgradeProcessAsync(args2, item, onLog, cancellationToken);
 
         item.IsBusy = false;
