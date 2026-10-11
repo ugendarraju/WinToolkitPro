@@ -43,6 +43,15 @@ public partial class SystemToolsViewModel : ObservableObject
     private string _selectedDrive = "C:\\";
 
     [ObservableProperty]
+    private string _currentDiskPath = "C:\\";
+
+    [ObservableProperty]
+    private bool _canNavigateUp;
+
+    [ObservableProperty]
+    private bool _isTreemapView = true;
+
+    [ObservableProperty]
     private bool _isDiskScanning;
 
     // Collections
@@ -327,28 +336,116 @@ public partial class SystemToolsViewModel : ObservableObject
     }
 
     // ========================================================
-    // Disk Space Analyzer Commands
+    // Disk Space Analyzer / SpaceSniffer Treemap Commands
     // ========================================================
     [RelayCommand]
     public async Task AnalyzeDiskSpace()
+    {
+        CurrentDiskPath = SelectedDrive;
+        await ScanPathAsync(SelectedDrive);
+    }
+
+    [RelayCommand]
+    public async Task DrillDown(DiskFolderItem item)
+    {
+        if (item == null || !item.IsDirectory) return;
+        CurrentDiskPath = item.Path;
+        await ScanPathAsync(item.Path);
+    }
+
+    [RelayCommand]
+    public async Task NavigateUp()
+    {
+        if (string.IsNullOrWhiteSpace(CurrentDiskPath)) return;
+        var parent = Directory.GetParent(CurrentDiskPath);
+        if (parent != null)
+        {
+            CurrentDiskPath = parent.FullName;
+            await ScanPathAsync(parent.FullName);
+        }
+        else
+        {
+            CurrentDiskPath = SelectedDrive;
+            await ScanPathAsync(SelectedDrive);
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleView()
+    {
+        IsTreemapView = !IsTreemapView;
+    }
+
+    [RelayCommand]
+    public async Task LaunchSpaceSniffer()
+    {
+        AddLog("Checking for SpaceSniffer utility on system...");
+        StatusMessage = "Launching SpaceSniffer...";
+
+        // Check if SpaceSniffer is available in PATH or common paths
+        var commonPaths = new[]
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "SpaceSniffer", "SpaceSniffer.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "SpaceSniffer", "SpaceSniffer.exe"),
+            @"C:\ProgramData\chocolatey\bin\SpaceSniffer.exe"
+        };
+
+        string? foundPath = commonPaths.FirstOrDefault(File.Exists);
+
+        if (foundPath != null)
+        {
+            AddLog($"Found SpaceSniffer at: {foundPath}. Launching...");
+            Process.Start(new ProcessStartInfo { FileName = foundPath, Arguments = SelectedDrive, UseShellExecute = true });
+            StatusMessage = "SpaceSniffer launched.";
+            return;
+        }
+
+        // Prompt user and offer to install via winget
+        AddLog("SpaceSniffer is not installed. Downloading & installing portable SpaceSniffer via winget...");
+        StatusMessage = "Installing SpaceSniffer via winget...";
+
+        try
+        {
+            var res = await _systemToolsService.ExecutePowerShellAsync("winget install --id UderzoSoftware.SpaceSniffer -e --silent --accept-source-agreements --accept-package-agreements", AddLog);
+            if (res.Success)
+            {
+                AddLog("SpaceSniffer installation finished. Attempting launch...");
+                StatusMessage = "SpaceSniffer installed successfully. Launching...";
+                Process.Start(new ProcessStartInfo { FileName = "SpaceSniffer.exe", Arguments = SelectedDrive, UseShellExecute = true });
+            }
+            else
+            {
+                StatusMessage = "Could not automatically download SpaceSniffer. Opening official website...";
+                Process.Start(new ProcessStartInfo { FileName = "https://www.uderzo.it/main_products/space_sniffer/", UseShellExecute = true });
+            }
+        }
+        catch (Exception ex)
+        {
+            AddLog($"SpaceSniffer launch error: {ex.Message}");
+            Process.Start(new ProcessStartInfo { FileName = "https://www.uderzo.it/main_products/space_sniffer/", UseShellExecute = true });
+        }
+    }
+
+    private async Task ScanPathAsync(string targetPath)
     {
         if (IsDiskScanning) return;
         IsDiskScanning = true;
         DiskFolders.Clear();
         _activeCts = new CancellationTokenSource();
 
-        AddLog($"Starting Disk Space Analysis on {SelectedDrive}...");
-        StatusMessage = $"Analyzing storage on {SelectedDrive}...";
+        CanNavigateUp = Directory.GetParent(targetPath) != null;
+        AddLog($"Analyzing storage on '{targetPath}'...");
+        StatusMessage = $"Analyzing treemap visualizer on '{targetPath}'...";
 
         try
         {
-            var items = await _systemToolsService.AnalyzeDiskSpaceAsync(SelectedDrive, _activeCts.Token);
+            var items = await _systemToolsService.AnalyzeDiskSpaceAsync(targetPath, _activeCts.Token);
             foreach (var item in items)
             {
                 DiskFolders.Add(item);
             }
-            StatusMessage = $"Analysis complete: {DiskFolders.Count} largest directories/files identified.";
-            AddLog($"✅ Disk analysis finished: found {DiskFolders.Count} entries.");
+            StatusMessage = $"Analysis complete: {DiskFolders.Count} largest items identified in '{targetPath}'.";
+            AddLog($"✅ Analysis completed: {DiskFolders.Count} items visualized.");
         }
         catch (Exception ex)
         {

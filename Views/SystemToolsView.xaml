@@ -363,81 +363,219 @@
                 </Grid>
             </TabItem>
 
-            <!-- Sub Tab 4: Disk Space Analyzer -->
-            <TabItem Header="💽 Disk Space Analyzer">
+            <!-- Sub Tab 4: SpaceSniffer Disk Treemap Visualizer -->
+            <TabItem Header="🗺️ SpaceSniffer Treemap Analyzer">
                 <Grid Margin="0,8,0,0">
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Drive Selector & Scan Action -->
+                    <!-- Drive Selector & Top Toolbar -->
                     <Border Grid.Row="0" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
                             BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,8">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="130"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBlock Grid.Column="0" Text="Select Drive: " VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="0" Text="Target Drive: " VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12" Margin="0,0,8,0"/>
                             
                             <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableDrives}" SelectedItem="{Binding SelectedDrive}" VerticalAlignment="Center"/>
 
                             <ProgressBar Grid.Column="2" IsIndeterminate="{Binding IsDiskScanning}" Height="6" Margin="16,0"
                                          Visibility="{Binding IsDiskScanning, Converter={StaticResource BoolToVis}}"/>
 
-                            <Button Grid.Column="3" Content="🔍 Analyze Disk Space" Command="{Binding AnalyzeDiskSpaceCommand}"
-                                    Background="{DynamicResource AccentFillColorDefaultBrush}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
-                                    FontWeight="SemiBold" Padding="14,6" FontSize="12"/>
+                            <!-- Actions -->
+                            <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="🔍 Scan Visual Treemap" Command="{Binding AnalyzeDiskSpaceCommand}"
+                                        Background="{DynamicResource AccentFillColorDefaultBrush}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                                        FontWeight="SemiBold" Padding="12,6" FontSize="12" Margin="0,0,8,0"/>
+
+                                <Button Command="{Binding ToggleViewCommand}"
+                                        Padding="10,6" FontSize="11" Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="🔄 "/>
+                                        <TextBlock Text="Switch View"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <Button Command="{Binding LaunchSpaceSnifferCommand}"
+                                        Background="#0284c7" Foreground="White" FontWeight="Bold" Padding="12,6" FontSize="12" Cursor="Hand">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="🚀 "/>
+                                        <TextBlock Text="Launch SpaceSniffer App"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
                         </Grid>
                     </Border>
 
-                    <!-- Top Folders & Files Result -->
-                    <Border Grid.Row="1" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                    <!-- Breadcrumbs & Path Navigator Bar -->
+                    <Border Grid.Row="1" Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,0,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button Grid.Column="0" Content="⬆️ Up Folder" Command="{Binding NavigateUpCommand}"
+                                    IsEnabled="{Binding CanNavigateUp}" Padding="8,3" FontSize="11" Margin="0,0,10,0"/>
+
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Viewing Path: " FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <TextBlock Text="{Binding CurrentDiskPath}" FontWeight="Bold" FontSize="12" Foreground="#38bdf8" Margin="4,0,0,0"/>
+                            </StackPanel>
+
+                            <TextBlock Grid.Column="2" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center">
+                                <Run Text="💡 Tip: Click any folder block to drill down; click 'Open' to view in Explorer."/>
+                            </TextBlock>
+                        </Grid>
+                    </Border>
+
+                    <!-- Visual Workspace: Treemap & List Views -->
+                    <Border Grid.Row="2" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
                             BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="6" Padding="8">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <ItemsControl ItemsSource="{Binding DiskFolders}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Margin="0,0,0,6" Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
-                                                CornerRadius="4" Padding="10,6">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="30"/>
-                                                    <ColumnDefinition Width="220"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="100"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
+                        <Grid>
+                            <!-- Treemap Interactive Blocks View -->
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                          Visibility="{Binding IsTreemapView, Converter={StaticResource BoolToVis}}">
+                                <ItemsControl ItemsSource="{Binding DiskFolders}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Command="{Binding DataContext.DrillDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Margin="4" Padding="0" BorderThickness="1" BorderBrush="#334155"
+                                                    Cursor="Hand">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                                                BorderThickness="1" CornerRadius="6" Padding="10,8">
+                                                            <ContentPresenter/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                                <Button.Style>
+                                                    <Style TargetType="Button">
+                                                        <Setter Property="Background" Value="{Binding ColorHex}"/>
+                                                        <!-- Adaptive block size based on disk consumption -->
+                                                        <Setter Property="Width" Value="240"/>
+                                                        <Setter Property="Height" Value="110"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Percentage, Converter={x:Null}}" Value="null">
+                                                                <Setter Property="Width" Value="240"/>
+                                                            </DataTrigger>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Opacity" Value="0.88"/>
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="*"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
 
-                                                <TextBlock Grid.Column="0" Text="{Binding Icon}" 
-                                                           VerticalAlignment="Center" FontSize="14"/>
+                                                    <!-- Header: Icon & Name -->
+                                                    <Grid Grid.Row="0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Grid.Column="0" Text="{Binding Icon}" FontSize="15" Margin="0,0,6,0"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="Bold" FontSize="13" 
+                                                                   Foreground="White" TextTrimming="CharacterEllipsis"/>
+                                                        
+                                                        <!-- Open button -->
+                                                        <Button Grid.Column="2" Content="↗️" 
+                                                                Command="{Binding DataContext.OpenInExplorerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                CommandParameter="{Binding Path}"
+                                                                Background="#0f172a" Foreground="White" Padding="4,1" FontSize="10" 
+                                                                ToolTip="Open in File Explorer"/>
+                                                    </Grid>
 
-                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="12" TextTrimming="CharacterEllipsis"/>
-                                                    <TextBlock Text="{Binding Path}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
-                                                </StackPanel>
+                                                    <!-- Center: Percentage & Size Callout -->
+                                                    <StackPanel Grid.Row="1" VerticalAlignment="Center" Margin="0,4">
+                                                        <TextBlock Text="{Binding FormattedSize}" FontWeight="ExtraBold" FontSize="18" Foreground="#ffffff"/>
+                                                        <TextBlock Text="{Binding Subtitle}" FontSize="11" Foreground="#e2e8f0" TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
 
-                                                <!-- Percentage Usage Bar -->
-                                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="12,0">
-                                                    <ProgressBar Value="{Binding Percentage}" Maximum="100" Height="8"
-                                                                 Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
-                                                </StackPanel>
+                                                    <!-- Footer: Visual Bar indicator -->
+                                                    <ProgressBar Grid.Row="2" Value="{Binding Percentage}" Maximum="100" Height="4"
+                                                                 Background="#1e293b" Foreground="#38bdf8"/>
+                                                </Grid>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
 
-                                                <TextBlock Grid.Column="3" Text="{Binding FormattedSize}" FontWeight="Bold" FontSize="12" 
-                                                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                            <!-- Classic List View (Alternative Toggle) -->
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ScrollViewer.Style>
+                                    <Style TargetType="ScrollViewer">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsTreemapView}" Value="False">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ScrollViewer.Style>
+                                <ItemsControl ItemsSource="{Binding DiskFolders}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,0,0,6" Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
+                                                    CornerRadius="4" Padding="10,6">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="30"/>
+                                                        <ColumnDefinition Width="220"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="100"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
 
-                                                <Button Grid.Column="4" Content="📂 Open" Command="{Binding DataContext.OpenInExplorerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                        CommandParameter="{Binding Path}" FontSize="10" Padding="8,4" Margin="10,0,0,0"/>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
+                                                    <TextBlock Grid.Column="0" Text="{Binding Icon}" 
+                                                               VerticalAlignment="Center" FontSize="14"/>
+
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding Path}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                    </StackPanel>
+
+                                                    <!-- Percentage Usage Bar -->
+                                                    <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="12,0">
+                                                        <ProgressBar Value="{Binding Percentage}" Maximum="100" Height="8"
+                                                                     Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
+                                                    </StackPanel>
+
+                                                    <TextBlock Grid.Column="3" Text="{Binding FormattedSize}" FontWeight="Bold" FontSize="12" 
+                                                               VerticalAlignment="Center" HorizontalAlignment="Right"/>
+
+                                                    <Button Grid.Column="4" Content="📂 Open" Command="{Binding DataContext.OpenInExplorerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding Path}" FontSize="10" Padding="8,4" Margin="10,0,0,0"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
                     </Border>
                 </Grid>
             </TabItem>

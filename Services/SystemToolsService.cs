@@ -77,6 +77,11 @@ public class SystemToolsService
         _powerShellService = powerShellService;
     }
 
+    public Task<(bool Success, string Output, string Error)> ExecutePowerShellAsync(string script, Action<string>? onLog = null)
+    {
+        return _powerShellService.ExecuteCommandAsync(script, onLog);
+    }
+
     public async Task<List<UwpAppItem>> ScanUwpAppsAsync(Action<string>? onLog = null)
     {
         onLog?.Invoke("Scanning installed Windows packages and bloatware...");
@@ -691,13 +696,22 @@ public class SystemToolsService
                     });
                 }
 
-                // Calculate percentages and sort descending
+                // Calculate percentages, colors and sort descending
                 var sorted = results.OrderByDescending(r => r.SizeBytes).ToList();
+                var colors = new[]
+                {
+                    "#0284c7", "#0d9488", "#7c3aed", "#d97706", "#2563eb",
+                    "#059669", "#c026d3", "#e11d48", "#4f46e5", "#0891b2",
+                    "#ca8a04", "#475569"
+                };
+
                 if (totalScannedBytes > 0)
                 {
-                    foreach (var item in sorted)
+                    for (int i = 0; i < sorted.Count; i++)
                     {
+                        var item = sorted[i];
                         item.Percentage = Math.Round((double)item.SizeBytes / totalScannedBytes * 100.0, 1);
+                        item.ColorHex = colors[i % colors.Length];
                     }
                 }
 
