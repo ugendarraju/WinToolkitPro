@@ -713,11 +713,11 @@ public class SystemToolsService
     private static string FormatBytes(long bytes)
     {
         if (bytes >= 1024L * 1024L * 1024L)
-            return $"{bytes / 1024.0 / 1024.0 / 1024.0:0.1} GB";
+            return $"{bytes / 1024.0 / 1024.0 / 1024.0:0.0} GB";
         if (bytes >= 1024L * 1024L)
-            return $"{bytes / 1024.0 / 1024.0:0.1} MB";
+            return $"{bytes / 1024.0 / 1024.0:0.0} MB";
         if (bytes >= 1024L)
-            return $"{bytes / 1024.0:0.1} KB";
+            return $"{bytes / 1024.0:0.0} KB";
         return $"{bytes} B";
     }
 

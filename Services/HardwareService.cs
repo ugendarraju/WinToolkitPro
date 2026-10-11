@@ -26,6 +26,7 @@ public class HardwareService
                 $gpus = Get-CimInstance Win32_VideoController | Select-Object Name, DriverVersion, AdapterRAM
                 $os = Get-CimInstance Win32_OperatingSystem | Select-Object TotalVisibleMemorySize, FreePhysicalMemory
                 $ramSticks = Get-CimInstance Win32_PhysicalMemory | Select-Object Capacity, Speed, MemoryType
+                $physBytes = ($ramSticks | Measure-Object -Property Capacity -Sum).Sum
                 $bb = Get-CimInstance Win32_BaseBoard | Select-Object Manufacturer, Product
                 $bios = Get-CimInstance Win32_BIOS | Select-Object SMBIOSBIOSVersion, ReleaseDate
                 $disks = Get-CimInstance Win32_DiskDrive | Select-Object Model, InterfaceType, Size
@@ -38,6 +39,7 @@ public class HardwareService
                     CpuMaxClock = $cpu.MaxClockSpeed
                     CpuArch = $cpu.AddressWidth
                     GpuList = $gpus
+                    PhysicalRamBytes = $physBytes
                     TotalRamKB = $os.TotalVisibleMemorySize
                     FreeRamKB = $os.FreePhysicalMemory
                     RamSpeed = ($ramSticks | Select-Object -First 1).Speed
@@ -84,15 +86,26 @@ public class HardwareService
                 }
 
                 // RAM
+                long physBytes = 0;
+                if (root.TryGetProperty("PhysicalRamBytes", out var prb) && prb.TryGetInt64(out var pb))
+                {
+                    physBytes = pb;
+                }
+
                 if (root.TryGetProperty("TotalRamKB", out var tr) && tr.TryGetInt64(out var totalKb))
                 {
-                    var totalGb = totalKb / 1024.0 / 1024.0;
-                    info.RamTotal = $"{totalGb:0.1} GB";
+                    var usableGb = totalKb / 1024.0 / 1024.0;
+                    var installedGb = physBytes > 0 
+                        ? Math.Round(physBytes / 1024.0 / 1024.0 / 1024.0) 
+                        : Math.Round(usableGb);
+
+                    info.RamTotal = $"{installedGb} GB";
 
                     if (root.TryGetProperty("FreeRamKB", out var fr) && fr.TryGetInt64(out var freeKb))
                     {
                         var availGb = freeKb / 1024.0 / 1024.0;
-                        info.RamAvailable = $"{availGb:0.1} GB Free ({((totalGb - availGb) / totalGb * 100):0}% used)";
+                        var usedPct = Math.Clamp((int)Math.Round((usableGb - availGb) / usableGb * 100.0), 0, 100);
+                        info.RamAvailable = $"{availGb:0.0} GB Free ({usedPct}% used)";
                     }
                 }
                 if (root.TryGetProperty("RamSpeed", out var rs) && rs.TryGetInt32(out var spd) && spd > 0)
