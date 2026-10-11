@@ -67,9 +67,9 @@
                     <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="4" Padding="8,2" Margin="14,0,0,0">
                         <TextBlock FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                             <Run Text="Targets Selected: "/>
-                            <Run Text="{Binding SelectedCount}" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            <Run Text="{Binding SelectedCount, Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                             <Run Text=" | Est. Junk: "/>
-                            <Run Text="{Binding TotalJunkFormatted}" FontWeight="Bold" Foreground="#38bdf8"/>
+                            <Run Text="{Binding TotalJunkFormatted, Mode=OneWay}" FontWeight="Bold" Foreground="#38bdf8"/>
                         </TextBlock>
                     </Border>
                 </StackPanel>

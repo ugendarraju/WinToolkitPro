@@ -162,9 +162,9 @@
                                         Visibility="{Binding UpgradeCount, Converter={StaticResource BoolToVis}}">
                                     <TextBlock FontSize="11" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
                                         <Run Text="Available Updates: "/>
-                                        <Run Text="{Binding UpgradeCount}" FontWeight="Bold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                        <Run Text="{Binding UpgradeCount, Mode=OneWay}" FontWeight="Bold" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                                         <Run Text=" | Selected: "/>
-                                        <Run Text="{Binding SelectedUpgradeCount}" FontWeight="Bold"/>
+                                        <Run Text="{Binding SelectedUpgradeCount, Mode=OneWay}" FontWeight="Bold"/>
                                     </TextBlock>
                                 </Border>
                             </StackPanel>
