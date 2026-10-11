@@ -134,17 +134,17 @@ public partial class WingetService
                 await process.WaitForExitAsync(cancellationToken);
             }
 
-            if (process.ExitCode == 0 || process.ExitCode == -1978335189 || process.ExitCode == -1978335175)
+            if (IsSuccessExitCode(process.ExitCode))
             {
                 app.Status = InstallStatus.Installed;
-                app.StatusMessage = "Installed successfully";
+                app.StatusMessage = process.ExitCode == 3010 ? "Installed (Reboot Required)" : "Installed successfully";
                 app.Progress = 100;
                 return true;
             }
             else
             {
                 app.Status = InstallStatus.Failed;
-                app.StatusMessage = $"Failed (Exit code: {process.ExitCode})";
+                app.StatusMessage = $"Failed ({GetExitCodeExplanation(process.ExitCode)})";
                 return false;
             }
         }
@@ -484,7 +484,45 @@ public partial class WingetService
     }
 
     /// <summary>
-    /// Upgrades an individual application silently using winget upgrade.
+    /// Checks whether an exit code represents a success, benign condition, or reboot-required status.
+    /// </summary>
+    public static bool IsSuccessExitCode(int exitCode)
+    {
+        return exitCode == 0 ||
+               exitCode == 3010 ||          // ERROR_SUCCESS_REBOOT_REQUIRED
+               exitCode == 1641 ||          // ERROR_SUCCESS_REBOOT_INITIATED
+               exitCode == 2359302 ||       // WU_S_ALREADY_INSTALLED
+               exitCode == -1978335189 ||   // WINGET_INSTALLED_STATUS_ARP_ENTRY_NOT_FOUND (0x8A15002B)
+               exitCode == -1978335175 ||   // WINGET_INSTALLED_STATUS_UPDATE_NOT_APPLICABLE (0x8A150039)
+               exitCode == -1978335188 ||   // WINGET_INSTALLED_STATUS_ALREADY_INSTALLED (0x8A15002C)
+               exitCode == -1978335215;     // WINGET_INSTALLED_STATUS_INSTALL_NOT_APPLICABLE
+    }
+
+    /// <summary>
+    /// Translates numeric installer exit codes into descriptive, user-friendly messages.
+    /// </summary>
+    public static string GetExitCodeExplanation(int exitCode)
+    {
+        return exitCode switch
+        {
+            0 => "Success",
+            3010 => "Success (Reboot Required)",
+            1641 => "Success (Reboot Initiated)",
+            2359302 => "Already Installed",
+            -1978335189 => "Installed successfully",
+            -1978335175 => "Already up to date",
+            -1978335188 => "Already up to date",
+            1603 => "Access Denied / UAC required (Install requires Administrator privileges)",
+            1618 => "Another installer is currently busy (Wait a moment and retry)",
+            -1978334967 => "Hash verification mismatch (Manifest checksum differs from CDN)",
+            -1978335212 => "Package dependency check failed",
+            -1978335120 => "Package not found in configured source",
+            _ => $"Exit code {exitCode}"
+        };
+    }
+
+    /// <summary>
+    /// Upgrades an individual application with automated self-healing retry.
     /// </summary>
     public async Task<bool> UpgradeAppAsync(
         AppUpgradeItem item,
@@ -497,10 +535,75 @@ public partial class WingetService
         item.IsFailed = false;
         item.Progress = 10;
 
+        var sourceArg = !string.IsNullOrWhiteSpace(item.Source) && !item.Source.Equals("unknown", StringComparison.OrdinalIgnoreCase)
+            ? $"--source \"{item.Source}\""
+            : "";
+
+        // Phase 1: Silent upgrade with agreements, source isolation, and unknown versions enabled
+        var args1 = $"upgrade --id \"{item.PackageId}\" --exact {sourceArg} --silent --accept-package-agreements --accept-source-agreements --include-unknown --disable-interactivity";
+        onLog?.Invoke($"[{item.Name}] Executing silent upgrade: winget {args1}");
+
+        var (exitCode1, lastOutput1) = await RunWingetUpgradeProcessAsync(args1, item, onLog, cancellationToken);
+
+        if (IsSuccessExitCode(exitCode1))
+        {
+            item.IsBusy = false;
+            item.Progress = 100;
+            item.IsSuccess = true;
+            item.IsFailed = false;
+            item.StatusMessage = exitCode1 == 3010 ? "Updated (Reboot Required)" : "Updated to " + item.AvailableVersion;
+            onLog?.Invoke($"[{item.Name}] ✅ {item.StatusMessage}");
+            return true;
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            item.IsBusy = false;
+            item.StatusMessage = "Cancelled";
+            return false;
+        }
+
+        // Phase 2: Self-healing retry with --force (bypasses hash mismatches, pinned locks, and strict silent failures)
+        var reason1 = GetExitCodeExplanation(exitCode1);
+        onLog?.Invoke($"[{item.Name}] Notice: Silent attempt exited ({reason1}). Executing self-healing retry with --force...");
+        item.StatusMessage = "Retrying with --force...";
+        item.Progress = 25;
+
+        var args2 = $"upgrade --id \"{item.PackageId}\" --exact {sourceArg} --force --include-unknown --accept-package-agreements --accept-source-agreements";
+        var (exitCode2, lastOutput2) = await RunWingetUpgradeProcessAsync(args2, item, onLog, cancellationToken);
+
+        item.IsBusy = false;
+        item.Progress = 100;
+
+        if (IsSuccessExitCode(exitCode2))
+        {
+            item.IsSuccess = true;
+            item.IsFailed = false;
+            item.StatusMessage = exitCode2 == 3010 ? "Updated (Reboot Required)" : "Updated to " + item.AvailableVersion;
+            onLog?.Invoke($"[{item.Name}] ✅ {item.StatusMessage} (after self-healing retry)");
+            return true;
+        }
+
+        // If still failed, explain the exact root cause
+        var finalExplanation = GetExitCodeExplanation(exitCode2 != 0 ? exitCode2 : exitCode1);
+        item.IsSuccess = false;
+        item.IsFailed = true;
+        item.ErrorMessage = finalExplanation;
+        item.StatusMessage = $"Failed ({finalExplanation})";
+        onLog?.Invoke($"[{item.Name}] ❌ Upgrade failed: {finalExplanation}. Detail: {(string.IsNullOrWhiteSpace(lastOutput2) ? lastOutput1 : lastOutput2)}");
+        return false;
+    }
+
+    private async Task<(int ExitCode, string LastOutput)> RunWingetUpgradeProcessAsync(
+        string arguments,
+        AppUpgradeItem item,
+        Action<string>? onLog,
+        CancellationToken cancellationToken)
+    {
         var startInfo = new ProcessStartInfo
         {
             FileName = "winget",
-            Arguments = $"upgrade --id \"{item.PackageId}\" --exact --silent --accept-package-agreements --accept-source-agreements --disable-interactivity",
+            Arguments = arguments,
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -510,25 +613,34 @@ public partial class WingetService
         };
 
         using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+        var lastOutput = string.Empty;
 
         process.OutputDataReceived += (_, e) =>
         {
             if (string.IsNullOrWhiteSpace(e.Data)) return;
-
+            lastOutput = e.Data;
             onLog?.Invoke($"[{item.Name}] {e.Data}");
 
             var match = ProgressRegex.Match(e.Data);
             if (match.Success && double.TryParse(match.Groups[1].Value, out var percent))
             {
                 item.Progress = percent;
-                if (percent >= 100)
-                {
-                    item.StatusMessage = "Applying upgrade...";
-                }
-                else
-                {
-                    item.StatusMessage = $"Downloading: {percent}%";
-                }
+                item.StatusMessage = percent >= 100 ? "Applying upgrade..." : $"Downloading: {percent}%";
+            }
+            else if (e.Data.Contains("Installing", StringComparison.OrdinalIgnoreCase) ||
+                     e.Data.Contains("Starting package install", StringComparison.OrdinalIgnoreCase))
+            {
+                item.StatusMessage = "Applying upgrade...";
+                item.Progress = 85;
+            }
+        };
+
+        process.ErrorDataReceived += (_, e) =>
+        {
+            if (!string.IsNullOrWhiteSpace(e.Data))
+            {
+                lastOutput = e.Data;
+                onLog?.Invoke($"[{item.Name}] [stderr] {e.Data}");
             }
         };
 
@@ -536,6 +648,7 @@ public partial class WingetService
         {
             process.Start();
             process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
 
             using (cancellationToken.Register(() =>
             {
@@ -549,42 +662,37 @@ public partial class WingetService
                 await process.WaitForExitAsync(cancellationToken);
             }
 
-            var success = process.ExitCode == 0;
-            item.IsBusy = false;
-            item.Progress = 100;
-
-            if (success)
-            {
-                item.StatusMessage = "Updated to " + item.AvailableVersion;
-                item.IsSuccess = true;
-                item.IsFailed = false;
-                onLog?.Invoke($"[{item.Name}] Updated successfully!");
-            }
-            else
-            {
-                item.StatusMessage = "Upgrade Failed";
-                item.IsSuccess = false;
-                item.IsFailed = true;
-                item.ErrorMessage = $"Exit code: {process.ExitCode}";
-                onLog?.Invoke($"[{item.Name}] Upgrade ended with exit code {process.ExitCode}");
-            }
-
-            return success;
+            return (process.ExitCode, lastOutput);
         }
         catch (OperationCanceledException)
         {
-            item.IsBusy = false;
-            item.StatusMessage = "Cancelled";
-            return false;
+            return (-1, "Operation cancelled");
         }
         catch (Exception ex)
         {
-            item.IsBusy = false;
-            item.StatusMessage = "Error: " + ex.Message;
-            item.IsFailed = true;
-            item.ErrorMessage = ex.Message;
-            onLog?.Invoke($"[{item.Name}] Error: {ex.Message}");
-            return false;
+            return (-1, ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Launches an elevated PowerShell window to run an interactive upgrade for stubborn or prompt-heavy packages.
+    /// </summary>
+    public void LaunchInteractiveUpgrade(AppUpgradeItem item)
+    {
+        var sourceArg = !string.IsNullOrWhiteSpace(item.Source) && !item.Source.Equals("unknown", StringComparison.OrdinalIgnoreCase)
+            ? $"--source \"{item.Source}\""
+            : "";
+
+        var arguments = $"upgrade --id \"{item.PackageId}\" {sourceArg} --force --include-unknown --accept-package-agreements --accept-source-agreements";
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = "powershell.exe",
+            Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"Write-Host 'Upgrading {item.Name}...' -ForegroundColor Cyan; winget {arguments}; Write-Host ''; Write-Host 'Done. Press any key to exit.' -ForegroundColor Green; $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')\"",
+            UseShellExecute = true,
+            Verb = "runas"
+        };
+
+        Process.Start(psi);
     }
 }

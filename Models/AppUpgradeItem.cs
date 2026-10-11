@@ -20,14 +20,18 @@ public partial class AppUpgradeItem : ObservableObject
     private double _progress;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRetryInteractive))]
     private bool _isBusy;
 
     [ObservableProperty]
     private bool _isSuccess;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRetryInteractive))]
     private bool _isFailed;
 
     [ObservableProperty]
     private string _errorMessage = string.Empty;
+
+    public bool CanRetryInteractive => IsFailed && !IsBusy;
 }

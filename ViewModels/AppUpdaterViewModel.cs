@@ -180,6 +180,22 @@ public partial class AppUpdaterViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task RetryUpgrade(AppUpgradeItem item)
+    {
+        if (IsUpgrading) return;
+        _updateCts = new CancellationTokenSource();
+        AddLog($"[Retry] Attempting update for {item.Name}...");
+        await _wingetService.UpgradeAppAsync(item, AddLog, _updateCts.Token);
+    }
+
+    [RelayCommand]
+    private void RetryInteractive(AppUpgradeItem item)
+    {
+        AddLog($"[Interactive] Launching elevated console installer for {item.Name}...");
+        _wingetService.LaunchInteractiveUpgrade(item);
+    }
+
+    [RelayCommand]
     private void CancelUpgrade()
     {
         _updateCts?.Cancel();
