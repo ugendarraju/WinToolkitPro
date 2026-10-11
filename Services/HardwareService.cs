@@ -25,8 +25,9 @@ public class HardwareService
                 $cpu = Get-CimInstance Win32_Processor | Select-Object -First 1 Name, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed, AddressWidth
                 $gpus = Get-CimInstance Win32_VideoController | Select-Object Name, DriverVersion, AdapterRAM
                 $os = Get-CimInstance Win32_OperatingSystem | Select-Object TotalVisibleMemorySize, FreePhysicalMemory
-                $ramSticks = Get-CimInstance Win32_PhysicalMemory | Select-Object Capacity, Speed, MemoryType
+                $ramSticks = Get-CimInstance Win32_PhysicalMemory | Select-Object Capacity, Speed, MemoryType, SMBIOSMemoryType
                 $physBytes = ($ramSticks | Measure-Object -Property Capacity -Sum).Sum
+                $firstRam = $ramSticks | Select-Object -First 1
                 $bb = Get-CimInstance Win32_BaseBoard | Select-Object Manufacturer, Product
                 $bios = Get-CimInstance Win32_BIOS | Select-Object SMBIOSBIOSVersion, ReleaseDate
                 $disks = Get-CimInstance Win32_DiskDrive | Select-Object Model, InterfaceType, Size
@@ -42,7 +43,9 @@ public class HardwareService
                     PhysicalRamBytes = $physBytes
                     TotalRamKB = $os.TotalVisibleMemorySize
                     FreeRamKB = $os.FreePhysicalMemory
-                    RamSpeed = ($ramSticks | Select-Object -First 1).Speed
+                    RamSpeed = $firstRam.Speed
+                    RamSmbiosType = $firstRam.SMBIOSMemoryType
+                    RamMemType = $firstRam.MemoryType
                     RamCount = $ramSticks.Count
                     MbManufacturer = $bb.Manufacturer
                     MbProduct = $bb.Product
@@ -108,10 +111,65 @@ public class HardwareService
                         info.RamAvailable = $"{availGb:0.0} GB Free ({usedPct}% used)";
                     }
                 }
+                // Detect DDR Generation (SMBIOS Memory Type or speed heuristics)
+                var ramGeneration = string.Empty;
+                var smbiosType = 0;
+                var memType = 0;
+                if (root.TryGetProperty("RamSmbiosType", out var rst) && rst.TryGetInt32(out var st)) smbiosType = st;
+                if (root.TryGetProperty("RamMemType", out var rmt) && rmt.TryGetInt32(out var mt)) memType = mt;
+
+                ramGeneration = smbiosType switch
+                {
+                    19 => "DDR",
+                    20 => "DDR2",
+                    21 => "DDR2 FB-DIMM",
+                    24 => "DDR3",
+                    26 => "DDR4",
+                    27 => "LPDDR",
+                    28 => "LPDDR2",
+                    29 => "LPDDR3",
+                    30 => "LPDDR4",
+                    31 => "Logical non-volatile device",
+                    34 => "DDR5",
+                    35 => "LPDDR5",
+                    _ => string.Empty
+                };
+
+                if (string.IsNullOrEmpty(ramGeneration))
+                {
+                    ramGeneration = memType switch
+                    {
+                        19 => "DDR",
+                        20 => "DDR2",
+                        21 => "DDR2 FB-DIMM",
+                        24 => "DDR3",
+                        26 => "DDR4",
+                        _ => string.Empty
+                    };
+                }
+
+                int speedMhz = 0;
                 if (root.TryGetProperty("RamSpeed", out var rs) && rs.TryGetInt32(out var spd) && spd > 0)
                 {
+                    speedMhz = spd;
                     info.RamSpeed = $"{spd} MHz";
                 }
+
+                // Fallback heuristic based on speed if SMBIOS was 0/unknown
+                if (string.IsNullOrEmpty(ramGeneration) && speedMhz > 0)
+                {
+                    if (speedMhz >= 4800) ramGeneration = "DDR5";
+                    else if (speedMhz >= 2133) ramGeneration = "DDR4";
+                    else if (speedMhz >= 800) ramGeneration = "DDR3";
+                    else if (speedMhz >= 400) ramGeneration = "DDR2";
+                }
+
+                info.RamType = ramGeneration;
+                if (!string.IsNullOrEmpty(ramGeneration))
+                {
+                    info.RamTotal = $"{info.RamTotal} {ramGeneration}".Trim();
+                }
+
                 if (root.TryGetProperty("RamCount", out var rc))
                 {
                     info.RamSlots = $"{rc.GetInt32()} module(s) installed";

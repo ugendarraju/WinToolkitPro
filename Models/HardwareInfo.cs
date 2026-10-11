@@ -18,6 +18,7 @@ public partial class HardwareInfo : ObservableObject
 
     // Memory
     public string RamTotal { get; set; } = "Detecting...";
+    public string RamType { get; set; } = string.Empty;
     public string RamAvailable { get; set; } = string.Empty;
     public string RamSpeed { get; set; } = string.Empty;
     public string RamSlots { get; set; } = string.Empty;

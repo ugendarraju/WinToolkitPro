@@ -140,7 +140,13 @@
                                         <TextBlock Text="💾 " FontSize="16"/>
                                         <TextBlock Text="Memory (RAM)" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                     </StackPanel>
-                                    <TextBlock Text="{Binding Hardware.RamTotal}" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,0,6"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                        <TextBlock Text="{Binding Hardware.RamTotal}" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
+                                        <Border Background="#1e293b" CornerRadius="4" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                Visibility="{Binding Hardware.RamType, Converter={StaticResource StringNotEmptyToVis}}">
+                                            <TextBlock Text="{Binding Hardware.RamType}" FontSize="11" FontWeight="Bold" Foreground="#38bdf8"/>
+                                        </Border>
+                                    </StackPanel>
                                     <StackPanel Orientation="Horizontal" Margin="0,2">
                                         <TextBlock Text="Status: " FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         <TextBlock Text="{Binding Hardware.RamAvailable}" FontSize="11" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
