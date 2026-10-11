@@ -8,38 +8,67 @@ public class SystemToolsService
 {
     private readonly PowerShellService _powerShellService;
 
-    private static readonly HashSet<string> KnownBloatwareNames = new(StringComparer.OrdinalIgnoreCase)
+    private record BloatEntry(string NamePattern, string DisplayName, string Category, string Description, bool SafeToRemove = true);
+
+    private static readonly List<BloatEntry> BloatwareCatalog = new()
     {
-        "Microsoft.BingNews",
-        "Microsoft.BingWeather",
-        "Microsoft.GetHelp",
-        "Microsoft.Getstarted",
-        "Microsoft.MicrosoftFeedbackHub",
-        "Microsoft.MicrosoftSolitaireCollection",
-        "Microsoft.People",
-        "Microsoft.Todos",
-        "Microsoft.WindowsAlarms",
-        "Microsoft.WindowsCamera",
-        "Microsoft.WindowsMaps",
-        "Microsoft.WindowsSoundRecorder",
-        "Microsoft.YourPhone",
-        "Microsoft.ZuneMusic",
-        "Microsoft.ZuneVideo",
-        "Microsoft.XboxApp",
-        "Microsoft.XboxGameOverlay",
-        "Microsoft.XboxGamingOverlay",
-        "Microsoft.XboxIdentityProvider",
-        "Microsoft.XboxSpeechToTextOverlay",
-        "Clipchamp.Clipchamp",
-        "SpotifyAB.SpotifyMusic",
-        "Bytedance.TikTok",
-        "Disney.DisneyPlus",
-        "Microsoft.549981C3F5F10", // Cortana
-        "Microsoft.Copilot",
-        "Microsoft.GamingApp",
-        "Microsoft.MixedReality.Portal",
-        "Microsoft.3DBuilder",
-        "Microsoft.MicrosoftStickyNotes"
+        // Promotional & Web Wrappers
+        new("OutlookForWindows", "Microsoft Outlook (New)", "Promotional Wrapper", "Web wrapper replacing Windows Mail with embedded ads and telemetry", true),
+        new("MSTeams", "Microsoft Teams (Personal)", "Background Telemetry", "Preinstalled personal Teams chat client running constantly in background", true),
+        new("Client.WebExperience", "Windows Widgets & News Feed", "Telemetry & Ads", "Feeds MSN clickbait news and promotional widgets into Windows taskbar", true),
+        new("CrossDevice", "Cross Device Experience Host", "Background Sync", "Background phone linking and cross-device sync telemetry", true),
+        new("OfficePushNotificationUtility", "Office Notification Utility", "Promotional Utility", "Pushes Microsoft 365 promotional notifications and subscription prompts", true),
+        new("Office.ActionsServer", "Office Actions Server", "Background Service", "Background telemetry service for Microsoft Office integrations", true),
+        
+        // News, Weather & Assistant
+        new("BingNews", "MSN News", "Microsoft Bloatware", "Preinstalled news feed with telemetry and advertisements", true),
+        new("BingWeather", "MSN Weather", "Microsoft Bloatware", "Weather app with MSN telemetry and targeted promotions", true),
+        new("549981C3F5F10", "Cortana", "Obsolete AI", "Discontinued Cortana voice assistant", true),
+        new("Cortana", "Cortana", "Obsolete AI", "Discontinued Cortana voice assistant", true),
+        new("Copilot", "Microsoft Copilot", "Microsoft AI", "Copilot web wrapper and sidebar integrations", true),
+        new("GetHelp", "Get Help", "Support Redirection", "Diagnostic support and customer assistance redirection", true),
+        new("Getstarted", "Tips (Get Started)", "Promotional", "Displays popups and promotional tips for Windows features", true),
+        new("FeedbackHub", "Feedback Hub", "Telemetry", "Feedback reporting and diagnostic telemetry collector", true),
+
+        // Entertainment & Media
+        new("SolitaireCollection", "Microsoft Solitaire Collection", "Promotional Games", "Preinstalled card games containing full-screen video ads", true),
+        new("Clipchamp", "Clipchamp Video Editor", "Cloud Editor", "Freemium cloud video editor with monthly subscription upselling", true),
+        new("Spotify", "Spotify Music", "Promotional App", "Preinstalled music streaming client", true),
+        new("TikTok", "TikTok", "Promotional App", "Preinstalled social media application", true),
+        new("Disney", "Disney+", "Promotional App", "Preinstalled video streaming promotional app", true),
+        new("Netflix", "Netflix", "Promotional App", "Preinstalled entertainment app", true),
+        new("CandyCrush", "Candy Crush Saga", "OEM Games", "Preinstalled promotional game", true),
+        new("LinkedIn", "LinkedIn", "Promotional App", "Preinstalled corporate social network app", true),
+        new("Facebook", "Facebook", "Promotional App", "Preinstalled social media app", true),
+        new("Instagram", "Instagram", "Promotional App", "Preinstalled photo sharing app", true),
+
+        // Windows Apps rarely needed / alternatives preferred
+        new("WindowsMaps", "Windows Maps", "Microsoft Bloatware", "Offline mapping application rarely used on desktop PCs", true),
+        new("People", "Microsoft People", "Obsolete Hub", "Deprecated contact hub", true),
+        new("Todos", "Microsoft To-Do", "Productivity", "Task management and todo list app", false),
+        new("YourPhone", "Phone Link", "Mobile Sync", "Syncs Android and iOS phone notifications and photos", false),
+        new("ZuneMusic", "Media Player (Groove)", "Media Apps", "Default Windows audio player", false),
+        new("ZuneVideo", "Movies & TV", "Media Store", "Microsoft Movies & TV video player and rental store", true),
+        new("WindowsAlarms", "Alarms & Clock", "Windows Utilities", "Clock, timer, and stopwatch app", false),
+        new("WindowsCamera", "Camera", "Windows Utilities", "Built-in camera application", false),
+        new("WindowsSoundRecorder", "Sound Recorder", "Windows Utilities", "Voice and audio recording tool", false),
+
+        // Gaming Overlays
+        new("XboxApp", "Xbox App", "Gaming", "Xbox gaming launcher and PC Game Pass store", true),
+        new("GamingApp", "Xbox App", "Gaming", "Xbox gaming launcher and PC Game Pass store", true),
+        new("XboxGameOverlay", "Xbox Game Overlay", "Gaming Overlays", "Game capture and DVR background overlay", true),
+        new("XboxGamingOverlay", "Xbox Game Bar", "Gaming Overlays", "Xbox Game Bar overlay HUD (Win+G)", true),
+        new("XboxIdentityProvider", "Xbox Identity Provider", "Gaming Services", "Xbox authentication system for games", false),
+        new("XboxSpeechToTextOverlay", "Xbox Game Speech Overlay", "Gaming Services", "Accessibility speech-to-text overlay for Xbox chat", true),
+
+        // Obsolete / VR / 3D
+        new("MixedReality.Portal", "Mixed Reality Portal", "Obsolete VR", "Discontinued Windows Mixed Reality VR environment", true),
+        new("3DBuilder", "3D Builder", "Obsolete Apps", "Deprecated 3D model viewer and printing app", true),
+        new("MSPaint", "Paint 3D", "Obsolete Apps", "Discontinued 3D paint app (separate from classic Paint)", true),
+        new("Paint3D", "Paint 3D", "Obsolete Apps", "Discontinued 3D paint app", true),
+        new("SkypeApp", "Skype", "Messaging", "Legacy preinstalled VoIP messaging app", true),
+        new("OneNote", "OneNote for Windows 10", "Notes", "Legacy UWP OneNote application", true),
+        new("QuickAssist", "Quick Assist", "Remote Assistance", "Remote desktop support assistance tool", false),
     };
 
     public SystemToolsService(PowerShellService powerShellService)
@@ -49,7 +78,7 @@ public class SystemToolsService
 
     public async Task<List<UwpAppItem>> ScanUwpAppsAsync(Action<string>? onLog = null)
     {
-        onLog?.Invoke("Scanning installed Windows UWP packages...");
+        onLog?.Invoke("Scanning installed Windows packages and bloatware...");
 
         var script = @"
             $apps = Get-AppxPackage | Where-Object { -not $_.IsFramework -and -not $_.NonRemovable } | 
@@ -85,10 +114,11 @@ public class SystemToolsService
         }
         catch (Exception ex)
         {
-            onLog?.Invoke($"Parsing error during UWP scan: {ex.Message}");
+            onLog?.Invoke($"Parsing error during package scan: {ex.Message}");
         }
 
-        onLog?.Invoke($"Found {list.Count} installed UWP application(s).");
+        var bloatCount = list.Count(a => a.IsBloatware);
+        onLog?.Invoke($"Found {list.Count} packages ({bloatCount} identified as Windows bloatware).");
         return list;
     }
 
@@ -100,18 +130,100 @@ public class SystemToolsService
 
         if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(pkg)) return;
 
-        var isBloat = KnownBloatwareNames.Any(b => name.Contains(b, StringComparison.OrdinalIgnoreCase) || b.Contains(name, StringComparison.OrdinalIgnoreCase));
-        var friendly = FormatFriendlyName(name);
+        // Check if matching known bloatware
+        var bloatEntry = BloatwareCatalog.FirstOrDefault(b => 
+            name.Contains(b.NamePattern, StringComparison.OrdinalIgnoreCase) ||
+            b.NamePattern.Contains(name, StringComparison.OrdinalIgnoreCase));
 
-        list.Add(new UwpAppItem
+        var isSystemOrUser = IsSystemOrUserApp(name);
+
+        if (bloatEntry != null)
         {
-            Name = name,
-            DisplayName = friendly,
-            PackageFullName = pkg,
-            Publisher = publisher,
-            IsBloatware = isBloat,
-            IsSelected = isBloat
-        });
+            list.Add(new UwpAppItem
+            {
+                Name = name,
+                DisplayName = bloatEntry.DisplayName,
+                PackageFullName = pkg,
+                Publisher = publisher,
+                Category = bloatEntry.Category,
+                Description = bloatEntry.Description,
+                IsBloatware = true,
+                IsSystemCritical = false,
+                IsSelected = bloatEntry.SafeToRemove,
+                Status = "Installed (Safe to Debloat)"
+            });
+        }
+        else
+        {
+            list.Add(new UwpAppItem
+            {
+                Name = name,
+                DisplayName = FormatFriendlyName(name),
+                PackageFullName = pkg,
+                Publisher = publisher,
+                Category = isSystemOrUser ? "System Component / Driver" : "Installed App",
+                Description = isSystemOrUser 
+                    ? "Essential system driver, codec, or user-installed desktop application." 
+                    : "Installed Windows application.",
+                IsBloatware = false,
+                IsSystemCritical = isSystemOrUser,
+                IsSelected = false,
+                Status = "Installed"
+            });
+        }
+    }
+
+    private static bool IsSystemOrUserApp(string name)
+    {
+        // Hardware vendors / Drivers
+        if (name.StartsWith("NVIDIACorp", StringComparison.OrdinalIgnoreCase) ||
+            name.StartsWith("Realtek", StringComparison.OrdinalIgnoreCase) ||
+            name.StartsWith("AppUp.Intel", StringComparison.OrdinalIgnoreCase) ||
+            name.StartsWith("ASUS", StringComparison.OrdinalIgnoreCase) ||
+            name.StartsWith("B9ECED6F", StringComparison.OrdinalIgnoreCase) ||
+            name.StartsWith("AMD", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // Codecs & Image Extensions
+        if (name.Contains("VideoExtension", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("ImageExtension", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("WebMediaExtensions", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("AVCEncoder", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // Language & Speech
+        if (name.Contains("LanguageExperiencePack", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("Speech", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("Handwriting", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // System Frameworks & Core Windows Apps
+        if (name.Contains("WinAppRuntime", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("WidgetsPlatformRuntime", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("ApplicationCompatibilityEnhancements", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("Winget", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("StorePurchaseApp", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("WindowsStore", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("WindowsTerminal", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("WindowsCalculator", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("WindowsNotepad", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("ScreenSketch", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("VCLibs", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("NET.Native", StringComparison.OrdinalIgnoreCase) ||
+            name.Equals("aimgr", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // User installed desktop MSIX apps
+        if (name.StartsWith("FastCopy", StringComparison.OrdinalIgnoreCase) ||
+            name.StartsWith("NotepadPlusPlus", StringComparison.OrdinalIgnoreCase) ||
+            name.StartsWith("Agilebits", StringComparison.OrdinalIgnoreCase) ||
+            name.StartsWith("AdobeAcrobat", StringComparison.OrdinalIgnoreCase) ||
+            name.StartsWith("Python", StringComparison.OrdinalIgnoreCase) ||
+            name.StartsWith("MEGASync", StringComparison.OrdinalIgnoreCase) ||
+            name.Contains("WindowsSubsystemForLinux", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
     }
 
     private static string FormatFriendlyName(string raw)
@@ -149,8 +261,9 @@ public class SystemToolsService
 
         var script = $@"
             try {{
-                Remove-AppxPackage -Package '{item.PackageFullName}' -ErrorAction Stop
+                Remove-AppxPackage -Package '{item.PackageFullName}' -ErrorAction SilentlyContinue
                 Remove-AppxPackage -AllUsers -Package '{item.PackageFullName}' -ErrorAction SilentlyContinue
+                Get-AppxProvisionedPackage -Online | Where-Object {{ $_.DisplayName -eq '{item.Name}' -or $_.PackageName -like '*{item.Name}*' }} | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
                 Write-Output 'SUCCESS'
             }} catch {{
                 Write-Error $_.Exception.Message
@@ -230,86 +343,92 @@ public class SystemToolsService
                 secondary = "149.112.112.112";
                 break;
             case "dhcp":
-            case "automatic":
-                break;
             default:
-                primary = "1.1.1.1";
-                secondary = "1.0.0.1";
-                break;
+                var resetScript = @"
+                    $adapters = Get-NetAdapter | Where-Object { $_.Status -eq 'Up' }
+                    foreach ($adapter in $adapters) {
+                        Set-DnsClientServerAddress -InterfaceIndex $adapter.InterfaceIndex -ResetServerAddresses
+                    }
+                ";
+                var rRes = await _powerShellService.ExecuteCommandAsync(resetScript);
+                onLog("DNS reset to automatic DHCP dynamically.");
+                return rRes.Success;
         }
 
-        string script;
-        if (string.IsNullOrEmpty(primary))
-        {
-            script = @"
-                Get-NetAdapter | Where-Object { $_.Status -eq 'Up' } | ForEach-Object {
-                    Set-DnsClientServerAddress -InterfaceIndex $_.InterfaceIndex -ResetServerAddresses
-                }
-                Write-Output 'DHCP_RESET_OK'
-            ";
-        }
-        else
-        {
-            script = $@"
-                Get-NetAdapter | Where-Object {{ $_.Status -eq 'Up' }} | ForEach-Object {{
-                    Set-DnsClientServerAddress -InterfaceIndex $_.InterfaceIndex -ServerAddresses ('{primary}', '{secondary}')
-                }}
-                Write-Output 'DNS_SET_OK'
-            ";
-        }
+        var script = $@"
+            $adapters = Get-NetAdapter | Where-Object {{ $_.Status -eq 'Up' }}
+            foreach ($adapter in $adapters) {{
+                Set-DnsClientServerAddress -InterfaceIndex $adapter.InterfaceIndex -ServerAddresses ('{primary}', '{secondary}')
+            }}
+        ";
 
         var res = await _powerShellService.ExecuteCommandAsync(script);
         if (res.Success)
         {
-            onLog($"✅ DNS successfully set to {dnsType} ({(string.IsNullOrEmpty(primary) ? "Automatic DHCP" : primary + ", " + secondary)})");
+            onLog($"✅ DNS configured to {dnsType} (Primary: {primary}, Secondary: {secondary})");
             return true;
         }
 
-        onLog($"❌ Failed to configure DNS: {res.Error}");
+        onLog($"❌ Failed to update DNS: {res.Error}");
         return false;
     }
 
     public async Task<bool> CreateRestorePointAsync(string description, Action<string> onLog)
     {
-        onLog($"Creating System Restore Point ('{description}')...");
+        onLog($"Creating System Restore Point: '{description}'...");
+
         var script = $@"
             try {{
                 Enable-ComputerRestore -Drive 'C:\' -ErrorAction SilentlyContinue
-                Checkpoint-Computer -Description '{description}' -RestorePointType 'MODIFY_SETTINGS'
-                Write-Output 'RESTORE_POINT_OK'
+                Checkpoint-Computer -Description '{description}' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop
+                Write-Output 'SUCCESS'
             }} catch {{
                 Write-Error $_.Exception.Message
             }}
         ";
 
         var res = await _powerShellService.ExecuteCommandAsync(script);
-        if (res.Success && res.Output.Contains("RESTORE_POINT_OK"))
+        if (res.Success && res.Output.Contains("SUCCESS"))
         {
             onLog("✅ System Restore Point created successfully!");
             return true;
         }
 
-        onLog($"Notice creating restore point: {res.Error}");
+        onLog($"⚠️ Restore point creation reported: {res.Error} {res.Output}");
         return false;
     }
 
-    private async Task RunNativeCliAsync(string exe, string args, Action<string> onLog, CancellationToken ct = default)
+    private static async Task RunNativeCliAsync(string filename, string arguments, Action<string> onLog, CancellationToken ct = default)
     {
+        var tcs = new TaskCompletionSource<int>();
+
         var psi = new ProcessStartInfo
         {
-            FileName = exe,
-            Arguments = args,
-            UseShellExecute = false,
+            FileName = filename,
+            Arguments = arguments,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
+            UseShellExecute = false,
             CreateNoWindow = true,
             StandardOutputEncoding = Encoding.UTF8,
             StandardErrorEncoding = Encoding.UTF8
         };
 
         using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
-        process.OutputDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) onLog(e.Data); };
-        process.ErrorDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) onLog($"[stderr] {e.Data}"); };
+
+        process.OutputDataReceived += (_, e) =>
+        {
+            if (!string.IsNullOrWhiteSpace(e.Data))
+                onLog(e.Data.Trim());
+        };
+
+        process.ErrorDataReceived += (_, e) =>
+        {
+            if (!string.IsNullOrWhiteSpace(e.Data))
+                onLog($"[ERROR] {e.Data.Trim()}");
+        };
+
+        process.Exited += (_, _) => tcs.TrySetResult(process.ExitCode);
 
         try
         {
@@ -317,16 +436,20 @@ public class SystemToolsService
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
 
-            using (ct.Register(() => { try { if (!process.HasExited) process.Kill(true); } catch { } }))
+            using var reg = ct.Register(() =>
             {
-                await process.WaitForExitAsync(ct);
-            }
+                try
+                {
+                    if (!process.HasExited) process.Kill(true);
+                }
+                catch { }
+            });
 
-            onLog($"Process finished with exit code {process.ExitCode}.");
+            await tcs.Task;
         }
         catch (Exception ex)
         {
-            onLog($"Error running {exe}: {ex.Message}");
+            onLog($"Execution error for {filename}: {ex.Message}");
         }
     }
 }

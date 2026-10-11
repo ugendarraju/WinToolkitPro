@@ -21,10 +21,16 @@ public partial class SystemToolsViewModel : ObservableObject
     private string _searchQuery = string.Empty;
 
     [ObservableProperty]
+    private bool _showBloatwareOnly = true;
+
+    [ObservableProperty]
     private int _selectedAppCount;
 
     [ObservableProperty]
     private int _totalAppCount;
+
+    [ObservableProperty]
+    private int _bloatwareCount;
 
     [ObservableProperty]
     private string _currentDnsSelection = "Cloudflare";
@@ -44,17 +50,24 @@ public partial class SystemToolsViewModel : ObservableObject
     }
 
     partial void OnSearchQueryChanged(string value) => ApplyFilter();
+    partial void OnShowBloatwareOnlyChanged(bool value) => ApplyFilter();
 
     private void ApplyFilter()
     {
         FilteredApps.Clear();
         var q = SearchQuery?.Trim() ?? string.Empty;
 
+        var baseList = ShowBloatwareOnly 
+            ? AllApps.Where(a => a.IsBloatware) 
+            : AllApps;
+
         var matches = string.IsNullOrWhiteSpace(q)
-            ? AllApps
-            : AllApps.Where(a =>
+            ? baseList
+            : baseList.Where(a =>
                 a.DisplayName.Contains(q, StringComparison.OrdinalIgnoreCase) ||
                 a.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                a.Category.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                a.Description.Contains(q, StringComparison.OrdinalIgnoreCase) ||
                 a.Publisher.Contains(q, StringComparison.OrdinalIgnoreCase));
 
         foreach (var item in matches) FilteredApps.Add(item);
@@ -66,7 +79,7 @@ public partial class SystemToolsViewModel : ObservableObject
         if (IsBusy) return;
 
         IsBusy = true;
-        StatusMessage = "Scanning installed Windows UWP packages...";
+        StatusMessage = "Scanning for preinstalled Windows bloatware packages...";
         AllApps.Clear();
         FilteredApps.Clear();
 
@@ -87,8 +100,12 @@ public partial class SystemToolsViewModel : ObservableObject
 
             ApplyFilter();
             TotalAppCount = AllApps.Count;
+            BloatwareCount = AllApps.Count(a => a.IsBloatware);
             UpdateSelectedCount();
-            StatusMessage = $"Scan completed: {TotalAppCount} packages found ({AllApps.Count(a => a.IsBloatware)} detected as safe to remove).";
+
+            StatusMessage = BloatwareCount > 0
+                ? $"Scan completed: {BloatwareCount} bloatware packages detected ({SelectedAppCount} selected for debloat)."
+                : "Scan completed: No Windows bloatware packages detected on this system.";
         }
         finally
         {
@@ -99,7 +116,11 @@ public partial class SystemToolsViewModel : ObservableObject
     [RelayCommand]
     private void SelectAll()
     {
-        foreach (var a in FilteredApps) a.IsSelected = true;
+        foreach (var a in FilteredApps)
+        {
+            if (!a.IsSystemCritical)
+                a.IsSelected = true;
+        }
         UpdateSelectedCount();
     }
 
@@ -115,10 +136,10 @@ public partial class SystemToolsViewModel : ObservableObject
     {
         foreach (var a in AllApps)
         {
-            a.IsSelected = a.IsBloatware;
+            a.IsSelected = a.IsBloatware && !a.IsSystemCritical;
         }
         UpdateSelectedCount();
-        AddLog($"Selected {AllApps.Count(a => a.IsSelected)} safe-to-remove bloatware packages.");
+        AddLog($"Selected {AllApps.Count(a => a.IsSelected)} safe-to-remove bloatware package(s).");
     }
 
     private void UpdateSelectedCount()
@@ -132,35 +153,46 @@ public partial class SystemToolsViewModel : ObservableObject
         var targets = AllApps.Where(a => a.IsSelected && !a.IsRemoved).ToList();
         if (targets.Count == 0)
         {
-            StatusMessage = "Please select at least one UWP application to uninstall.";
+            StatusMessage = "Please select at least one bloatware package to uninstall.";
             return;
         }
 
         IsBusy = true;
         _activeCts = new CancellationTokenSource();
-        var total = targets.Count;
-        var current = 0;
+        var ct = _activeCts.Token;
 
-        AddLog($"Starting batch debloat of {total} package(s)...");
+        AddLog($"Starting batch removal of {targets.Count} package(s)...");
+        int successCount = 0;
 
         try
         {
-            foreach (var app in targets)
+            foreach (var item in targets)
             {
-                if (_activeCts.IsCancellationRequested) break;
-                current++;
-                StatusMessage = $"Uninstalling {app.DisplayName} ({current}/{total})...";
+                if (ct.IsCancellationRequested)
+                {
+                    AddLog("Debloat operation was cancelled by user.");
+                    break;
+                }
 
-                await _systemToolsService.UninstallUwpAppAsync(app, AddLog);
+                StatusMessage = $"Uninstalling {item.DisplayName}...";
+                var ok = await _systemToolsService.UninstallUwpAppAsync(item, AddLog);
+                if (ok) successCount++;
             }
 
-            StatusMessage = _activeCts.IsCancellationRequested ? "Debloat cancelled." : "Batch debloat completed!";
-            AddLog(StatusMessage);
+            StatusMessage = $"Debloat complete. Successfully removed {successCount} of {targets.Count} packages.";
+            AddLog($"[Debloat] Finished: {successCount}/{targets.Count} removed.");
+            
+            // Remove uninstalled items from AllApps and re-filter
+            var removed = AllApps.Where(a => a.IsRemoved).ToList();
+            foreach (var r in removed) AllApps.Remove(r);
+            ApplyFilter();
+            UpdateSelectedCount();
+            BloatwareCount = AllApps.Count(a => a.IsBloatware);
         }
         finally
         {
-            UpdateSelectedCount();
             IsBusy = false;
+            _activeCts = null;
         }
     }
 
@@ -169,17 +201,18 @@ public partial class SystemToolsViewModel : ObservableObject
     {
         if (IsBusy) return;
         IsBusy = true;
-        StatusMessage = "Running System File Checker (sfc /scannow)...";
         _activeCts = new CancellationTokenSource();
+        StatusMessage = "Running System File Checker (sfc /scannow)...";
 
         try
         {
             await _systemToolsService.RunSfcScanAsync(AddLog, _activeCts.Token);
-            StatusMessage = "SFC Scan completed.";
+            StatusMessage = "SFC scan finished. Check log for details.";
         }
         finally
         {
             IsBusy = false;
+            _activeCts = null;
         }
     }
 
@@ -188,17 +221,18 @@ public partial class SystemToolsViewModel : ObservableObject
     {
         if (IsBusy) return;
         IsBusy = true;
-        StatusMessage = "Running DISM RestoreHealth...";
         _activeCts = new CancellationTokenSource();
+        StatusMessage = "Running DISM Component Store RestoreHealth...";
 
         try
         {
             await _systemToolsService.RunDismRestoreHealthAsync(AddLog, _activeCts.Token);
-            StatusMessage = "DISM Component Store Repair completed.";
+            StatusMessage = "DISM RestoreHealth completed.";
         }
         finally
         {
             IsBusy = false;
+            _activeCts = null;
         }
     }
 
@@ -207,17 +241,18 @@ public partial class SystemToolsViewModel : ObservableObject
     {
         if (IsBusy) return;
         IsBusy = true;
-        StatusMessage = "Running WinSxS Component Store Deep Cleanup...";
         _activeCts = new CancellationTokenSource();
+        StatusMessage = "Running WinSxS Component Store Deep Cleanup...";
 
         try
         {
             await _systemToolsService.RunDismComponentCleanupAsync(AddLog, _activeCts.Token);
-            StatusMessage = "WinSxS Component Store Cleanup completed.";
+            StatusMessage = "WinSxS Component Store deep cleanup completed.";
         }
         finally
         {
             IsBusy = false;
+            _activeCts = null;
         }
     }
 
@@ -226,12 +261,12 @@ public partial class SystemToolsViewModel : ObservableObject
     {
         if (IsBusy) return;
         IsBusy = true;
-        StatusMessage = "Flushing DNS and resetting network stack...";
+        StatusMessage = "Resetting network stack and flushing DNS...";
 
         try
         {
             await _systemToolsService.FlushDnsAndResetNetworkAsync(AddLog);
-            StatusMessage = "Network sockets and DNS cache reset successfully.";
+            StatusMessage = "Network cache flushed and sockets reset.";
         }
         finally
         {
