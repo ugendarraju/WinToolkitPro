@@ -77,6 +77,11 @@
                 <views:CleanerView DataContext="{Binding CleanerVM}"/>
             </TabItem>
 
+            <!-- System Repair, DNS & Debloat Tools Tab -->
+            <TabItem Header="🛠️ System Tools">
+                <views:SystemToolsView DataContext="{Binding SystemToolsVM}"/>
+            </TabItem>
+
             <!-- Windows & Office Activation Tab -->
             <TabItem Header="🔑 Activation">
                 <views:ActivationView DataContext="{Binding ActivationVM}"/>

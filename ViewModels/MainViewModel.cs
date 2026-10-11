@@ -13,6 +13,7 @@ public partial class MainViewModel : ObservableObject
     public DriversViewModel DriversVM { get; }
     public WindowsUpdateViewModel WindowsUpdateVM { get; }
     public CleanerViewModel CleanerVM { get; }
+    public SystemToolsViewModel SystemToolsVM { get; }
     public ActivationViewModel ActivationVM { get; }
 
     [ObservableProperty]
@@ -36,6 +37,7 @@ public partial class MainViewModel : ObservableObject
         DriversViewModel driversVM,
         WindowsUpdateViewModel windowsUpdateVM,
         CleanerViewModel cleanerVM,
+        SystemToolsViewModel systemToolsVM,
         ActivationViewModel activationVM)
     {
         AppsVM = appsVM;
@@ -44,6 +46,7 @@ public partial class MainViewModel : ObservableObject
         DriversVM = driversVM;
         WindowsUpdateVM = windowsUpdateVM;
         CleanerVM = cleanerVM;
+        SystemToolsVM = systemToolsVM;
         ActivationVM = activationVM;
 
         CheckPrivilegesAndSystem();
@@ -53,6 +56,7 @@ public partial class MainViewModel : ObservableObject
     {
         await AppsVM.InitializeAsync();
         await OptimizerVM.InitializeAsync();
+        await SystemToolsVM.InitializeAsync();
     }
 
     private void CheckPrivilegesAndSystem()
