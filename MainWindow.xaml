@@ -8,84 +8,244 @@
         xmlns:views="clr-namespace:WinToolkit.Views"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
-        Title="WinToolkit Pro" Height="820" Width="1180"
-        MinHeight="650" MinWidth="950"
+        Title="WinToolkit Pro" Height="840" Width="1240"
+        MinHeight="680" MinWidth="1020"
         WindowStartupLocation="CenterScreen"
         ExtendsContentIntoTitleBar="True"
         WindowBackdropType="Mica">
+
+    <Window.Resources>
+        <!-- Sidebar Navigation Item Style -->
+        <Style x:Key="SidebarNavItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Blue accent vertical indicator pill -->
+                                <Border x:Name="Indicator" Grid.Column="0" Width="3.5" Height="18" 
+                                        Background="{DynamicResource AccentFillColorDefaultBrush}" 
+                                        CornerRadius="1.5" HorizontalAlignment="Left" Visibility="Collapsed" Margin="-8,0,10,0"/>
+                                <ContentPresenter Grid.Column="1" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}"/>
+                                <Setter TargetName="Indicator" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Hidden Header TabControl for content switching -->
+        <Style x:Key="PagePresenterTabControl" TargetType="TabControl">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid>
+                            <ContentPresenter ContentSource="SelectedContent"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Top Fluent TitleBar -->
-        <ui:TitleBar Grid.Row="0" Title="WinToolkit Pro">
-            <ui:TitleBar.Header>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
-                    <!-- Title & Tag -->
-                    <TextBlock Text="⚡ WinToolkit Pro" FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                    
-                    <!-- Admin Indicator -->
-                    <Border Background="#1f2d3d" CornerRadius="4" Padding="6,2" Margin="0,0,6,0" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding SystemInfo}" FontSize="11" Foreground="#38bdf8"/>
+        <!-- Fluent Window TitleBar -->
+        <ui:TitleBar Grid.Row="0" Title="WinToolkit Pro"/>
+
+        <!-- Main Work Area with Vertical Sidebar Navigation -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="235" MinWidth="200" MaxWidth="280"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ================= Left Navigation Sidebar Rail ================= -->
+            <Border Grid.Column="0" 
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="0,0,1,0"
+                    Padding="10,12">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Branding Header -->
+                    <StackPanel Grid.Row="0" Margin="4,0,0,14">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="⚡" FontSize="20" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="WinToolkit Pro" FontWeight="Bold" FontSize="16" 
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="v1.4 • Power User Suite" FontSize="11" 
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}" Margin="28,2,0,0"/>
+                    </StackPanel>
+
+                    <!-- Navigation Items List -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <ListBox SelectedIndex="{Binding SelectedNavigationIndex}"
+                                 ItemContainerStyle="{StaticResource SidebarNavItemStyle}"
+                                 Background="Transparent" BorderThickness="0">
+                            <!-- Item 0: Software Catalog -->
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📦" FontSize="14" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Software Installer"/>
+                                </StackPanel>
+                            </ListBoxItem>
+
+                            <!-- Item 1: App Updater -->
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🚀" FontSize="14" Margin="0,0,10,0"/>
+                                    <TextBlock Text="App Updater"/>
+                                </StackPanel>
+                            </ListBoxItem>
+
+                            <!-- Item 2: OS Optimizer -->
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="⚡" FontSize="14" Margin="0,0,10,0"/>
+                                    <TextBlock Text="OS Optimizer"/>
+                                </StackPanel>
+                            </ListBoxItem>
+
+                            <!-- Item 3: Hardware & Drivers -->
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📊" FontSize="14" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Hardware &amp; Specs"/>
+                                </StackPanel>
+                            </ListBoxItem>
+
+                            <!-- Item 4: Windows Update -->
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔄" FontSize="14" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Windows Update"/>
+                                </StackPanel>
+                            </ListBoxItem>
+
+                            <!-- Item 5: System Cleaner -->
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🧹" FontSize="14" Margin="0,0,10,0"/>
+                                    <TextBlock Text="System Cleaner"/>
+                                </StackPanel>
+                            </ListBoxItem>
+
+                            <!-- Item 6: System Tools (Repair, Debloat, Startup, Disk, Features) -->
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🛠️" FontSize="14" Margin="0,0,10,0"/>
+                                    <TextBlock Text="System Tools"/>
+                                </StackPanel>
+                            </ListBoxItem>
+
+                            <!-- Item 7: Activation -->
+                            <ListBoxItem>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔑" FontSize="14" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Activation"/>
+                                </StackPanel>
+                            </ListBoxItem>
+                        </ListBox>
+                    </ScrollViewer>
+
+                    <!-- Sidebar Footer (System Status, Elevate & Theme) -->
+                    <Border Grid.Row="2" Margin="0,10,0,0" Padding="0,10,0,0" 
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                        <StackPanel>
+                            <!-- System Details Badge -->
+                            <Border Background="#1f2d3d" CornerRadius="6" Padding="8,4" Margin="0,0,0,8">
+                                <TextBlock Text="{Binding SystemInfo}" FontSize="10" Foreground="#38bdf8" TextWrapping="Wrap"/>
+                            </Border>
+
+                            <!-- Elevate to Admin (only visible when not elevated) -->
+                            <Button Content="🛡️ Elevate to Admin" Command="{Binding RestartAsAdminCommand}" 
+                                    Visibility="{Binding CanElevate, Converter={StaticResource BoolToVis}}"
+                                    Background="#991b1b" Foreground="White" FontWeight="SemiBold"
+                                    Padding="8,5" FontSize="11" HorizontalAlignment="Stretch" Margin="0,0,0,6"/>
+
+                            <!-- Theme Toggle -->
+                            <Button Content="🌓 Toggle Theme" Command="{Binding ToggleThemeCommand}" 
+                                    Padding="8,5" FontSize="11" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
                     </Border>
+                </Grid>
+            </Border>
 
-                    <!-- Elevate Button (shown only when NOT admin) -->
-                    <Button Content="🛡️ Elevate to Admin" Command="{Binding RestartAsAdminCommand}" 
-                            Visibility="{Binding CanElevate, Converter={StaticResource BoolToVis}}"
-                            Background="#991b1b" Foreground="White" FontWeight="SemiBold"
-                            Padding="8,2" FontSize="11" Margin="0,0,6,0" VerticalAlignment="Center"/>
+            <!-- ================= Right Content Workspace Area ================= -->
+            <Grid Grid.Column="1">
+                <TabControl Style="{StaticResource PagePresenterTabControl}"
+                            SelectedIndex="{Binding SelectedNavigationIndex}">
+                    <!-- Page 0: Software Installer -->
+                    <TabItem>
+                        <views:AppsView DataContext="{Binding AppsVM}"/>
+                    </TabItem>
 
-                    <!-- Theme Toggle -->
-                    <Button Content="🌓 Theme" Command="{Binding ToggleThemeCommand}" 
-                            Padding="8,2" FontSize="11" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                </StackPanel>
-            </ui:TitleBar.Header>
-        </ui:TitleBar>
+                    <!-- Page 1: App Updater -->
+                    <TabItem>
+                        <views:AppUpdaterView DataContext="{Binding AppUpdaterVM}"/>
+                    </TabItem>
 
-        <!-- Main Navigation TabControl -->
-        <TabControl Grid.Row="1" Margin="12,4,12,12" 
-                    SelectedIndex="{Binding SelectedNavigationIndex}">
-            <!-- Software Catalog Installer Tab -->
-            <TabItem Header="📦 Software Installer">
-                <views:AppsView DataContext="{Binding AppsVM}"/>
-            </TabItem>
+                    <!-- Page 2: OS Optimizer -->
+                    <TabItem>
+                        <views:OptimizerView DataContext="{Binding OptimizerVM}"/>
+                    </TabItem>
 
-            <!-- App Updater Tab -->
-            <TabItem Header="🚀 App Updater">
-                <views:AppUpdaterView DataContext="{Binding AppUpdaterVM}"/>
-            </TabItem>
+                    <!-- Page 3: Drivers & Hardware Specs -->
+                    <TabItem>
+                        <views:DriversView DataContext="{Binding DriversVM}"/>
+                    </TabItem>
 
-            <!-- Optimizer Tab -->
-            <TabItem Header="⚡ OS Optimizer">
-                <views:OptimizerView DataContext="{Binding OptimizerVM}"/>
-            </TabItem>
+                    <!-- Page 4: Windows Update -->
+                    <TabItem>
+                        <views:WindowsUpdateView DataContext="{Binding WindowsUpdateVM}"/>
+                    </TabItem>
 
-            <!-- Drivers Tab -->
-            <TabItem Header="🚗 Drivers &amp; Hardware">
-                <views:DriversView DataContext="{Binding DriversVM}"/>
-            </TabItem>
+                    <!-- Page 5: System Cleaner -->
+                    <TabItem>
+                        <views:CleanerView DataContext="{Binding CleanerVM}"/>
+                    </TabItem>
 
-            <!-- Windows Update Tab -->
-            <TabItem Header="🔄 Windows Update">
-                <views:WindowsUpdateView DataContext="{Binding WindowsUpdateVM}"/>
-            </TabItem>
+                    <!-- Page 6: System Tools (Repair, Debloater, Startup, Disk, Features) -->
+                    <TabItem>
+                        <views:SystemToolsView DataContext="{Binding SystemToolsVM}"/>
+                    </TabItem>
 
-            <!-- System & Cache Cleaner Tab (CCleaner Style) -->
-            <TabItem Header="🧹 System Cleaner">
-                <views:CleanerView DataContext="{Binding CleanerVM}"/>
-            </TabItem>
-
-            <!-- System Repair, DNS & Debloat Tools Tab -->
-            <TabItem Header="🛠️ System Tools">
-                <views:SystemToolsView DataContext="{Binding SystemToolsVM}"/>
-            </TabItem>
-
-            <!-- Windows & Office Activation Tab -->
-            <TabItem Header="🔑 Activation">
-                <views:ActivationView DataContext="{Binding ActivationVM}"/>
-            </TabItem>
-        </TabControl>
+                    <!-- Page 7: Activation -->
+                    <TabItem>
+                        <views:ActivationView DataContext="{Binding ActivationVM}"/>
+                    </TabItem>
+                </TabControl>
+            </Grid>
+        </Grid>
     </Grid>
 </ui:FluentWindow>

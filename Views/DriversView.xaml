@@ -7,6 +7,37 @@
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:DriversViewModel}"
              d:DesignHeight="700" d:DesignWidth="1100">
+    <UserControl.Resources>
+        <!-- Segmented Navigation Pill Style for SubTabs -->
+        <Style x:Key="SegmentedPillTabItem" TargetType="TabItem">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="PillBorder" Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
+                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                                CornerRadius="8" Padding="14,8" Margin="0,0,8,0" Cursor="Hand">
+                            <ContentPresenter x:Name="ContentSite" ContentSource="Header" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="PillBorder" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="PillBorder" Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+                                <Setter TargetName="PillBorder" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
     <Grid Margin="16,12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -23,8 +54,8 @@
             </StackPanel>
         </Grid>
 
-        <!-- Main Content SubTabs -->
-        <TabControl Grid.Row="1" Margin="0,0,0,8">
+        <!-- Main Content SubTabs styled as Segmented Navigation Pills -->
+        <TabControl Grid.Row="1" Margin="0,0,0,8" ItemContainerStyle="{StaticResource SegmentedPillTabItem}">
             <!-- SubTab 1: System Specs & Battery Health -->
             <TabItem Header="📊 System Specs &amp; Battery Health">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
