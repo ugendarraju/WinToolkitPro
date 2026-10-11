@@ -22,9 +22,14 @@ public partial class AppItem : ObservableObject
     public string Icon { get; set; } = "AppGeneric24";
 
     /// <summary>
-    /// Type of installer: "winget" (default), or "zip_bat" (download zip, extract, and execute .bat)
+    /// Type of installer: "winget" (default), "exe_download", or "zip_bat" (download zip, extract, and execute .bat)
     /// </summary>
     public string InstallerType { get; set; } = "winget";
+
+    /// <summary>
+    /// Package source repository: "winget" (default), or "msstore"
+    /// </summary>
+    public string Source { get; set; } = "winget";
 
     /// <summary>
     /// Direct download URL if not using standard winget or for custom zip

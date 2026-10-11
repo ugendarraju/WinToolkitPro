@@ -52,6 +52,10 @@ public partial class WingetService
         {
             return await InstallZipBatAppAsync(app, onLog, cancellationToken);
         }
+        if (app.InstallerType.Equals("exe_download", StringComparison.OrdinalIgnoreCase))
+        {
+            return await InstallExeDownloadAppAsync(app, onLog, cancellationToken);
+        }
 
         return await InstallWingetAppAsync(app, onLog, cancellationToken);
     }
@@ -65,10 +69,14 @@ public partial class WingetService
         app.StatusMessage = "Starting download...";
         app.Progress = 5;
 
+        var sourceArg = !string.IsNullOrWhiteSpace(app.Source) && !app.Source.Equals("winget", StringComparison.OrdinalIgnoreCase)
+            ? $"--source \"{app.Source}\""
+            : "";
+
         var startInfo = new ProcessStartInfo
         {
             FileName = "winget",
-            Arguments = $"install --id \"{app.WingetId}\" --exact --silent --accept-package-agreements --accept-source-agreements --disable-interactivity",
+            Arguments = $"install --id \"{app.WingetId}\" --exact {sourceArg} --silent --accept-package-agreements --accept-source-agreements --include-unknown --skip-dependencies --disable-interactivity",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -159,6 +167,86 @@ public partial class WingetService
         {
             app.Status = InstallStatus.Failed;
             app.StatusMessage = $"Error: {ex.Message}";
+            return false;
+        }
+    }
+
+    private async Task<bool> InstallExeDownloadAppAsync(
+        AppItem app,
+        Action<string>? onLog = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            app.Status = InstallStatus.Downloading;
+            app.StatusMessage = "Downloading package...";
+            app.Progress = 10;
+
+            var downloadUrl = app.DownloadUrl;
+            if (string.IsNullOrWhiteSpace(downloadUrl))
+            {
+                return await InstallWingetAppAsync(app, onLog, cancellationToken);
+            }
+
+            var tempDir = Path.Combine(Path.GetTempPath(), "WinToolkit", app.Id);
+            Directory.CreateDirectory(tempDir);
+            var exePath = Path.Combine(tempDir, "setup.exe");
+
+            onLog?.Invoke($"[{app.Name}] Downloading setup executable from {downloadUrl}...");
+            using (var response = await HttpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+            {
+                response.EnsureSuccessStatusCode();
+                var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+
+                await using var streamToReadFrom = await response.Content.ReadAsStreamAsync(cancellationToken);
+                await using var streamToWriteTo = File.Create(exePath);
+
+                var buffer = new byte[81920];
+                var bytesRead = 0;
+                var totalBytesRead = 0L;
+
+                while ((bytesRead = await streamToReadFrom.ReadAsync(buffer, cancellationToken)) > 0)
+                {
+                    await streamToWriteTo.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                    totalBytesRead += bytesRead;
+
+                    if (totalBytes > 0)
+                    {
+                        var pct = (double)totalBytesRead / totalBytes * 50.0;
+                        app.Progress = Math.Min(50.0, pct);
+                        app.StatusMessage = $"Downloading: {(int)(pct * 2)}%";
+                    }
+                }
+            }
+
+            app.Status = InstallStatus.Installing;
+            app.StatusMessage = "Installing package silently...";
+            app.Progress = 60;
+
+            onLog?.Invoke($"[{app.Name}] Launching installer silently...");
+            var psi = new ProcessStartInfo
+            {
+                FileName = exePath,
+                Arguments = app.BatArguments ?? "/S",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = new Process { StartInfo = psi };
+            process.Start();
+            await process.WaitForExitAsync(cancellationToken);
+
+            app.Status = InstallStatus.Installed;
+            app.StatusMessage = "Installed successfully";
+            app.Progress = 100;
+            onLog?.Invoke($"[{app.Name}] Installed successfully!");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            app.Status = InstallStatus.Failed;
+            app.StatusMessage = $"Error: {ex.Message}";
+            onLog?.Invoke($"[{app.Name}] Error: {ex.Message}");
             return false;
         }
     }
