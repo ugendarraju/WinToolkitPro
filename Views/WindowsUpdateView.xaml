@@ -53,7 +53,7 @@
         <!-- Status & Filter Toolbar -->
         <Border Grid.Row="1" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
                 BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,0,8">
+                BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -62,27 +62,84 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding StatusText}" FontWeight="Medium" FontSize="12"
-                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                    <!-- Status Badge -->
+                    <Border CornerRadius="4" Padding="8,4" Margin="0,0,10,0">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#1e293b"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsScanning}" Value="True">
+                                        <Setter Property="Background" Value="#1e3a8a"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsCleanState}" Value="True">
+                                        <Setter Property="Background" Value="#064e3b"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding AvailableUpdates.Count, Converter={StaticResource ZeroToVis}}" Value="Collapsed">
+                                        <Setter Property="Background" Value="#78350f"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="ℹ️ Status:"/>
+                                        <Setter Property="Foreground" Value="#94a3b8"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsScanning}" Value="True">
+                                                <Setter Property="Text" Value="🔍 Scanning:"/>
+                                                <Setter Property="Foreground" Value="#93c5fd"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsCleanState}" Value="True">
+                                                <Setter Property="Text" Value="✅ Up to Date:"/>
+                                                <Setter Property="Foreground" Value="#6ee7b7"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding AvailableUpdates.Count, Converter={StaticResource ZeroToVis}}" Value="Collapsed">
+                                                <Setter Property="Text" Value="⚠️ Attention:"/>
+                                                <Setter Property="Foreground" Value="#fcd34d"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold" FontSize="12" Margin="6,0,0,0" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="#ffffff"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCleanState}" Value="True">
+                                                <Setter Property="Foreground" Value="#34d399"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsScanning}" Value="True">
+                                                <Setter Property="Foreground" Value="#60a5fa"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
 
-                    <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="4" Padding="6,2" Margin="12,0,0,0"
+                    <!-- Selected badge counter -->
+                    <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="4" Padding="8,4" Margin="4,0,0,0"
                             Visibility="{Binding HasScanned, Converter={StaticResource BoolToVis}}">
-                        <TextBlock FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                        <TextBlock FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center">
                             <Run Text="Selected: "/>
-                            <Run Text="{Binding SelectedCount, Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            <Run Text="{Binding SelectedCount, Mode=OneWay}" FontWeight="Bold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                             <Run Text=" | Size: "/>
-                            <Run Text="{Binding TotalSelectedSizeMB, Mode=OneWay, StringFormat='{}{0:F1} MB'}" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            <Run Text="{Binding TotalSelectedSizeMB, Mode=OneWay, StringFormat='{}{0:F1} MB'}" FontWeight="Bold" Foreground="#38bdf8"/>
                         </TextBlock>
                     </Border>
                 </StackPanel>
 
-                <ProgressBar Grid.Column="1" IsIndeterminate="{Binding IsScanning}" Width="150" Height="5" Margin="0,0,12,0"
+                <ProgressBar Grid.Column="1" IsIndeterminate="{Binding IsScanning}" Width="150" Height="6" Margin="0,0,12,0"
                              Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}"
                              Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
 
                 <!-- Search box -->
                 <TextBox Grid.Column="2" Text="{Binding SearchFilter, UpdateSourceTrigger=PropertyChanged}" 
-                         VerticalAlignment="Center" Padding="8,4" FontSize="11"
+                         VerticalAlignment="Center" Padding="8,5" FontSize="11"
                          Tag="Filter updates by KB, title, category..."/>
             </Grid>
         </Border>
@@ -126,16 +183,67 @@
                 BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
                 BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,8">
             <Grid>
-                <!-- Empty State Prompt -->
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" 
-                            Visibility="{Binding FilteredUpdates.Count, Converter={StaticResource ZeroToVis}}">
-                    <TextBlock Text="🔄 Click 'Scan Updates' above to search Microsoft Update servers." 
-                               FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                <!-- Initial State (Before Any Scan) Prompt -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding HasScanned}" Value="False"/>
+                                        <Condition Binding="{Binding IsScanning}" Value="False"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <Border Background="#1e293b" CornerRadius="30" Width="60" Height="60" Margin="0,0,0,12" HorizontalAlignment="Center">
+                        <TextBlock Text="🔄" FontSize="26" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="Ready to check for Microsoft updates" 
+                               FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                     <TextBlock Text="Supports Windows 10/11 Cumulative Updates, Security KBs, .NET Framework / Runtime patches, and servicing stack updates." 
-                               FontSize="12" HorizontalAlignment="Center" Margin="0,4,0,0"
-                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                               FontSize="12" HorizontalAlignment="Center" Margin="0,4,0,14"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    <Button Content="🔍 Start Updates Scan" Command="{Binding ScanUpdatesCommand}" 
+                            HorizontalAlignment="Center" Padding="18,8" FontSize="13" FontWeight="SemiBold"
+                            Background="{DynamicResource AccentFillColorDefaultBrush}"
+                            Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
                 </StackPanel>
+
+                <!-- Clean State Prompt (Scan finished with 0 updates needed) -->
+                <Border Background="#064e3b" BorderBrush="#059669" BorderThickness="1" CornerRadius="10" Padding="28,24"
+                        HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="560">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsCleanState}" Value="True"/>
+                                        <Condition Binding="{Binding IsScanning}" Value="False"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Border Background="#059669" CornerRadius="28" Width="56" Height="56" Margin="0,0,0,12" HorizontalAlignment="Center">
+                            <TextBlock Text="✓" FontSize="30" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="Your Windows System is Up to Date!" 
+                                   FontSize="17" FontWeight="Bold" Foreground="#ecfdf5" HorizontalAlignment="Center"/>
+                        <TextBlock Text="No pending Microsoft cumulative, security, or feature updates were found. Your device is running the latest certified versions." 
+                                   FontSize="12" Foreground="#a7f3d0" TextWrapping="Wrap" TextAlignment="Center" Margin="0,6,0,16"/>
+                        <Button Content="🔄 Check for Updates Again" Command="{Binding ScanUpdatesCommand}" 
+                                HorizontalAlignment="Center" Padding="16,7" FontSize="12" FontWeight="SemiBold"
+                                Background="#10b981" Foreground="White" Cursor="Hand"/>
+                    </StackPanel>
+                </Border>
 
                 <!-- Update Items ScrollViewer -->
                 <ScrollViewer VerticalScrollBarVisibility="Auto">

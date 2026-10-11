@@ -42,6 +42,9 @@ public partial class WindowsUpdateViewModel : ObservableObject
     [ObservableProperty]
     private string _searchFilter = string.Empty;
 
+    [ObservableProperty]
+    private bool _isCleanState;
+
     public ObservableCollection<WindowsUpdateItem> AvailableUpdates { get; } = new();
     public ObservableCollection<WindowsUpdateItem> FilteredUpdates { get; } = new();
     public ObservableCollection<string> Logs { get; } = new();
@@ -83,6 +86,7 @@ public partial class WindowsUpdateViewModel : ObservableObject
 
         HasScanned = true;
         IsScanning = false;
+        IsCleanState = AvailableUpdates.Count == 0;
         StatusText = AvailableUpdates.Count > 0
             ? $"Found {AvailableUpdates.Count} pending update(s)."
             : "Your system is up to date! No pending Microsoft updates found.";
