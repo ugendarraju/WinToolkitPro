@@ -408,16 +408,27 @@ public class SystemToolsService
     {
         var tcs = new TaskCompletionSource<int>();
 
+        // Ensure full path to 64-bit Windows System32 is used to prevent WOW64 redirection issues
+        var fullExePath = filename;
+        if (!Path.IsPathRooted(filename))
+        {
+            var sys32 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", filename);
+            if (File.Exists(sys32))
+            {
+                fullExePath = sys32;
+            }
+        }
+
         var psi = new ProcessStartInfo
         {
-            FileName = filename,
+            FileName = fullExePath,
             Arguments = arguments,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8
+            StandardOutputEncoding = Encoding.GetEncoding(System.Globalization.CultureInfo.InstalledUICulture.TextInfo.OEMCodePage),
+            StandardErrorEncoding = Encoding.GetEncoding(System.Globalization.CultureInfo.InstalledUICulture.TextInfo.OEMCodePage)
         };
 
         using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
@@ -438,6 +449,7 @@ public class SystemToolsService
 
         try
         {
+            onLog($"[Execute] {Path.GetFileName(fullExePath)} {arguments}");
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
@@ -451,7 +463,8 @@ public class SystemToolsService
                 catch { }
             });
 
-            await tcs.Task;
+            var exitCode = await tcs.Task;
+            onLog($"Process completed with exit code: {exitCode}");
         }
         catch (Exception ex)
         {

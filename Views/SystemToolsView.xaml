@@ -72,8 +72,8 @@
                                 <TextBlock Text="Execute automated Windows image servicing and system integrity scans to fix crashes, corrupted DLLs, and bloated update caches." 
                                            FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,14"/>
 
-                                <WrapPanel Orientation="Horizontal">
-                                    <Button Command="{Binding RunSfcCommand}" Margin="0,0,10,10" Padding="14,8" Cursor="Hand">
+                                <WrapPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                    <Button Command="{Binding RunSfcCommand}" IsEnabled="{Binding IsBusy, Converter={x:Null}}" Margin="0,0,10,10" Padding="14,8" Cursor="Hand">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="🩺 " FontSize="13"/>
                                             <TextBlock Text="SFC Scannow (System File Checker)" FontSize="12" FontWeight="SemiBold"/>
@@ -101,6 +101,25 @@
                                         </StackPanel>
                                     </Button>
                                 </WrapPanel>
+
+                                <!-- Active Execution Indicator Banner -->
+                                <Border Background="#1e293b" BorderBrush="#38bdf8" BorderThickness="1" CornerRadius="6" Padding="12,8"
+                                        Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="⏳ " FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding StatusMessage}" FontWeight="Bold" FontSize="12" Foreground="#38bdf8"/>
+                                            <ProgressBar IsIndeterminate="True" Height="4" Margin="0,4,12,0" Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Content="⏹️ Stop Operation" Command="{Binding CancelOperationCommand}" 
+                                                Background="#dc2626" Foreground="White" FontWeight="SemiBold" Padding="10,4" FontSize="11"/>
+                                    </Grid>
+                                </Border>
                             </StackPanel>
                         </Border>
 
