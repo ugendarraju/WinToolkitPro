@@ -1,4 +1,4 @@
-﻿[
+[
     {
         "Id":  "chrome",
         "Name":  "Google Chrome",
@@ -403,7 +403,7 @@
         "Id":  "ultraviewer",
         "Name":  "UltraViewer",
         "WingetId":  "DucFabulous.UltraViewer",
-        "Category":  "Utilities",
+        "Category":  "Remote Desktop",
         "Description":  "Fast, safe remote desktop support and screen sharing software.",
         "Icon":  "WindowRemote24"
     },
@@ -411,7 +411,7 @@
         "Id":  "wireshark",
         "Name":  "Wireshark",
         "WingetId":  "WiresharkFoundation.Wireshark",
-        "Category":  "Utilities",
+        "Category":  "Hardware & Diagnostics",
         "Description":  "World\u0027s foremost network protocol analyzer.",
         "Icon":  "NetworkCheck24"
     },
@@ -419,7 +419,7 @@
         "Id":  "powertoys",
         "Name":  "Microsoft PowerToys",
         "WingetId":  "Microsoft.PowerToys",
-        "Category":  "Utilities",
+        "Category":  "System Tools",
         "Description":  "Suite of utilities for power users to customize Windows.",
         "Icon":  "Wrench24"
     },
@@ -427,7 +427,7 @@
         "Id":  "anydesk",
         "Name":  "AnyDesk",
         "WingetId":  "AnyDeskSoftwareGmbH.AnyDesk",
-        "Category":  "Utilities",
+        "Category":  "Remote Desktop",
         "Description":  "Fast remote desktop connectivity application.",
         "Icon":  "WindowRemote24"
     },
@@ -435,7 +435,7 @@
         "Id":  "teamviewer",
         "Name":  "TeamViewer",
         "WingetId":  "TeamViewer.TeamViewer",
-        "Category":  "Utilities",
+        "Category":  "Remote Desktop",
         "Description":  "Comprehensive remote access, support, and collaboration solution.",
         "Icon":  "WindowRemote24"
     },
@@ -443,7 +443,7 @@
         "Id":  "imgburn",
         "Name":  "ImgBurn",
         "WingetId":  "LIGHTNINGUK.ImgBurn",
-        "Category":  "Utilities",
+        "Category":  "File & Disk Tools",
         "Description":  "Lightweight CD / DVD / HD DVD / Blu-ray burning application.",
         "Icon":  "Cd24"
     },
@@ -451,7 +451,7 @@
         "Id":  "tightvnc",
         "Name":  "TightVNC",
         "WingetId":  "TightVNC.TightVNC",
-        "Category":  "Utilities",
+        "Category":  "Remote Desktop",
         "Description":  "Free, open-source remote control and administration tool.",
         "Icon":  "WindowRemote24"
     },
@@ -459,7 +459,7 @@
         "Id":  "teracopy",
         "Name":  "TeraCopy",
         "WingetId":  "CodeSector.TeraCopy",
-        "Category":  "Utilities",
+        "Category":  "File & Disk Tools",
         "Description":  "Accelerate file copying, verify integrity with checksums, and resume transfers.",
         "Icon":  "Copy24"
     },
@@ -467,7 +467,7 @@
         "Id":  "cdburnerxp",
         "Name":  "CDBurnerXP",
         "WingetId":  "Canneverbe.CDBurnerXP",
-        "Category":  "Utilities",
+        "Category":  "File & Disk Tools",
         "Description":  "Burn CDs and DVDs, including Blu-Ray and HD-DVDs.",
         "Icon":  "Cd24"
     },
@@ -475,7 +475,7 @@
         "Id":  "revo",
         "Name":  "Revo Uninstaller",
         "WingetId":  "RevoUninstaller.RevoUninstaller",
-        "Category":  "Utilities",
+        "Category":  "System Tools",
         "Description":  "Thorough software uninstaller removing leftover files and registry entries.",
         "Icon":  "Delete24"
     },
@@ -483,7 +483,7 @@
         "Id":  "launchy",
         "Name":  "Launchy",
         "WingetId":  "Launchy.Launchy",
-        "Category":  "Utilities",
+        "Category":  "System Tools",
         "Description":  "Keystroke launcher for quickly finding programs and documents.",
         "Icon":  "Search24"
     },
@@ -491,7 +491,7 @@
         "Id":  "windirstat",
         "Name":  "WinDirStat",
         "WingetId":  "WinDirStat.WinDirStat",
-        "Category":  "Utilities",
+        "Category":  "File & Disk Tools",
         "Description":  "Disk usage statistics viewer and cleanup tool for Windows.",
         "Icon":  "Storage24"
     },
@@ -499,7 +499,7 @@
         "Id":  "wiztree",
         "Name":  "WizTree",
         "WingetId":  "AntibodySoftware.WizTree",
-        "Category":  "Utilities",
+        "Category":  "File & Disk Tools",
         "Description":  "Ultra-fast disk space analyzer that scans directly via MFT in seconds.",
         "Icon":  "Storage24"
     },
@@ -507,7 +507,7 @@
         "Id":  "glary",
         "Name":  "Glary Utilities",
         "WingetId":  "Glarysoft.GlaryUtilities",
-        "Category":  "Utilities",
+        "Category":  "System Tools",
         "Description":  "Powerful system cleaning, optimization, and registry maintenance.",
         "Icon":  "Wrench24"
     },
@@ -515,7 +515,7 @@
         "Id":  "infrarecorder",
         "Name":  "InfraRecorder",
         "WingetId":  "InfraRecorder.InfraRecorder",
-        "Category":  "Utilities",
+        "Category":  "File & Disk Tools",
         "Description":  "Free CD/DVD burning solution with ISO image support.",
         "Icon":  "Cd24"
     },
@@ -523,7 +523,7 @@
         "Id":  "openshell",
         "Name":  "Open-Shell Menu",
         "WingetId":  "Open-Shell.Open-Shell-Menu",
-        "Category":  "Utilities",
+        "Category":  "System Tools",
         "Description":  "Classic style start menu, taskbar, and File Explorer customization.",
         "Icon":  "Window24"
     },
@@ -531,7 +531,7 @@
         "Id":  "ccleaner",
         "Name":  "CCleaner",
         "WingetId":  "Piriform.CCleaner",
-        "Category":  "Utilities",
+        "Category":  "System Tools",
         "Description":  "Cleans temporary files, registry entries, and frees system disk space.",
         "Icon":  "Broom24"
     },
@@ -833,7 +833,7 @@
         "WingetId":  "DeepL.DeepL",
         "Description":  "AI-powered high-accuracy neural translation for text and documents.",
         "Icon":  "Translate24",
-        "Category":  "Utilities"
+        "Category":  "System Tools"
     },
     {
         "Id":  "rufus",
@@ -842,7 +842,7 @@
         "WingetId":  "Rufus.Rufus",
         "Description":  "Create bootable USB drives for Windows and Linux installations.",
         "Icon":  "UsbStick24",
-        "Category":  "Utilities"
+        "Category":  "File & Disk Tools"
     },
     {
         "Id":  "crystaldiskinfo",
@@ -851,7 +851,7 @@
         "WingetId":  "CrystalDewWorld.CrystalDiskInfo",
         "Description":  "HDD/SSD health monitoring tool with S.M.A.R.T. data and temperature readouts.",
         "Icon":  "HardDrive24",
-        "Category":  "Utilities"
+        "Category":  "Hardware & Diagnostics"
     },
     {
         "Id":  "crystaldiskmark",
@@ -860,7 +860,7 @@
         "WingetId":  "CrystalDewWorld.CrystalDiskMark",
         "Description":  "Disk speed benchmark utility for measuring sequential and random read/write.",
         "Icon":  "SpeedHigh24",
-        "Category":  "Utilities"
+        "Category":  "Hardware & Diagnostics"
     },
     {
         "Id":  "cpuz",
@@ -869,7 +869,7 @@
         "WingetId":  "CPUID.CPU-Z",
         "Description":  "Hardware detection for CPU processor, motherboard, and memory timings.",
         "Icon":  "DeveloperBoard24",
-        "Category":  "Utilities"
+        "Category":  "Hardware & Diagnostics"
     },
     {
         "Id":  "gpuz",
@@ -878,7 +878,7 @@
         "WingetId":  "TechPowerUp.GPU-Z",
         "Description":  "Graphics subsystem diagnostic providing detailed GPU and VRAM metrics.",
         "Icon":  "DeveloperBoard24",
-        "Category":  "Utilities"
+        "Category":  "Hardware & Diagnostics"
     },
     {
         "Source":  "winget",
@@ -886,7 +886,7 @@
         "Id":  "rustdesk",
         "WingetId":  "RustDesk.RustDesk",
         "BatArguments":  "--silent-install",
-        "Category":  "Utilities",
+        "Category":  "Remote Desktop",
         "Description":  "Open-source remote desktop client alternative to TeamViewer and AnyDesk.",
         "Icon":  "WindowRemote24",
         "Name":  "RustDesk",
@@ -899,7 +899,7 @@
         "WingetId":  "QL-Win.QuickLook",
         "Description":  "Spacebar file preview inspection for photos, PDFs, archives, and videos.",
         "Icon":  "Eye24",
-        "Category":  "Utilities"
+        "Category":  "System Tools"
     },
     {
         "Id":  "localsend",
@@ -926,7 +926,7 @@
         "WingetId":  "CharlesMilette.TranslucentTB",
         "Description":  "Customizable translucent, blur, or crystal-clear taskbar appearance.",
         "Icon":  "Color24",
-        "Category":  "Utilities"
+        "Category":  "System Tools"
     },
     {
         "Id":  "autohotkey",
@@ -935,7 +935,7 @@
         "WingetId":  "AutoHotkey.AutoHotkey",
         "Description":  "Custom keyboard shortcuts, macro automation, and scripting language.",
         "Icon":  "Keyboard24",
-        "Category":  "Utilities"
+        "Category":  "System Tools"
     },
     {
         "Id":  "windowsterminal",

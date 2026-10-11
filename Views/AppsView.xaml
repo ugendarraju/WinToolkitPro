@@ -105,34 +105,36 @@
                                                    Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                                     </Border>
 
-                                    <!-- Compact App Checkboxes List -->
-                                    <ItemsControl ItemsSource="{Binding Apps}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Grid Margin="0,2" ToolTip="{Binding Description}">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                    </Grid.ColumnDefinitions>
+                                    <!-- Compact App Checkboxes List with MaxHeight ScrollViewer -->
+                                    <ScrollViewer MaxHeight="320" VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl ItemsSource="{Binding Apps}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Margin="0,2" ToolTip="{Binding Description}">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
 
-                                                    <!-- Checkbox with Name -->
-                                                    <CheckBox IsChecked="{Binding IsSelected}" 
-                                                              Content="{Binding Name}" 
-                                                              FontSize="12"
-                                                              VerticalAlignment="Center"/>
+                                                        <!-- Checkbox with Name -->
+                                                        <CheckBox IsChecked="{Binding IsSelected}" 
+                                                                  Content="{Binding Name}" 
+                                                                  FontSize="12"
+                                                                  VerticalAlignment="Center"/>
 
-                                                    <!-- Status Badge (only shown during/after install) -->
-                                                    <Border Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0"
-                                                            CornerRadius="3" Padding="4,1"
-                                                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                                                            Visibility="{Binding HasActiveStatus, Converter={StaticResource BoolToVis}}">
-                                                        <TextBlock Text="{Binding StatusMessage}" FontSize="9" 
-                                                                   Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                                                    </Border>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                                        <!-- Status Badge (only shown during/after install) -->
+                                                        <Border Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0"
+                                                                CornerRadius="3" Padding="4,1"
+                                                                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                                                Visibility="{Binding HasActiveStatus, Converter={StaticResource BoolToVis}}">
+                                                            <TextBlock Text="{Binding StatusMessage}" FontSize="9" 
+                                                                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                                        </Border>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
                                 </StackPanel>
                             </Border>
                         </DataTemplate>
