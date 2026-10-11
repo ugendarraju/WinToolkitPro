@@ -13,6 +13,11 @@
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
             <converters:ZeroToVisibilityConverter x:Key="ZeroToVis" />
             <converters:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVis" />
+
+            <!-- Global High-Contrast Text Styling for Dark Theme -->
+            <Style TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
