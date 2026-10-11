@@ -19,13 +19,15 @@ public partial class MainWindow : FluentWindow
         var catalogService = new CatalogService();
         var tweakService = new TweakService(powerShellService);
         var driverService = new DriverService(powerShellService);
+        var updateService = new WindowsUpdateService(powerShellService);
 
         // Initialize ViewModels
         var appsVM = new AppsViewModel(wingetService, catalogService);
         var optimizerVM = new OptimizerViewModel(tweakService, catalogService);
         var driversVM = new DriversViewModel(driverService);
+        var updateVM = new WindowsUpdateViewModel(updateService, powerShellService);
 
-        _viewModel = new MainViewModel(appsVM, optimizerVM, driversVM);
+        _viewModel = new MainViewModel(appsVM, optimizerVM, driversVM, updateVM);
         DataContext = _viewModel;
 
         Loaded += MainWindow_Loaded;

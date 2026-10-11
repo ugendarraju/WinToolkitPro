@@ -61,6 +61,11 @@
             <TabItem Header="🚗 Drivers &amp; Hardware">
                 <views:DriversView DataContext="{Binding DriversVM}"/>
             </TabItem>
+
+            <!-- Windows Update Tab -->
+            <TabItem Header="🔄 Windows Update">
+                <views:WindowsUpdateView DataContext="{Binding WindowsUpdateVM}"/>
+            </TabItem>
         </TabControl>
     </Grid>
 </ui:FluentWindow>
