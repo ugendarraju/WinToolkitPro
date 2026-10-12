@@ -23,6 +23,7 @@ public partial class MainWindow : FluentWindow
         var updateService = new WindowsUpdateService(powerShellService);
         var cleanerService = new SystemCleanerService(powerShellService);
         var systemToolsService = new SystemToolsService(powerShellService);
+        var gitHubUpdateService = new GitHubUpdateService();
 
         // Initialize ViewModels
         var appsVM = new AppsViewModel(wingetService, catalogService);
@@ -34,7 +35,7 @@ public partial class MainWindow : FluentWindow
         var systemToolsVM = new SystemToolsViewModel(systemToolsService);
         var activationVM = new ActivationViewModel();
 
-        _viewModel = new MainViewModel(appsVM, appUpdaterVM, optimizerVM, driversVM, updateVM, cleanerVM, systemToolsVM, activationVM);
+        _viewModel = new MainViewModel(appsVM, appUpdaterVM, optimizerVM, driversVM, updateVM, cleanerVM, systemToolsVM, activationVM, gitHubUpdateService);
         DataContext = _viewModel;
 
         Loaded += MainWindow_Loaded;
