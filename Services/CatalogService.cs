@@ -26,6 +26,21 @@ public class CatalogService
             catch { }
         }
 
+        // Fallback: Read embedded resource from assembly (for standalone single-file EXE)
+        try
+        {
+            var asm = typeof(CatalogService).Assembly;
+            using var stream = asm.GetManifestResourceStream("WinToolkit.Data.apps.json");
+            if (stream != null)
+            {
+                using var reader = new StreamReader(stream);
+                var json = await reader.ReadToEndAsync();
+                var items = JsonSerializer.Deserialize<List<AppItem>>(json, JsonOptions);
+                if (items != null) return items;
+            }
+        }
+        catch { }
+
         return new List<AppItem>();
     }
 
@@ -42,6 +57,21 @@ public class CatalogService
             }
             catch { }
         }
+
+        // Fallback: Read embedded resource from assembly (for standalone single-file EXE)
+        try
+        {
+            var asm = typeof(CatalogService).Assembly;
+            using var stream = asm.GetManifestResourceStream("WinToolkit.Data.tweaks.json");
+            if (stream != null)
+            {
+                using var reader = new StreamReader(stream);
+                var json = await reader.ReadToEndAsync();
+                var items = JsonSerializer.Deserialize<List<TweakItem>>(json, JsonOptions);
+                if (items != null) return items;
+            }
+        }
+        catch { }
 
         return new List<TweakItem>();
     }

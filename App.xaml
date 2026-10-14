@@ -12,6 +12,7 @@
             </ResourceDictionary.MergedDictionaries>
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
             <converters:ZeroToVisibilityConverter x:Key="ZeroToVis" />
+            <converters:IntToVisibilityConverter x:Key="IntToVis" />
             <converters:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVis" />
 
             <!-- Global High-Contrast Text Styling for Dark Theme -->
