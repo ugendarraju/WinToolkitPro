@@ -1,5 +1,14 @@
 [
   {
+    "Id": "classic_context_menu",
+    "Title": "Windows 11 Full Classic Right-Click Menu",
+    "Category": "UI & Customization",
+    "Description": "Restores the immediate full classic right-click context menu in Windows 11, completely eliminating the need to click 'Show more options'.",
+    "Impact": "Recommended",
+    "ApplyScript": "reg.exe add 'HKCU\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32' /f /ve; Stop-Process -Name explorer -Force",
+    "RevertScript": "reg.exe delete 'HKCU\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}' /f; Stop-Process -Name explorer -Force"
+  },
+  {
     "Id": "disable_telemetry",
     "Title": "Disable Windows Telemetry & Data Collection",
     "Category": "Privacy & Telemetry",
@@ -97,15 +106,6 @@
     "Impact": "Safe",
     "ApplyScript": "Get-AppxPackage -Name '*WindowsFeedbackHub*' -AllUsers -ErrorAction SilentlyContinue | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue; Get-AppxPackage -Name '*GetHelp*' -AllUsers -ErrorAction SilentlyContinue | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue",
     "RevertScript": "Write-Output 'Can be reinstalled from Microsoft Store.'"
-  },
-  {
-    "Id": "classic_context_menu",
-    "Title": "Restore Classic Windows 10 Right-Click Context Menu (Win 11)",
-    "Category": "UI & Customization",
-    "Description": "Brings back the full, immediate right-click context menu without needing to click 'Show more options' every time.",
-    "Impact": "Recommended",
-    "ApplyScript": "reg.exe add 'HKCU\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32' /f /ve; Stop-Process -Name explorer -Force",
-    "RevertScript": "reg.exe delete 'HKCU\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}' /f; Stop-Process -Name explorer -Force"
   },
   {
     "Id": "show_file_extensions",

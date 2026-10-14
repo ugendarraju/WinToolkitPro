@@ -28,6 +28,9 @@ public partial class DriversViewModel : ObservableObject
     private string _statusText = "Ready to scan for hardware drivers";
 
     [ObservableProperty]
+    private int _selectedDriverCount;
+
+    [ObservableProperty]
     private int _updateCount;
 
     [ObservableProperty]
@@ -94,7 +97,7 @@ public partial class DriversViewModel : ObservableObject
     private async Task ScanHardware()
     {
         IsScanning = true;
-        StatusText = "Scanning hardware devices...";
+        StatusText = "Scanning hardware devices and driver states...";
         HasSummary = false;
         _driverCts = new CancellationTokenSource();
 
@@ -102,9 +105,14 @@ public partial class DriversViewModel : ObservableObject
         var scanned = await _driverService.ScanDevicesAsync(AddLog, _driverCts.Token);
         foreach (var item in scanned)
         {
+            item.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(DriverItem.IsSelected)) UpdateSelectedDriverCount();
+            };
             Devices.Add(item);
         }
 
+        UpdateSelectedDriverCount();
         HasScanned = true;
         IsScanning = false;
         StatusText = $"Hardware scan complete. {Devices.Count} devices analyzed.";
@@ -114,7 +122,7 @@ public partial class DriversViewModel : ObservableObject
     private async Task CheckOnlineUpdates()
     {
         IsScanning = true;
-        StatusText = "Searching Windows Update Catalog for drivers...";
+        StatusText = "Searching Windows Update Catalog for certified drivers...";
         HasSummary = false;
         _driverCts = new CancellationTokenSource();
 
@@ -122,6 +130,10 @@ public partial class DriversViewModel : ObservableObject
         var updates = await _driverService.CheckOnlineDriverUpdatesAsync(AddLog, _driverCts.Token);
         foreach (var item in updates)
         {
+            item.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(DriverItem.IsSelected)) UpdateSelectedDriverCount();
+            };
             PendingUpdates.Add(item);
         }
 
@@ -130,8 +142,16 @@ public partial class DriversViewModel : ObservableObject
 
         if (UpdateCount > 0)
         {
+            // Switch display to show available updates with selection checkboxes
+            Devices.Clear();
+            foreach (var item in PendingUpdates)
+            {
+                item.IsSelected = true;
+                Devices.Add(item);
+            }
+            UpdateSelectedDriverCount();
             StatusText = $"Found {UpdateCount} certified driver update(s) ready to install.";
-            SummaryMessage = $"{UpdateCount} driver updates available.";
+            SummaryMessage = $"{UpdateCount} certified driver update(s) available. Select the required drivers and click Install.";
             HasSummary = true;
         }
         else
@@ -143,32 +163,61 @@ public partial class DriversViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void SelectAllDrivers()
+    {
+        foreach (var item in Devices)
+        {
+            item.IsSelected = true;
+        }
+        UpdateSelectedDriverCount();
+    }
+
+    [RelayCommand]
+    private void DeselectAllDrivers()
+    {
+        foreach (var item in Devices)
+        {
+            item.IsSelected = false;
+        }
+        UpdateSelectedDriverCount();
+    }
+
+    private void UpdateSelectedDriverCount()
+    {
+        SelectedDriverCount = Devices.Count(d => d.IsSelected);
+    }
+
+    [RelayCommand]
     private async Task InstallDriverUpdates()
     {
-        if (PendingUpdates.Count == 0)
+        var selected = Devices.Where(d => d.IsSelected).ToList();
+        if (selected.Count == 0)
         {
-            StatusText = "No driver updates selected.";
+            StatusText = "Please select at least one driver to install.";
+            SummaryMessage = "No drivers selected. Check the boxes next to the required drivers.";
+            HasSummary = true;
             return;
         }
 
         IsInstalling = true;
-        StatusText = "Downloading and installing certified drivers...";
+        StatusText = $"Downloading and installing {selected.Count} selected driver(s)...";
         _driverCts = new CancellationTokenSource();
 
-        var success = await _driverService.InstallDriverUpdatesAsync(AddLog, cancellationToken: _driverCts.Token);
+        var selectedIds = selected.Select(d => !string.IsNullOrEmpty(d.HardwareId) ? d.HardwareId : d.DeviceName);
+        var success = await _driverService.InstallDriverUpdatesAsync(selectedIds, AddLog, cancellationToken: _driverCts.Token);
 
         IsInstalling = false;
         if (success)
         {
             StatusText = $"Driver installation completed!";
-            SummaryMessage = $"Successfully processed driver updates. A reboot may be recommended.";
+            SummaryMessage = $"Successfully processed {selected.Count} driver update(s). A reboot may be recommended.";
             HasSummary = true;
             PendingUpdates.Clear();
             UpdateCount = 0;
         }
         else
         {
-            StatusText = "Driver update process encountered issues. Check log.";
+            StatusText = "Driver update process completed with notices. Check log.";
         }
     }
 

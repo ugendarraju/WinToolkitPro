@@ -178,31 +178,103 @@ public partial class AppsViewModel : ObservableObject
         var ct = _installCts.Token;
 
         var total = selectedApps.Count;
-        var current = 0;
+        var completedCount = 0;
 
-        AddLog($"Starting batch silent installation of {total} package(s)...");
+        AddLog($"Starting background download & installation pipeline for {total} app(s)...");
+
+        // Mark all selected apps as Queued initially
+        foreach (var app in selectedApps)
+        {
+            app.Status = InstallStatus.Queued;
+            app.StatusMessage = "Waiting in queue...";
+            app.Progress = 0;
+        }
+
+        // Semaphores:
+        // 1. Up to 3 simultaneous background downloads
+        var downloadSemaphore = new SemaphoreSlim(3, 3);
+        // 2. Up to 2 concurrent non-MSI installs, but strictly 1 MSI install at a time (Windows 1618 mutex lock)
+        var generalInstallSemaphore = new SemaphoreSlim(2, 2);
+        var msiLock = new SemaphoreSlim(1, 1);
 
         try
         {
-            foreach (var app in selectedApps)
+            // Launch simultaneous background download tasks
+            // Each app starts downloading in background as downloadSemaphore allows.
+            // When downloaded, it acquires installation locks and installs.
+            var tasks = selectedApps.Select(async app =>
             {
-                if (ct.IsCancellationRequested) break;
+                if (ct.IsCancellationRequested) return;
 
-                current++;
-                StatusText = $"Installing {app.Name} ({current}/{total})...";
-                OverallProgress = ((double)(current - 1) / total) * 100.0;
+                // Step 1: Background Pre-Download
+                await downloadSemaphore.WaitAsync(ct);
+                try
+                {
+                    if (ct.IsCancellationRequested) return;
+                    AddLog($"[{app.Name}] Downloading in background...");
+                    await _wingetService.PreDownloadAppAsync(app, AddLog, ct);
+                }
+                catch (OperationCanceledException) { return; }
+                catch (Exception ex)
+                {
+                    AddLog($"[{app.Name}] Download notice: {ex.Message}");
+                }
+                finally
+                {
+                    downloadSemaphore.Release();
+                }
 
-                await _wingetService.InstallAppAsync(app, AddLog, ct);
+                if (ct.IsCancellationRequested) return;
 
-                OverallProgress = ((double)current / total) * 100.0;
-            }
+                // Step 2: Installation Queue
+                var isMsi = WingetService.IsMsiPackage(app);
+                app.Status = InstallStatus.Queued;
+                app.StatusMessage = isMsi ? "Waiting for MSI installer slot..." : "Waiting for installation slot...";
 
-            StatusText = ct.IsCancellationRequested ? "Installation cancelled." : "Batch installation finished!";
+                await generalInstallSemaphore.WaitAsync(ct);
+                try
+                {
+                    if (ct.IsCancellationRequested) return;
+
+                    if (isMsi)
+                    {
+                        // Acquire exclusive MSI lock so multiple MSIs don't collide with Error 1618
+                        await msiLock.WaitAsync(ct);
+                    }
+
+                    try
+                    {
+                        if (ct.IsCancellationRequested) return;
+
+                        StatusText = $"Installing {app.Name}...";
+                        AddLog($"[{app.Name}] Starting installation...");
+                        await _wingetService.InstallAppAsync(app, AddLog, ct);
+                    }
+                    finally
+                    {
+                        if (isMsi)
+                        {
+                            msiLock.Release();
+                        }
+                    }
+                }
+                catch (OperationCanceledException) { }
+                finally
+                {
+                    generalInstallSemaphore.Release();
+                    var done = Interlocked.Increment(ref completedCount);
+                    OverallProgress = ((double)done / total) * 100.0;
+                    StatusText = $"Progress: {done}/{total} app(s) processed";
+                }
+            });
+
+            await Task.WhenAll(tasks);
+
+            StatusText = ct.IsCancellationRequested ? "Installation cancelled." : "All selected apps processed!";
             AddLog(StatusText);
         }
         finally
         {
-            // Automatically clean up all temporary download and extraction files from OS Temp
             await _wingetService.CleanTempFilesAsync(AddLog);
             IsInstalling = false;
         }

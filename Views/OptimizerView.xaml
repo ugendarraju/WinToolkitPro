@@ -23,29 +23,30 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <StackPanel Orientation="Vertical">
-                <TextBlock Text="OS Optimizer &amp; Debloater" FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <StackPanel Grid.Column="0" Orientation="Vertical" Margin="0,0,12,0" VerticalAlignment="Center">
+                <TextBlock Text="OS Optimizer &amp; Debloater" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                 <TextBlock Text="Fine-tune Windows telemetry, performance, background latency, and debloat pre-installed apps." 
-                           FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0"/>
+                           FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
             </StackPanel>
 
-            <!-- Action Buttons -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button Content="⭐ Recommended" Command="{Binding SelectRecommendedCommand}" Margin="0,0,8,0" Padding="12,6"/>
-                <Button Content="Select All" Command="{Binding SelectAllCommand}" Margin="0,0,8,0" Padding="12,6"/>
-                <Button Content="Clear" Command="{Binding DeselectAllCommand}" Margin="0,0,12,0" Padding="12,6"/>
+            <!-- Action Buttons WrapPanel ensuring buttons wrap nicely and never clip -->
+            <WrapPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="⭐ Recommended" Command="{Binding SelectRecommendedCommand}" Margin="0,0,6,4" Padding="10,5" FontSize="11"/>
+                <Button Content="Select All" Command="{Binding SelectAllCommand}" Margin="0,0,6,4" Padding="10,5" FontSize="11"/>
+                <Button Content="Clear" Command="{Binding DeselectAllCommand}" Margin="0,0,8,4" Padding="10,5" FontSize="11"/>
                 
                 <Button Content="{Binding SelectedCount, StringFormat='⚡ Apply Tweaks ({0})'}" 
                         Command="{Binding ApplySelectedCommand}"
                         Background="{DynamicResource AccentFillColorDefaultBrush}"
                         Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
                         FontWeight="SemiBold"
-                        Padding="16,7"
-                        Margin="0,0,8,0"/>
+                        Padding="14,5"
+                        FontSize="11"
+                        Margin="0,0,6,4"/>
 
                 <Button Content="Revert Selected" Command="{Binding RevertSelectedCommand}" 
-                        Padding="12,6"/>
-            </StackPanel>
+                        Padding="10,5" FontSize="11" Margin="0,0,0,4"/>
+            </WrapPanel>
         </Grid>
 
         <!-- Safety Banner & Categories -->

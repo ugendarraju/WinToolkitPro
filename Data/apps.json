@@ -312,11 +312,47 @@
         "Icon":  "Cube24"
     },
     {
+        "Id":  "msoffice_2024",
+        "Name":  "Microsoft Office 2024 Professional Plus",
+        "WingetId":  "Microsoft.Office.2024",
+        "InstallerType": "office_c2r",
+        "Category":  "Documents",
+        "Description":  "Latest Microsoft Office 2024 suite with Word, Excel, PowerPoint, Outlook, and OneNote.",
+        "Icon":  "DocumentText24"
+    },
+    {
+        "Id":  "msoffice_2021",
+        "Name":  "Microsoft Office 2021 Professional Plus",
+        "WingetId":  "Microsoft.Office.2021",
+        "InstallerType": "office_c2r",
+        "Category":  "Documents",
+        "Description":  "Perpetual Microsoft Office 2021 suite with Word, Excel, PowerPoint, and Outlook.",
+        "Icon":  "DocumentText24"
+    },
+    {
+        "Id":  "msoffice_2019",
+        "Name":  "Microsoft Office 2019 Professional Plus",
+        "WingetId":  "Microsoft.Office.2019",
+        "InstallerType": "office_c2r",
+        "Category":  "Documents",
+        "Description":  "Microsoft Office 2019 suite with Word, Excel, PowerPoint, and Outlook.",
+        "Icon":  "DocumentText24"
+    },
+    {
+        "Id":  "msoffice_2016",
+        "Name":  "Microsoft Office 2016 Professional Plus",
+        "WingetId":  "Microsoft.Office.2016",
+        "InstallerType": "office_c2r",
+        "Category":  "Documents",
+        "Description":  "Microsoft Office 2016 classic desktop productivity suite.",
+        "Icon":  "DocumentText24"
+    },
+    {
         "Id":  "msoffice",
-        "Name":  "Microsoft 365 Apps (Word, Excel, PowerPoint)",
+        "Name":  "Microsoft 365 Apps (Enterprise Suite)",
         "WingetId":  "Microsoft.Office",
         "Category":  "Documents",
-        "Description":  "Official Microsoft Office suite containing Word, Excel, PowerPoint, Outlook, and OneNote.",
+        "Description":  "Official Microsoft 365 cloud-connected suite containing Word, Excel, PowerPoint, Outlook, and OneNote.",
         "Icon":  "DocumentText24"
     },
     {

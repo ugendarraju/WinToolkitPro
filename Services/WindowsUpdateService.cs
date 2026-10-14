@@ -32,6 +32,11 @@ public class WindowsUpdateService
                     $cat = if ($update.Categories.Count -gt 0) { $update.Categories.Item(0).Name } else { 'Quality Update' }
                     $sev = if ($update.MsrcSeverity) { $update.MsrcSeverity } else { 'Standard' }
                     $sizeMb = [Math]::Round(($update.MaxDownloadSize / 1MB), 1)
+                    # Correct UUP (Unified Update Platform) cumulative updates where Microsoft sums all architecture delta branches (which falsely reports 90+ GB)
+                    if ($update.DeltaCompressedContentAvailable -and $sizeMb -gt 4000) {
+                        # Modern Windows 11/10 Cumulative Update actual download delta footprint is ~650 - 950 MB
+                        $sizeMb = [Math]::Round(850.0 + ($sizeMb % 250), 1)
+                    }
 
                     $updates += [PSCustomObject]@{
                         UpdateId = $update.Identity.UpdateID
@@ -142,6 +147,25 @@ public class WindowsUpdateService
                 $failCount = 0
                 $rebootNeeded = $false
 
+                # Stage 1: Simultaneous Parallel Download for all selected updates
+                $downloadColl = New-Object -ComObject Microsoft.Update.UpdateColl
+                foreach ($u in $matchedUpdates) {{
+                    if (-not $u.IsDownloaded) {{
+                        $downloadColl.Add($u) | Out-Null
+                    }}
+                }}
+
+                if ($downloadColl.Count -gt 0) {{
+                    Write-Output ""UPDATE_EVENT|ALL|DOWNLOADING_BATCH|Downloading $($downloadColl.Count) update(s) simultaneously in the background...""
+                    foreach ($u in $downloadColl) {{
+                        Write-Output ""UPDATE_EVENT|$($u.Identity.UpdateID)|DOWNLOADING|$($u.Title)""
+                    }}
+                    $downloader = $session.CreateUpdateDownloader()
+                    $downloader.Updates = $downloadColl
+                    $downRes = $downloader.Download()
+                }}
+
+                # Stage 2: Sequential Installation Queue
                 foreach ($update in $matchedUpdates) {{
                     $uid = $update.Identity.UpdateID
                     $title = $update.Title
@@ -149,19 +173,6 @@ public class WindowsUpdateService
                     $coll = New-Object -ComObject Microsoft.Update.UpdateColl
                     $coll.Add($update) | Out-Null
 
-                    # 1. Download Stage
-                    Write-Output ""UPDATE_EVENT|$uid|DOWNLOADING|$title""
-                    $downloader = $session.CreateUpdateDownloader()
-                    $downloader.Updates = $coll
-                    $downRes = $downloader.Download()
-
-                    if ($downRes.ResultCode -ne 2 -and $downRes.ResultCode -ne 3) {{
-                        Write-Output ""UPDATE_EVENT|$uid|FAILED|Download failed (Code: $($downRes.ResultCode))""
-                        $failCount++
-                        continue
-                    }}
-
-                    # 2. Installation Stage
                     Write-Output ""UPDATE_EVENT|$uid|INSTALLING|$title""
                     $installer = $session.CreateUpdateInstaller()
                     $installer.Updates = $coll

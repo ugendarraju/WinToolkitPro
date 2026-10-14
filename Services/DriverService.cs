@@ -158,80 +158,93 @@ public class DriverService
     /// Downloads and installs driver updates one by one with real-time per-driver event notifications.
     /// </summary>
     public async Task<bool> InstallDriverUpdatesAsync(
+        IEnumerable<string>? targetIdentifiers = null,
         Action<string>? onLog = null,
         Action<int, string, string>? onDriverEvent = null,
         CancellationToken cancellationToken = default)
     {
         onLog?.Invoke("Starting step-by-step driver installation engine...");
 
-        var script = @"
+        var idsList = targetIdentifiers?.ToList() ?? new List<string>();
+        var idsParam = string.Join(",", idsList.Select(id => $"'{id.Replace("'", "''")}'"));
+
+        var script = $@"
             $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-            if (-not $isAdmin) {
+            if (-not $isAdmin) {{
                 Write-Output 'DRIVER_ERROR|ADMIN_REQUIRED|Administrator privileges required to install drivers. Please click Elevate to Admin.'
                 exit 1
-            }
+            }}
 
-            try {
+            try {{
+                $targetList = @({idsParam})
                 $session = New-Object -ComObject Microsoft.Update.Session
                 $searcher = $session.CreateUpdateSearcher()
                 $searcher.ServerSelection = 2
                 $searchResult = $searcher.Search(""IsInstalled=0 and Type='Driver'"")
 
-                $count = $searchResult.Updates.Count
-                if ($count -eq 0) {
-                    Write-Output 'No driver updates pending.'
+                $matchedUpdates = @()
+                for ($i = 0; $i -lt $searchResult.Updates.Count; $i++) {{
+                    $u = $searchResult.Updates.Item($i)
+                    if ($targetList.Length -eq 0 -or $targetList -contains $u.Identity.UpdateID -or $targetList -contains $u.Title) {{
+                        $matchedUpdates += $u
+                    }}
+                }}
+
+                if ($matchedUpdates.Count -eq 0) {{
+                    Write-Output 'No matching driver updates pending.'
                     exit 0
-                }
+                }}
 
-                Write-Output ""Processing $count driver updates sequentially...""
+                Write-Output ""Processing $($matchedUpdates.Count) driver updates...""
 
+                # 1. Simultaneous background download for all selected drivers
+                $downloadColl = New-Object -ComObject Microsoft.Update.UpdateColl
+                foreach ($u in $matchedUpdates) {{
+                    if (-not $u.IsDownloaded) {{
+                        $downloadColl.Add($u) | Out-Null
+                    }}
+                }}
+
+                if ($downloadColl.Count -gt 0) {{
+                    Write-Output ""DRIVER_EVENT|0|DOWNLOADING_BATCH|Downloading $($downloadColl.Count) driver update(s) simultaneously...""
+                    $downloader = $session.CreateUpdateDownloader()
+                    $downloader.Updates = $downloadColl
+                    $downRes = $downloader.Download()
+                }}
+
+                # 2. Sequential installation queue
                 $successCount = 0
                 $failCount = 0
 
-                for ($i = 0; $i -lt $count; $i++) {
-                    $update = $searchResult.Updates.Item($i)
+                for ($i = 0; $i -lt $matchedUpdates.Count; $i++) {{
+                    $update = $matchedUpdates[$i]
                     $title = $update.Title
 
-                    # Single-item update collection for download
                     $singleColl = New-Object -ComObject Microsoft.Update.UpdateColl
                     $singleColl.Add($update) | Out-Null
 
-                    # 1. Download
-                    Write-Output ""DRIVER_EVENT|$i|DOWNLOADING|$title""
-                    $downloader = $session.CreateUpdateDownloader()
-                    $downloader.Updates = $singleColl
-                    $downRes = $downloader.Download()
-
-                    if ($downRes.ResultCode -ne 2 -and $downRes.ResultCode -ne 3) {
-                        Write-Output ""DRIVER_EVENT|$i|FAILED|$title|Download failed with code $($downRes.ResultCode)""
-                        $failCount++
-                        continue
-                    }
-
-                    # 2. Install
                     Write-Output ""DRIVER_EVENT|$i|INSTALLING|$title""
                     $installer = $session.CreateUpdateInstaller()
                     $installer.Updates = $singleColl
                     $instRes = $installer.Install()
 
-                    # Result Codes: 2 = Succeeded, 3 = SucceededWithErrors, 4 = Failed, 5 = Aborted
-                    if ($instRes.ResultCode -eq 2 -or $instRes.ResultCode -eq 3) {
+                    if ($instRes.ResultCode -eq 2 -or $instRes.ResultCode -eq 3) {{
                         Write-Output ""DRIVER_EVENT|$i|SUCCESS|$title""
                         $successCount++
-                    } else {
+                    }} else {{
                         $updRes = $instRes.GetUpdateResult(0)
                         $hres = $updRes.HResult
                         Write-Output ""DRIVER_EVENT|$i|FAILED|$title|Install failed (Error: 0x$($hres.ToString('X')) - Code: $($instRes.ResultCode))""
                         $failCount++
-                    }
-                }
+                    }}
+                }}
 
                 Write-Output ""DRIVER_SUMMARY|$successCount|$failCount""
                 exit 0
-            } catch {
+            }} catch {{
                 Write-Output ""DRIVER_ERROR|EXCEPTION|$($_.Exception.Message)""
                 exit 1
-            }
+            }}
         ";
 
         var (success, _, _) = await _powerShellService.ExecuteCommandAsync(

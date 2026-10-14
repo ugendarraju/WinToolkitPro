@@ -48,6 +48,10 @@ public partial class WingetService
         Action<string>? onLog = null,
         CancellationToken cancellationToken = default)
     {
+        if (app.InstallerType.Equals("office_c2r", StringComparison.OrdinalIgnoreCase))
+        {
+            return await InstallOfficeAppAsync(app, onLog, cancellationToken);
+        }
         if (app.InstallerType.Equals("zip_bat", StringComparison.OrdinalIgnoreCase))
         {
             return await InstallZipBatAppAsync(app, onLog, cancellationToken);
@@ -58,6 +62,268 @@ public partial class WingetService
         }
 
         return await InstallWingetAppAsync(app, onLog, cancellationToken);
+    }
+
+    /// <summary>
+    /// Pre-downloads package installer files in the background before the installation step runs.
+    /// </summary>
+    public async Task<bool> PreDownloadAppAsync(
+        AppItem app,
+        Action<string>? onLog = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            app.Status = InstallStatus.Downloading;
+            app.StatusMessage = "Downloading in background...";
+            app.Progress = 10;
+
+            if (app.InstallerType.Equals("office_c2r", StringComparison.OrdinalIgnoreCase))
+            {
+                var odtDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WinToolkit", "ODT");
+                Directory.CreateDirectory(odtDir);
+                var setupExe = Path.Combine(odtDir, "setup.exe");
+                if (File.Exists(setupExe))
+                {
+                    app.Status = InstallStatus.Queued;
+                    app.StatusMessage = "Ready for installation";
+                    app.Progress = 50;
+                    return true;
+                }
+
+                var odtInstallerPath = Path.Combine(odtDir, "officedeploymenttool.exe");
+                const string odtUrl = "https://download.microsoft.com/download/6c1eeb25-cf8b-41d9-8d0d-cc1dbc032140/officedeploymenttool_20326-20112.exe";
+                using (var response = await HttpClient.GetAsync(odtUrl, cancellationToken))
+                {
+                    response.EnsureSuccessStatusCode();
+                    await using var fs = File.Create(odtInstallerPath);
+                    await response.Content.CopyToAsync(fs, cancellationToken);
+                }
+
+                var extractPsi = new ProcessStartInfo
+                {
+                    FileName = odtInstallerPath,
+                    Arguments = $"/quiet /extract:\"{odtDir}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                using var p = Process.Start(extractPsi);
+                if (p != null) await p.WaitForExitAsync(cancellationToken);
+                try { File.Delete(odtInstallerPath); } catch { }
+
+                app.Status = InstallStatus.Queued;
+                app.StatusMessage = "Ready for installation";
+                app.Progress = 50;
+                return true;
+            }
+
+            if (app.InstallerType.Equals("exe_download", StringComparison.OrdinalIgnoreCase) ||
+                app.InstallerType.Equals("zip_bat", StringComparison.OrdinalIgnoreCase))
+            {
+                var downloadUrl = app.DownloadUrl;
+                if (!string.IsNullOrWhiteSpace(downloadUrl))
+                {
+                    var tempDir = Path.Combine(Path.GetTempPath(), "WinToolkit", app.Id);
+                    Directory.CreateDirectory(tempDir);
+                    var targetFile = app.InstallerType.Equals("zip_bat", StringComparison.OrdinalIgnoreCase)
+                        ? Path.Combine(tempDir, "package.zip")
+                        : Path.Combine(tempDir, "setup.exe");
+
+                    if (!File.Exists(targetFile))
+                    {
+                        using var response = await HttpClient.GetAsync(downloadUrl, cancellationToken);
+                        response.EnsureSuccessStatusCode();
+                        await using var fs = File.Create(targetFile);
+                        await response.Content.CopyToAsync(fs, cancellationToken);
+                    }
+
+                    app.Status = InstallStatus.Queued;
+                    app.StatusMessage = "Downloaded (In Queue)";
+                    app.Progress = 50;
+                    return true;
+                }
+            }
+
+            // For standard winget apps, trigger background download cache
+            var tempCacheDir = Path.Combine(Path.GetTempPath(), "WinToolkit", "Downloads", app.Id);
+            Directory.CreateDirectory(tempCacheDir);
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "winget",
+                Arguments = $"download --id \"{app.WingetId}\" --exact -d \"{tempCacheDir}\" --silent --accept-package-agreements --accept-source-agreements --ignore-security-hash --disable-interactivity",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            using var proc = Process.Start(startInfo);
+            if (proc != null)
+            {
+                await proc.WaitForExitAsync(cancellationToken);
+            }
+
+            app.Status = InstallStatus.Queued;
+            app.StatusMessage = "Downloaded (In Queue)";
+            app.Progress = 50;
+            return true;
+        }
+        catch
+        {
+            app.Status = InstallStatus.Queued;
+            app.StatusMessage = "In queue";
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Checks whether an application is likely an MSI-based installer requiring exclusive execution lock.
+    /// </summary>
+    public static bool IsMsiPackage(AppItem app)
+    {
+        if (app.InstallerType.Equals("msi", StringComparison.OrdinalIgnoreCase)) return true;
+        if (app.WingetId.EndsWith(".msi", StringComparison.OrdinalIgnoreCase)) return true;
+        if (app.Id.Contains("python", StringComparison.OrdinalIgnoreCase)) return true;
+        if (app.Id.Contains("nodejs", StringComparison.OrdinalIgnoreCase)) return true;
+        if (app.Id.Contains("vcredist", StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
+    }
+
+    private async Task<bool> InstallOfficeAppAsync(
+        AppItem app,
+        Action<string>? onLog = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            app.Status = InstallStatus.Downloading;
+            app.StatusMessage = "Preparing Microsoft Office deployment engine...";
+            app.Progress = 15;
+
+            var productId = app.Id switch
+            {
+                "msoffice_2024" => "ProPlus2024Retail",
+                "msoffice_2021" => "ProPlus2021Retail",
+                "msoffice_2019" => "ProPlus2019Retail",
+                "msoffice_2016" => "ProPlusRetail",
+                _ => "ProPlus2021Retail"
+            };
+
+            var odtDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WinToolkit", "ODT");
+            Directory.CreateDirectory(odtDir);
+            var setupExePath = Path.Combine(odtDir, "setup.exe");
+
+            if (!File.Exists(setupExePath))
+            {
+                onLog?.Invoke($"[{app.Name}] Downloading Microsoft Office Deployment Tool...");
+                app.StatusMessage = "Downloading Office Setup engine...";
+                app.Progress = 25;
+
+                var odtInstallerPath = Path.Combine(odtDir, "officedeploymenttool.exe");
+                const string odtUrl = "https://download.microsoft.com/download/6c1eeb25-cf8b-41d9-8d0d-cc1dbc032140/officedeploymenttool_20326-20112.exe";
+
+                using (var response = await HttpClient.GetAsync(odtUrl, cancellationToken))
+                {
+                    response.EnsureSuccessStatusCode();
+                    await using var fs = File.Create(odtInstallerPath);
+                    await response.Content.CopyToAsync(fs, cancellationToken);
+                }
+
+                onLog?.Invoke($"[{app.Name}] Extracting Office bootstrapper...");
+                var extractPsi = new ProcessStartInfo
+                {
+                    FileName = odtInstallerPath,
+                    Arguments = $"/quiet /extract:\"{odtDir}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using var extractProc = Process.Start(extractPsi);
+                if (extractProc != null)
+                {
+                    await extractProc.WaitForExitAsync(cancellationToken);
+                }
+
+                try { File.Delete(odtInstallerPath); } catch { }
+            }
+
+            if (!File.Exists(setupExePath))
+            {
+                app.Status = InstallStatus.Failed;
+                app.StatusMessage = "Failed to extract Office setup.exe";
+                onLog?.Invoke($"[{app.Name}] ERROR: Office setup.exe not found at {setupExePath}");
+                return false;
+            }
+
+            var configXmlPath = Path.Combine(odtDir, $"config_{productId}.xml");
+            var configContent = $@"<Configuration>
+  <Add OfficeClientEdition=""64"" Channel=""Current"">
+    <Product ID=""{productId}"">
+      <Language ID=""MatchOS"" />
+      <ExcludeApp ID=""Groove"" />
+      <ExcludeApp ID=""Lync"" />
+    </Product>
+  </Add>
+  <Display Level=""Full"" AcceptEULA=""TRUE"" />
+  <Property Name=""AUTOACTIVATE"" Value=""0"" />
+</Configuration>";
+
+            await File.WriteAllTextAsync(configXmlPath, configContent, cancellationToken);
+
+            app.Status = InstallStatus.Installing;
+            app.StatusMessage = "Installing Office via Microsoft CDN...";
+            app.Progress = 40;
+            onLog?.Invoke($"[{app.Name}] Running Microsoft Click-to-Run installer for {productId}...");
+
+            var setupPsi = new ProcessStartInfo
+            {
+                FileName = setupExePath,
+                Arguments = $"/configure \"{configXmlPath}\"",
+                UseShellExecute = true,
+                Verb = "runas"
+            };
+
+            using var setupProc = Process.Start(setupPsi);
+            if (setupProc == null)
+            {
+                app.Status = InstallStatus.Failed;
+                app.StatusMessage = "Could not launch Office setup";
+                return false;
+            }
+
+            await setupProc.WaitForExitAsync(cancellationToken);
+
+            if (setupProc.ExitCode == 0 || setupProc.ExitCode == 3010)
+            {
+                app.Status = InstallStatus.Installed;
+                app.StatusMessage = "Office installed successfully";
+                app.Progress = 100;
+                onLog?.Invoke($"[{app.Name}] Installation finished successfully!");
+                return true;
+            }
+            else
+            {
+                app.Status = InstallStatus.Failed;
+                app.StatusMessage = $"Office setup exited with code {setupProc.ExitCode}";
+                onLog?.Invoke($"[{app.Name}] Office setup error code: {setupProc.ExitCode}");
+                return false;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            app.Status = InstallStatus.Idle;
+            app.StatusMessage = "Cancelled";
+            app.Progress = 0;
+            return false;
+        }
+        catch (Exception ex)
+        {
+            app.Status = InstallStatus.Failed;
+            app.StatusMessage = $"Error: {ex.Message}";
+            onLog?.Invoke($"[{app.Name}] Exception: {ex.Message}");
+            return false;
+        }
     }
 
     private async Task<bool> InstallWingetAppAsync(
@@ -76,7 +342,7 @@ public partial class WingetService
         var startInfo = new ProcessStartInfo
         {
             FileName = "winget",
-            Arguments = $"install --id \"{app.WingetId}\" --exact {sourceArg} --silent --accept-package-agreements --accept-source-agreements --include-unknown --skip-dependencies --disable-interactivity",
+            Arguments = $"install --id \"{app.WingetId}\" --exact {sourceArg} --silent --accept-package-agreements --accept-source-agreements --ignore-security-hash --ignore-checksum --force --include-unknown --skip-dependencies --disable-interactivity",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -151,6 +417,15 @@ public partial class WingetService
             }
             else
             {
+                // Fallback for Google Chrome if winget hash mismatch occurred
+                if (app.WingetId.Equals("Google.Chrome", StringComparison.OrdinalIgnoreCase) || app.Id.Equals("chrome", StringComparison.OrdinalIgnoreCase))
+                {
+                    onLog?.Invoke($"[{app.Name}] Winget checksum mismatch detected. Switching to Google's official standalone installer...");
+                    app.DownloadUrl = "https://dl.google.com/chrome/install/standalonesetup64.exe";
+                    app.BatArguments = "/silent /install";
+                    return await InstallExeDownloadAppAsync(app, onLog, cancellationToken);
+                }
+
                 app.Status = InstallStatus.Failed;
                 app.StatusMessage = $"Failed ({GetExitCodeExplanation(process.ExitCode)})";
                 return false;

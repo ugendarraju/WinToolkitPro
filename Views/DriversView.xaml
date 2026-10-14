@@ -267,13 +267,22 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" FontWeight="Medium" FontSize="12"
-                                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" FontWeight="Medium" FontSize="12"
+                                           Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                <Border Background="#1e293b" CornerRadius="4" Padding="8,2" Margin="12,0,0,0"
+                                        Visibility="{Binding SelectedDriverCount, Converter={StaticResource IntToVis}}">
+                                    <TextBlock Text="{Binding SelectedDriverCount, StringFormat='{}Selected: {0}'}" FontSize="11" FontWeight="SemiBold" Foreground="#38bdf8"/>
+                                </Border>
+                            </StackPanel>
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                <Button Content="Select All" Command="{Binding SelectAllDriversCommand}" Margin="0,0,6,0" Padding="10,5" FontSize="11"/>
+                                <Button Content="Clear All" Command="{Binding DeselectAllDriversCommand}" Margin="0,0,8,0" Padding="10,5" FontSize="11"/>
                                 <Button Content="🔍 Scan Hardware" Command="{Binding ScanHardwareCommand}" Margin="0,0,6,0" Padding="12,5" FontSize="11"/>
                                 <Button Content="🌐 Check Online Drivers" Command="{Binding CheckOnlineUpdatesCommand}" Margin="0,0,6,0" Padding="12,5" FontSize="11"/>
-                                <Button Content="⚡ Install Driver Updates" Command="{Binding InstallDriverUpdatesCommand}"
+                                <Button Content="{Binding SelectedDriverCount, StringFormat='⚡ Install Selected Drivers ({0})'}" 
+                                        Command="{Binding InstallDriverUpdatesCommand}"
                                         Background="{DynamicResource AccentFillColorDefaultBrush}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
                                         FontWeight="SemiBold" Padding="14,5" FontSize="12"/>
                             </StackPanel>
@@ -287,7 +296,7 @@
                         <TextBlock Text="{Binding SummaryMessage}" FontWeight="SemiBold" FontSize="12" Foreground="#38bdf8"/>
                     </Border>
 
-                    <!-- Device List -->
+                    <!-- Device List with Checkboxes -->
                     <Border Grid.Row="2" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
                             BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
                             BorderThickness="1" CornerRadius="6" Padding="6">
@@ -300,24 +309,34 @@
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
 
-                                                <TextBlock Grid.Column="0" Text="🚗 " FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                <!-- CheckBox to select the required driver -->
+                                                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
-                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock Grid.Column="1" Text="🚗 " FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
+
+                                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding DeviceName}" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                        <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" CornerRadius="3" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding DeviceClass}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        </Border>
+                                                    </StackPanel>
                                                     <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
                                                         <TextBlock Text="Manufacturer: " FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                         <TextBlock Text="{Binding Manufacturer}" FontSize="10" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,10,0"/>
                                                         <TextBlock Text="Driver Version: " FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                        <TextBlock Text="{Binding DriverVersion}" FontSize="10" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                        <TextBlock Text="{Binding CurrentDriverVersion}" FontSize="10" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                                     </StackPanel>
                                                 </StackPanel>
 
-                                                <Border Grid.Column="2" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" CornerRadius="3" Padding="6,2" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Status}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                <Border Grid.Column="3" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" CornerRadius="3" Padding="8,3" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Status}" FontSize="10" FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
                                                 </Border>
                                             </Grid>
                                         </Border>
