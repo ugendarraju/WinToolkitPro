@@ -48,6 +48,11 @@ public partial class WingetService
         Action<string>? onLog = null,
         CancellationToken cancellationToken = default)
     {
+        if (app.Id.Equals("chrome", StringComparison.OrdinalIgnoreCase) || 
+            app.WingetId.Equals("Google.Chrome", StringComparison.OrdinalIgnoreCase))
+        {
+            return await InstallGoogleChromeMsiAsync(app, onLog, cancellationToken);
+        }
         if (app.InstallerType.Equals("office_c2r", StringComparison.OrdinalIgnoreCase))
         {
             return await InstallOfficeAppAsync(app, onLog, cancellationToken);
@@ -77,6 +82,26 @@ public partial class WingetService
             app.Status = InstallStatus.Downloading;
             app.StatusMessage = "Downloading in background...";
             app.Progress = 10;
+
+            if (app.Id.Equals("chrome", StringComparison.OrdinalIgnoreCase) || 
+                app.WingetId.Equals("Google.Chrome", StringComparison.OrdinalIgnoreCase))
+            {
+                var chromeDir = Path.Combine(Path.GetTempPath(), "WinToolkit", "GoogleChrome");
+                Directory.CreateDirectory(chromeDir);
+                var msiTarget = Path.Combine(chromeDir, "googlechromestandaloneenterprise64.msi");
+                if (!File.Exists(msiTarget))
+                {
+                    const string msiUrl = "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise64.msi";
+                    using var response = await HttpClient.GetAsync(msiUrl, cancellationToken);
+                    response.EnsureSuccessStatusCode();
+                    await using var fs = File.Create(msiTarget);
+                    await response.Content.CopyToAsync(fs, cancellationToken);
+                }
+                app.Status = InstallStatus.Queued;
+                app.StatusMessage = "Downloaded (In Queue)";
+                app.Progress = 50;
+                return true;
+            }
 
             if (app.InstallerType.Equals("office_c2r", StringComparison.OrdinalIgnoreCase))
             {
@@ -182,12 +207,114 @@ public partial class WingetService
     /// </summary>
     public static bool IsMsiPackage(AppItem app)
     {
+        if (app.Id.Equals("chrome", StringComparison.OrdinalIgnoreCase) || app.WingetId.Equals("Google.Chrome", StringComparison.OrdinalIgnoreCase)) return true;
         if (app.InstallerType.Equals("msi", StringComparison.OrdinalIgnoreCase)) return true;
         if (app.WingetId.EndsWith(".msi", StringComparison.OrdinalIgnoreCase)) return true;
         if (app.Id.Contains("python", StringComparison.OrdinalIgnoreCase)) return true;
         if (app.Id.Contains("nodejs", StringComparison.OrdinalIgnoreCase)) return true;
         if (app.Id.Contains("vcredist", StringComparison.OrdinalIgnoreCase)) return true;
         return false;
+    }
+
+    private async Task<bool> InstallGoogleChromeMsiAsync(
+        AppItem app,
+        Action<string>? onLog = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "WinToolkit", "GoogleChrome");
+            Directory.CreateDirectory(tempDir);
+            var msiPath = Path.Combine(tempDir, "googlechromestandaloneenterprise64.msi");
+
+            if (!File.Exists(msiPath))
+            {
+                app.Status = InstallStatus.Downloading;
+                app.StatusMessage = "Downloading Google Chrome Enterprise MSI...";
+                app.Progress = 10;
+                onLog?.Invoke($"[{app.Name}] Downloading official Google Chrome Enterprise 64-bit MSI...");
+
+                const string msiUrl = "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise64.msi";
+                using var response = await HttpClient.GetAsync(msiUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                response.EnsureSuccessStatusCode();
+                var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+                await using var streamToReadFrom = await response.Content.ReadAsStreamAsync(cancellationToken);
+                await using var streamToWriteTo = File.Create(msiPath);
+
+                var buffer = new byte[81920];
+                var bytesRead = 0;
+                var totalBytesRead = 0L;
+
+                while ((bytesRead = await streamToReadFrom.ReadAsync(buffer, cancellationToken)) > 0)
+                {
+                    await streamToWriteTo.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                    totalBytesRead += bytesRead;
+                    if (totalBytes > 0)
+                    {
+                        var pct = (double)totalBytesRead / totalBytes * 50.0;
+                        app.Progress = Math.Min(50.0, pct);
+                        app.StatusMessage = $"Downloading Chrome MSI: {(int)(pct * 2)}%";
+                    }
+                }
+            }
+
+            app.Status = InstallStatus.Installing;
+            app.StatusMessage = "Installing Chrome Enterprise MSI silently...";
+            app.Progress = 60;
+            onLog?.Invoke($"[{app.Name}] Running msiexec /i \"{msiPath}\" /qn /norestart...");
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "msiexec.exe",
+                Arguments = $"/i \"{msiPath}\" /qn /norestart",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = new Process { StartInfo = psi };
+            process.Start();
+            await process.WaitForExitAsync(cancellationToken);
+
+            // Wait briefly for file system sync
+            await Task.Delay(1500, cancellationToken);
+
+            var chromeExe64 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Google", "Chrome", "Application", "chrome.exe");
+            var chromeExe86 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Google", "Chrome", "Application", "chrome.exe");
+
+            bool isInstalled = File.Exists(chromeExe64) || File.Exists(chromeExe86);
+
+            if ((process.ExitCode == 0 || process.ExitCode == 3010) && isInstalled)
+            {
+                app.Status = InstallStatus.Installed;
+                app.StatusMessage = "Installed successfully";
+                app.Progress = 100;
+                var pathFound = File.Exists(chromeExe64) ? chromeExe64 : chromeExe86;
+                onLog?.Invoke($"[{app.Name}] Chrome verified at: {pathFound}");
+                try { File.Delete(msiPath); } catch { }
+                return true;
+            }
+            else
+            {
+                app.Status = InstallStatus.Failed;
+                app.StatusMessage = $"Installation failed (exit code {process.ExitCode})";
+                onLog?.Invoke($"[{app.Name}] msiexec exited with code {process.ExitCode}. chrome.exe exists: {isInstalled}");
+                return false;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            app.Status = InstallStatus.Idle;
+            app.StatusMessage = "Cancelled";
+            app.Progress = 0;
+            return false;
+        }
+        catch (Exception ex)
+        {
+            app.Status = InstallStatus.Failed;
+            app.StatusMessage = $"Error: {ex.Message}";
+            onLog?.Invoke($"[{app.Name}] Exception: {ex.Message}");
+            return false;
+        }
     }
 
     private async Task<bool> InstallOfficeAppAsync(
