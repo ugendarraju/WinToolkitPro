@@ -792,12 +792,11 @@
         "Name":  "Visual C++ Redistributable Runtimes All-in-One",
         "WingetId":  "abbodi1406.vcredist",
         "Category":  "VC++ Redistributables",
-        "Description":  "Installs all Microsoft Visual C++ runtimes (2005 to 2022+ x86/x64) in a single silent package. Automatically extracts and executes install_all.bat -ai.",
+        "Description":  "Installs all Microsoft Visual C++ runtimes (2005 to 2026 x86/x64) in a single silent package. Automatically executes unattended setup with /ai /gm2.",
         "Icon":  "PuzzlePiece24",
-        "InstallerType":  "zip_bat",
-        "DownloadUrl":  "https://github.com/abbodi1406/vcredist/releases/latest/download/VisualCppRedist_AIO_x86_x64.zip",
-        "BatFile":  "install_all.bat",
-        "BatArguments":  "-ai"
+        "InstallerType":  "vcredist_aio",
+        "DownloadUrl":  "https://github.com/abbodi1406/vcredist/releases/latest/download/VisualCppRedist_AIO_x86_x64.exe",
+        "BatArguments":  "/ai /gm2"
     },
     {
         "Id":  "whatsapp",

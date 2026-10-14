@@ -53,6 +53,11 @@ public partial class WingetService
         {
             return await InstallGoogleChromeMsiAsync(app, onLog, cancellationToken);
         }
+        if (app.Id.Equals("vcredist_aio", StringComparison.OrdinalIgnoreCase) ||
+            app.InstallerType.Equals("vcredist_aio", StringComparison.OrdinalIgnoreCase))
+        {
+            return await InstallVcRedistAioAsync(app, onLog, cancellationToken);
+        }
         if (app.InstallerType.Equals("office_c2r", StringComparison.OrdinalIgnoreCase))
         {
             return await InstallOfficeAppAsync(app, onLog, cancellationToken);
@@ -143,7 +148,9 @@ public partial class WingetService
             }
 
             if (app.InstallerType.Equals("exe_download", StringComparison.OrdinalIgnoreCase) ||
-                app.InstallerType.Equals("zip_bat", StringComparison.OrdinalIgnoreCase))
+                app.InstallerType.Equals("zip_bat", StringComparison.OrdinalIgnoreCase) ||
+                app.InstallerType.Equals("vcredist_aio", StringComparison.OrdinalIgnoreCase) ||
+                app.Id.Equals("vcredist_aio", StringComparison.OrdinalIgnoreCase))
             {
                 var downloadUrl = app.DownloadUrl;
                 if (!string.IsNullOrWhiteSpace(downloadUrl))
@@ -152,7 +159,9 @@ public partial class WingetService
                     Directory.CreateDirectory(tempDir);
                     var targetFile = app.InstallerType.Equals("zip_bat", StringComparison.OrdinalIgnoreCase)
                         ? Path.Combine(tempDir, "package.zip")
-                        : Path.Combine(tempDir, "setup.exe");
+                        : (app.Id.Equals("vcredist_aio", StringComparison.OrdinalIgnoreCase) || app.InstallerType.Equals("vcredist_aio", StringComparison.OrdinalIgnoreCase))
+                            ? Path.Combine(tempDir, "VisualCppRedist_AIO_x86_x64.exe")
+                            : Path.Combine(tempDir, "setup.exe");
 
                     if (!File.Exists(targetFile))
                     {
@@ -653,6 +662,140 @@ public partial class WingetService
         }
     }
 
+    private async Task<bool> InstallVcRedistAioAsync(
+        AppItem app,
+        Action<string>? onLog = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            app.Status = InstallStatus.Downloading;
+            app.StatusMessage = "Resolving latest VC++ Redistributables...";
+            app.Progress = 10;
+
+            string? exeDownloadUrl = null;
+            try
+            {
+                onLog?.Invoke($"[{app.Name}] Checking latest Abbodi1406 AIO release on GitHub...");
+                using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/repos/abbodi1406/vcredist/releases/latest");
+                request.Headers.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+                using var response = await HttpClient.SendAsync(request, cancellationToken);
+                if (response.IsSuccessStatusCode)
+                {
+                    var releaseJson = await response.Content.ReadAsStringAsync(cancellationToken);
+                    using var doc = JsonDocument.Parse(releaseJson);
+                    if (doc.RootElement.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var asset in assets.EnumerateArray())
+                        {
+                            var name = asset.GetProperty("name").GetString() ?? "";
+                            if (name.Equals("VisualCppRedist_AIO_x86_x64.exe", StringComparison.OrdinalIgnoreCase))
+                            {
+                                exeDownloadUrl = asset.GetProperty("browser_download_url").GetString();
+                                onLog?.Invoke($"[{app.Name}] Located release binary: {name}");
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                onLog?.Invoke($"[{app.Name}] Notice querying GitHub releases: {ex.Message}");
+            }
+
+            if (string.IsNullOrWhiteSpace(exeDownloadUrl))
+            {
+                exeDownloadUrl = "https://github.com/abbodi1406/vcredist/releases/latest/download/VisualCppRedist_AIO_x86_x64.exe";
+            }
+
+            var tempDir = Path.Combine(Path.GetTempPath(), "WinToolkit", "vcredist_aio");
+            Directory.CreateDirectory(tempDir);
+            var exePath = Path.Combine(tempDir, "VisualCppRedist_AIO_x86_x64.exe");
+
+            bool downloadSucceeded = false;
+            try
+            {
+                if (!File.Exists(exePath) || new FileInfo(exePath).Length < 10_000_000)
+                {
+                    onLog?.Invoke($"[{app.Name}] Downloading official All-in-One installer from GitHub...");
+                    app.StatusMessage = "Downloading package...";
+
+                    using var downloadResponse = await HttpClient.GetAsync(exeDownloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                    downloadResponse.EnsureSuccessStatusCode();
+                    var totalBytes = downloadResponse.Content.Headers.ContentLength ?? -1L;
+                    await using var streamToReadFrom = await downloadResponse.Content.ReadAsStreamAsync(cancellationToken);
+                    await using var streamToWriteTo = File.Create(exePath);
+
+                    var buffer = new byte[81920];
+                    var bytesRead = 0;
+                    var totalBytesRead = 0L;
+
+                    while ((bytesRead = await streamToReadFrom.ReadAsync(buffer, cancellationToken)) > 0)
+                    {
+                        await streamToWriteTo.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                        totalBytesRead += bytesRead;
+                        if (totalBytes > 0)
+                        {
+                            var pct = (double)totalBytesRead / totalBytes * 50.0;
+                            app.Progress = Math.Min(50.0, pct);
+                            app.StatusMessage = $"Downloading VC++ AIO: {(int)(pct * 2)}%";
+                        }
+                    }
+                }
+                downloadSucceeded = File.Exists(exePath) && new FileInfo(exePath).Length >= 10_000_000;
+            }
+            catch (Exception ex)
+            {
+                onLog?.Invoke($"[{app.Name}] Direct download notice: {ex.Message}. Falling back to winget.");
+                downloadSucceeded = false;
+            }
+
+            if (downloadSucceeded)
+            {
+                app.Status = InstallStatus.Installing;
+                app.StatusMessage = "Installing all VC++ runtimes (2005-2026 x86/x64)...";
+                app.Progress = 65;
+                onLog?.Invoke($"[{app.Name}] Launching silent unattended installation (/ai /gm2)...");
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = exePath,
+                    Arguments = "/ai /gm2",
+                    UseShellExecute = true,
+                    Verb = "runas"
+                };
+
+                using var process = Process.Start(psi);
+                if (process != null)
+                {
+                    await process.WaitForExitAsync(cancellationToken);
+                    if (process.ExitCode == 0 || process.ExitCode == 3010)
+                    {
+                        app.Status = InstallStatus.Installed;
+                        app.StatusMessage = "Installed successfully";
+                        app.Progress = 100;
+                        onLog?.Invoke($"[{app.Name}] All Visual C++ runtimes installed successfully!");
+                        return true;
+                    }
+                    onLog?.Invoke($"[{app.Name}] Installer exited with code {process.ExitCode}. Attempting winget fallback...");
+                }
+            }
+
+            // Fallback to verified winget abbodi1406.vcredist
+            onLog?.Invoke($"[{app.Name}] Running winget installer (abbodi1406.vcredist)...");
+            app.WingetId = "abbodi1406.vcredist";
+            return await InstallWingetAppAsync(app, onLog, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            app.Status = InstallStatus.Failed;
+            app.StatusMessage = $"Error: {ex.Message}";
+            onLog?.Invoke($"[{app.Name}] Installation error: {ex.Message}");
+            return false;
+        }
+    }
+
     private async Task<bool> InstallZipBatAppAsync(
         AppItem app,
         Action<string>? onLog = null,
@@ -665,40 +808,8 @@ public partial class WingetService
             app.Progress = 5;
 
             var downloadUrl = app.DownloadUrl;
-
-            // If it's the VC++ AIO package, resolve the latest version dynamically
-            if (app.Id == "vcredist_aio" || string.IsNullOrWhiteSpace(downloadUrl))
-            {
-                try
-                {
-                    onLog?.Invoke($"[{app.Name}] Resolving latest release of VC++ All-in-One...");
-                    var releaseJson = await HttpClient.GetStringAsync("https://api.github.com/repos/abbodi1406/vcredist/releases/latest", cancellationToken);
-                    using var doc = JsonDocument.Parse(releaseJson);
-                    if (doc.RootElement.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
-                    {
-                        foreach (var asset in assets.EnumerateArray())
-                        {
-                            var name = asset.GetProperty("name").GetString() ?? "";
-                            if (name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-                            {
-                                downloadUrl = asset.GetProperty("browser_download_url").GetString();
-                                onLog?.Invoke($"[{app.Name}] Found latest version: {name}");
-                                break;
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    onLog?.Invoke($"[{app.Name}] Warning checking GitHub releases: {ex.Message}. Falling back to default URL or winget.");
-                }
-            }
-
             if (string.IsNullOrWhiteSpace(downloadUrl))
             {
-                // Fallback to winget abbodi1406.vcredist
-                onLog?.Invoke($"[{app.Name}] Using winget abbodi1406.vcredist fallback...");
-                app.WingetId = "abbodi1406.vcredist";
                 return await InstallWingetAppAsync(app, onLog, cancellationToken);
             }
 
@@ -709,7 +820,7 @@ public partial class WingetService
                 var zipPath = Path.Combine(tempDir, "package.zip");
                 var extractPath = Path.Combine(tempDir, "extracted");
 
-                onLog?.Invoke($"[{app.Name}] Downloading from {downloadUrl} to OS Temp directory...");
+                onLog?.Invoke($"[{app.Name}] Downloading from {downloadUrl}...");
                 using (var response = await HttpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
                 {
                     response.EnsureSuccessStatusCode();
@@ -737,9 +848,9 @@ public partial class WingetService
                 }
 
                 app.Status = InstallStatus.Installing;
-                app.StatusMessage = "Extracting files in OS Temp...";
+                app.StatusMessage = "Extracting files...";
                 app.Progress = 60;
-                onLog?.Invoke($"[{app.Name}] Extracting zip package to {extractPath}...");
+                onLog?.Invoke($"[{app.Name}] Extracting zip package...");
 
                 if (Directory.Exists(extractPath))
                 {
@@ -748,91 +859,122 @@ public partial class WingetService
                 Directory.CreateDirectory(extractPath);
                 ZipFile.ExtractToDirectory(zipPath, extractPath, true);
 
-                // Locate .bat file
+                // Locate script or installer
                 var batTarget = app.BatFile ?? "install_all.bat";
                 var batFiles = Directory.GetFiles(extractPath, batTarget, SearchOption.AllDirectories);
                 if (batFiles.Length == 0)
                 {
                     batFiles = Directory.GetFiles(extractPath, "*.bat", SearchOption.AllDirectories);
                 }
-
                 if (batFiles.Length == 0)
                 {
-                    throw new FileNotFoundException($"Could not find batch installation script ({batTarget}) in package.");
+                    batFiles = Directory.GetFiles(extractPath, "*.cmd", SearchOption.AllDirectories);
                 }
 
-                var targetBat = batFiles[0];
-                var batWorkingDir = Path.GetDirectoryName(targetBat) ?? extractPath;
-                var batArgs = app.BatArguments ?? "-ai";
-
-                app.StatusMessage = "Running unattended batch installation...";
-                app.Progress = 75;
-                onLog?.Invoke($"[{app.Name}] Running script: {Path.GetFileName(targetBat)} {batArgs}...");
-
-                var startInfo = new ProcessStartInfo
+                if (batFiles.Length > 0)
                 {
-                    FileName = "cmd.exe",
-                    Arguments = $"/c \"\"{targetBat}\" {batArgs}\"",
-                    WorkingDirectory = batWorkingDir,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
-                };
+                    var targetBat = batFiles[0];
+                    var batWorkingDir = Path.GetDirectoryName(targetBat) ?? extractPath;
+                    var batArgs = app.BatArguments ?? "-ai";
 
-                using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
-                process.OutputDataReceived += (_, e) =>
-                {
-                    if (!string.IsNullOrWhiteSpace(e.Data))
+                    app.StatusMessage = "Running batch installation...";
+                    app.Progress = 75;
+                    onLog?.Invoke($"[{app.Name}] Running script: {Path.GetFileName(targetBat)} {batArgs}...");
+
+                    var startInfo = new ProcessStartInfo
                     {
-                        onLog?.Invoke($"[{app.Name}] {e.Data}");
-                    }
-                };
-                process.ErrorDataReceived += (_, e) =>
-                {
-                    if (!string.IsNullOrWhiteSpace(e.Data))
-                    {
-                        onLog?.Invoke($"[{app.Name}] ERROR: {e.Data}");
-                    }
-                };
+                        FileName = "cmd.exe",
+                        Arguments = $"/c \"\"{targetBat}\" {batArgs}\"",
+                        WorkingDirectory = batWorkingDir,
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true
+                    };
 
-                process.Start();
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
-
-                using (cancellationToken.Register(() =>
-                {
-                    try
+                    using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+                    process.OutputDataReceived += (_, e) =>
                     {
-                        if (!process.HasExited) process.Kill(true);
+                        if (!string.IsNullOrWhiteSpace(e.Data))
+                        {
+                            onLog?.Invoke($"[{app.Name}] {e.Data}");
+                        }
+                    };
+                    process.ErrorDataReceived += (_, e) =>
+                    {
+                        if (!string.IsNullOrWhiteSpace(e.Data))
+                        {
+                            onLog?.Invoke($"[{app.Name}] ERROR: {e.Data}");
+                        }
+                    };
+
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+
+                    using (cancellationToken.Register(() =>
+                    {
+                        try
+                        {
+                            if (!process.HasExited) process.Kill(true);
+                        }
+                        catch { }
+                    }))
+                    {
+                        await process.WaitForExitAsync(cancellationToken);
                     }
-                    catch { }
-                }))
+                }
+                else
                 {
-                    await process.WaitForExitAsync(cancellationToken);
+                    // Check if an executable is in the package
+                    var exeFiles = Directory.GetFiles(extractPath, "*.exe", SearchOption.AllDirectories);
+                    if (exeFiles.Length > 0)
+                    {
+                        var targetExe = exeFiles[0];
+                        var exeWorkingDir = Path.GetDirectoryName(targetExe) ?? extractPath;
+                        var exeArgs = app.BatArguments ?? "/ai /gm2";
+
+                        app.StatusMessage = "Running executable installer...";
+                        app.Progress = 75;
+                        onLog?.Invoke($"[{app.Name}] Running installer: {Path.GetFileName(targetExe)} {exeArgs}...");
+
+                        var psi = new ProcessStartInfo
+                        {
+                            FileName = targetExe,
+                            Arguments = exeArgs,
+                            WorkingDirectory = exeWorkingDir,
+                            UseShellExecute = true,
+                            Verb = "runas"
+                        };
+
+                        using var proc = Process.Start(psi);
+                        if (proc != null)
+                        {
+                            await proc.WaitForExitAsync(cancellationToken);
+                        }
+                    }
+                    else
+                    {
+                        throw new FileNotFoundException($"Could not find batch installation script ({batTarget}) or executable in package.");
+                    }
                 }
 
                 app.Progress = 100;
                 app.Status = InstallStatus.Installed;
-                app.StatusMessage = "All runtimes installed successfully";
+                app.StatusMessage = "Installed successfully";
                 onLog?.Invoke($"[{app.Name}] Installation finished successfully!");
                 return true;
             }
             finally
             {
-                // Clean up OS temp folder for this package
                 try
                 {
                     if (Directory.Exists(tempDir))
                     {
                         Directory.Delete(tempDir, true);
-                        onLog?.Invoke($"[{app.Name}] Cleaned up temporary installation folder: {tempDir}");
                     }
                 }
-                catch (Exception ex)
-                {
-                    onLog?.Invoke($"[{app.Name}] Note: Could not immediately delete temp folder (will be cleaned on exit): {ex.Message}");
-                }
+                catch { }
             }
         }
         catch (OperationCanceledException)
