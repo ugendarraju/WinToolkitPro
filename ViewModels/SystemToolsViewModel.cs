@@ -205,8 +205,20 @@ public partial class SystemToolsViewModel : ObservableObject
         _activeCts = new CancellationTokenSource();
         var ct = _activeCts.Token;
 
+        var tasks = targets.Select(item => new ActivityTaskItem
+        {
+            Id = item.PackageFullName,
+            Name = item.DisplayName,
+            Category = "Bloatware Debloat",
+            Status = ActivityTaskStatus.Queued,
+            StatusMessage = "Queued for removal...",
+            Progress = 0
+        }).ToList();
+        ActivityService.Instance.StartSession("Bloatware Debloat", tasks);
+
         AddLog($"Starting batch removal of {targets.Count} package(s)...");
         int successCount = 0;
+        int processedCount = 0;
 
         try
         {
@@ -219,12 +231,24 @@ public partial class SystemToolsViewModel : ObservableObject
                 }
 
                 StatusMessage = $"Uninstalling {item.DisplayName}...";
+                ActivityService.Instance.UpdateTask(item.PackageFullName, ActivityTaskStatus.Running, "Uninstalling...", 50);
                 var ok = await _systemToolsService.UninstallUwpAppAsync(item, AddLog);
-                if (ok) successCount++;
+                processedCount++;
+                if (ok)
+                {
+                    successCount++;
+                    ActivityService.Instance.UpdateTask(item.PackageFullName, ActivityTaskStatus.Completed, "Uninstalled", 100);
+                }
+                else
+                {
+                    ActivityService.Instance.UpdateTask(item.PackageFullName, ActivityTaskStatus.Failed, "Failed to remove", 100);
+                }
+                ActivityService.Instance.UpdateOverallProgress(((double)processedCount / targets.Count) * 100, StatusMessage);
             }
 
             StatusMessage = $"Debloat complete. Successfully removed {successCount} of {targets.Count} packages.";
             AddLog($"[Debloat] Finished: {successCount}/{targets.Count} removed.");
+            ActivityService.Instance.CompleteSession(StatusMessage);
             
             var removed = AllApps.Where(a => a.IsRemoved).ToList();
             foreach (var r in removed) AllApps.Remove(r);
@@ -518,10 +542,23 @@ public partial class SystemToolsViewModel : ObservableObject
         _activeCts = new CancellationTokenSource();
         StatusMessage = "Running System File Checker (sfc /scannow)...";
 
+        var task = new ActivityTaskItem
+        {
+            Id = "sfc",
+            Name = "System File Checker (SFC)",
+            Category = "System Repair",
+            Status = ActivityTaskStatus.Running,
+            StatusMessage = "Verifying system integrity...",
+            Progress = 50
+        };
+        ActivityService.Instance.StartSession("System Integrity Check", new[] { task });
+
         try
         {
             await _systemToolsService.RunSfcScanAsync(AddLog, _activeCts.Token);
             StatusMessage = "SFC scan finished. Check log for details.";
+            ActivityService.Instance.UpdateTask("sfc", ActivityTaskStatus.Completed, "Integrity check complete", 100);
+            ActivityService.Instance.CompleteSession(StatusMessage);
         }
         finally
         {
@@ -538,10 +575,23 @@ public partial class SystemToolsViewModel : ObservableObject
         _activeCts = new CancellationTokenSource();
         StatusMessage = "Running DISM Component Store RestoreHealth...";
 
+        var task = new ActivityTaskItem
+        {
+            Id = "dism",
+            Name = "DISM Component Store Repair",
+            Category = "System Repair",
+            Status = ActivityTaskStatus.Running,
+            StatusMessage = "Restoring component store health...",
+            Progress = 50
+        };
+        ActivityService.Instance.StartSession("DISM Health Restore", new[] { task });
+
         try
         {
             await _systemToolsService.RunDismRestoreHealthAsync(AddLog, _activeCts.Token);
             StatusMessage = "DISM RestoreHealth completed.";
+            ActivityService.Instance.UpdateTask("dism", ActivityTaskStatus.Completed, "Health restored", 100);
+            ActivityService.Instance.CompleteSession(StatusMessage);
         }
         finally
         {
@@ -558,10 +608,23 @@ public partial class SystemToolsViewModel : ObservableObject
         _activeCts = new CancellationTokenSource();
         StatusMessage = "Running WinSxS Component Store Deep Cleanup...";
 
+        var task = new ActivityTaskItem
+        {
+            Id = "dism_cleanup",
+            Name = "WinSxS Component Store Deep Cleanup",
+            Category = "System Repair",
+            Status = ActivityTaskStatus.Running,
+            StatusMessage = "Cleaning up superseded components...",
+            Progress = 50
+        };
+        ActivityService.Instance.StartSession("WinSxS Component Cleanup", new[] { task });
+
         try
         {
             await _systemToolsService.RunDismComponentCleanupAsync(AddLog, _activeCts.Token);
             StatusMessage = "WinSxS Component Store deep cleanup completed.";
+            ActivityService.Instance.UpdateTask("dism_cleanup", ActivityTaskStatus.Completed, "Component cleanup finished", 100);
+            ActivityService.Instance.CompleteSession(StatusMessage);
         }
         finally
         {
@@ -635,6 +698,7 @@ public partial class SystemToolsViewModel : ObservableObject
 
     private void AddLog(string msg)
     {
+        ActivityService.Instance.AddLog(msg);
         System.Windows.Application.Current?.Dispatcher.Invoke(() =>
         {
             var line = $"[{DateTime.Now:HH:mm:ss}] {msg}";

@@ -140,6 +140,15 @@ public partial class WindowsUpdateViewModel : ObservableObject
             u.ErrorMessage = string.Empty;
         }
 
+        var taskItems = selected.Select(u => new ActivityTaskItem
+        {
+            Id = u.UpdateId,
+            Name = !string.IsNullOrWhiteSpace(u.KBArticle) ? $"{u.KBArticle}: {u.Title}" : u.Title,
+            Category = u.Category ?? "Windows Update",
+            StatusMessage = "Queued..."
+        }).ToList();
+
+        ActivityService.Instance.StartSession("Windows Updates", taskItems);
         AddLog($"Starting installation of {selected.Count} update(s)...");
 
         var success = await _updateService.InstallSelectedUpdatesAsync(
@@ -157,10 +166,12 @@ public partial class WindowsUpdateViewModel : ObservableObject
                         case "DOWNLOADING":
                             item.StatusMessage = "Downloading...";
                             item.Progress = 40;
+                            ActivityService.Instance.UpdateTask(updateId, ActivityTaskStatus.Running, "Downloading update...", 40);
                             break;
                         case "INSTALLING":
                             item.StatusMessage = "Installing...";
                             item.Progress = 80;
+                            ActivityService.Instance.UpdateTask(updateId, ActivityTaskStatus.Running, "Installing update...", 80);
                             break;
                         case "SUCCESS":
                             item.StatusMessage = "Installed Successfully";
@@ -168,6 +179,7 @@ public partial class WindowsUpdateViewModel : ObservableObject
                             item.IsBusy = false;
                             item.IsSuccess = true;
                             item.IsFailed = false;
+                            ActivityService.Instance.UpdateTask(updateId, ActivityTaskStatus.Completed, "Installed Successfully", 100);
                             break;
                         case "FAILED":
                             item.StatusMessage = "Failed";
@@ -176,6 +188,7 @@ public partial class WindowsUpdateViewModel : ObservableObject
                             item.IsSuccess = false;
                             item.IsFailed = true;
                             item.ErrorMessage = detail;
+                            ActivityService.Instance.UpdateTask(updateId, ActivityTaskStatus.Failed, $"Failed: {detail}", 100);
                             break;
                     }
                 });
@@ -205,6 +218,7 @@ public partial class WindowsUpdateViewModel : ObservableObject
             SummaryMessage = $"🎉 Completed: {succeeded} update(s) installed, {failed} failed.";
             StatusText = "Windows update installation completed.";
         }
+        ActivityService.Instance.CompleteSession(StatusText);
     }
 
     [RelayCommand]
@@ -254,6 +268,7 @@ public partial class WindowsUpdateViewModel : ObservableObject
             {
                 Logs.RemoveAt(Logs.Count - 1);
             }
+            ActivityService.Instance.AddLog(msg);
         });
     }
 }

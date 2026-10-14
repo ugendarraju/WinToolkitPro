@@ -220,6 +220,21 @@ public partial class DriversViewModel : ObservableObject
         StatusText = $"Installing {selected.Count} driver(s) via {SelectedDriverSource}...";
         _driverCts = new CancellationTokenSource();
 
+        var taskItems = selected.Select(d => new ActivityTaskItem
+        {
+            Id = !string.IsNullOrEmpty(d.HardwareId) ? d.HardwareId : d.DeviceName,
+            Name = d.DeviceName,
+            Category = d.Manufacturer ?? "Hardware Driver",
+            StatusMessage = "Queued..."
+        }).ToList();
+
+        ActivityService.Instance.StartSession("Hardware & Driver Updates", taskItems);
+
+        foreach (var task in taskItems)
+        {
+            ActivityService.Instance.UpdateTask(task.Id, ActivityTaskStatus.Running, "Installing driver...", 50);
+        }
+
         var selectedIds = selected.Select(d => !string.IsNullOrEmpty(d.HardwareId) ? d.HardwareId : d.DeviceName);
         bool success;
 
@@ -233,6 +248,12 @@ public partial class DriversViewModel : ObservableObject
         }
 
         IsInstalling = false;
+        foreach (var task in taskItems)
+        {
+            ActivityService.Instance.UpdateTask(task.Id, success ? ActivityTaskStatus.Completed : ActivityTaskStatus.Failed,
+                success ? "Installed" : "Notice / Check logs", 100);
+        }
+
         if (success)
         {
             StatusText = $"Driver installation completed!";
@@ -240,10 +261,12 @@ public partial class DriversViewModel : ObservableObject
             HasSummary = true;
             PendingUpdates.Clear();
             UpdateCount = 0;
+            ActivityService.Instance.CompleteSession("Driver installation completed!");
         }
         else
         {
             StatusText = "Driver update process completed with notices. Check log.";
+            ActivityService.Instance.CompleteSession("Driver update process completed with notices.");
         }
     }
 
@@ -255,6 +278,7 @@ public partial class DriversViewModel : ObservableObject
         AddLog("User cancelled driver operation.");
         IsScanning = false;
         IsInstalling = false;
+        ActivityService.Instance.CompleteSession("Cancelled by user.");
     }
 
     private void AddLog(string msg)
@@ -264,6 +288,7 @@ public partial class DriversViewModel : ObservableObject
             var line = $"[{DateTime.Now:HH:mm:ss}] {msg}";
             Logs.Insert(0, line);
             if (Logs.Count > 200) Logs.RemoveAt(Logs.Count - 1);
+            ActivityService.Instance.AddLog(msg);
         });
     }
 }

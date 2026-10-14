@@ -12,8 +12,6 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="120"/>
         </Grid.RowDefinitions>
 
         <!-- Top Header & Controls -->
@@ -133,24 +131,5 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
-
-        <!-- Progress Bar -->
-        <ProgressBar Grid.Row="3" Value="{Binding OverallProgress}" Maximum="100" Height="6" 
-                     Margin="0,0,0,8"
-                     Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
-
-        <!-- Live Output Terminal -->
-        <Border Grid.Row="4" Background="#111116" BorderBrush="#33333e" BorderThickness="1" CornerRadius="6" Padding="8">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <TextBlock Text="Optimization Execution Logs" FontSize="11" FontWeight="SemiBold" Foreground="#888899" Margin="0,0,0,4"/>
-                <ListBox Grid.Row="1" ItemsSource="{Binding Logs}" 
-                         Background="Transparent" BorderThickness="0" 
-                         FontFamily="Consolas, Cascadia Code, Courier New" FontSize="11" Foreground="#c0caf5"/>
-            </Grid>
-        </Border>
     </Grid>
 </UserControl>

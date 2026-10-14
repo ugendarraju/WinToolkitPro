@@ -17,6 +17,7 @@ public partial class MainViewModel : ObservableObject
     public SystemToolsViewModel SystemToolsVM { get; }
     public ActivationViewModel ActivationVM { get; }
     public GitHubUpdateService GitHubUpdater { get; }
+    public ActivityService Activity => ActivityService.Instance;
 
     [ObservableProperty]
     private int _selectedNavigationIndex = 0;

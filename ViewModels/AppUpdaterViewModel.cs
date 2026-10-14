@@ -152,6 +152,15 @@ public partial class AppUpdaterViewModel : ObservableObject
         var total = targets.Count;
         var current = 0;
 
+        var taskItems = targets.Select(t => new ActivityTaskItem
+        {
+            Id = t.PackageId,
+            Name = t.Name,
+            Category = "Application Update",
+            StatusMessage = $"Queued (v{t.AvailableVersion})..."
+        }).ToList();
+
+        ActivityService.Instance.StartSession("Software Updates", taskItems);
         AddLog($"Starting batch upgrade of {total} application(s)...");
 
         try
@@ -163,14 +172,22 @@ public partial class AppUpdaterViewModel : ObservableObject
                 current++;
                 StatusText = $"Updating {item.Name} ({current}/{total})...";
                 OverallProgress = ((double)(current - 1) / total) * 100.0;
+                ActivityService.Instance.UpdateOverallProgress(OverallProgress);
+                ActivityService.Instance.UpdateTask(item.PackageId, ActivityTaskStatus.Running, $"Updating to {item.AvailableVersion}...", 30);
 
                 await _wingetService.UpgradeAppAsync(item, AddLog, ct);
 
+                var finalStatus = item.IsSuccess ? ActivityTaskStatus.Completed :
+                                  item.IsFailed ? ActivityTaskStatus.Failed : ActivityTaskStatus.Completed;
+                ActivityService.Instance.UpdateTask(item.PackageId, finalStatus, item.StatusMessage, 100);
+
                 OverallProgress = ((double)current / total) * 100.0;
+                ActivityService.Instance.UpdateOverallProgress(OverallProgress);
             }
 
             StatusText = ct.IsCancellationRequested ? "App upgrade cancelled." : "All selected applications updated successfully!";
             AddLog(StatusText);
+            ActivityService.Instance.CompleteSession(StatusText);
         }
         finally
         {
@@ -185,7 +202,23 @@ public partial class AppUpdaterViewModel : ObservableObject
         if (IsUpgrading) return;
         _updateCts = new CancellationTokenSource();
         AddLog($"[Retry] Attempting update for {item.Name}...");
+
+        var taskItem = new ActivityTaskItem
+        {
+            Id = item.PackageId,
+            Name = item.Name,
+            Category = "Application Update",
+            StatusMessage = $"Updating to {item.AvailableVersion}...",
+            Status = ActivityTaskStatus.Running
+        };
+        ActivityService.Instance.StartSession("Retry App Update", new List<ActivityTaskItem> { taskItem });
+
         await _wingetService.UpgradeAppAsync(item, AddLog, _updateCts.Token);
+
+        var finalStatus = item.IsSuccess ? ActivityTaskStatus.Completed :
+                          item.IsFailed ? ActivityTaskStatus.Failed : ActivityTaskStatus.Completed;
+        ActivityService.Instance.UpdateTask(item.PackageId, finalStatus, item.StatusMessage, 100);
+        ActivityService.Instance.CompleteSession(item.StatusMessage);
     }
 
     [RelayCommand]
@@ -201,6 +234,7 @@ public partial class AppUpdaterViewModel : ObservableObject
         _updateCts?.Cancel();
         StatusText = "Cancelling updates...";
         AddLog("User requested cancellation of application updates.");
+        ActivityService.Instance.CompleteSession("Cancelled by user.");
     }
 
     private void AddLog(string message)
@@ -210,6 +244,7 @@ public partial class AppUpdaterViewModel : ObservableObject
             var line = $"[{DateTime.Now:HH:mm:ss}] {message}";
             Logs.Insert(0, line);
             if (Logs.Count > 300) Logs.RemoveAt(Logs.Count - 1);
+            ActivityService.Instance.AddLog(message);
         });
     }
 }

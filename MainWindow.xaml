@@ -213,7 +213,7 @@
                             </Border>
 
                             <!-- Activity Drawer Toggle -->
-                            <Button Content="📊 Active Tasks / Log" Command="{Binding AppsVM.ToggleActivityPanelCommand}" 
+                            <Button Content="📊 Active Tasks / Log" Command="{Binding Activity.ToggleDrawerCommand}" 
                                     Background="#1e293b" Foreground="#38bdf8" FontWeight="SemiBold"
                                     Padding="8,5" FontSize="11" HorizontalAlignment="Stretch" Margin="0,0,0,6"/>
 
@@ -282,7 +282,7 @@
                     Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1,0,0,0"
-                    Visibility="{Binding AppsVM.IsActivityPanelOpen, Converter={StaticResource BoolToVis}}">
+                    Visibility="{Binding Activity.IsOpen, Converter={StaticResource BoolToVis}}">
                 <Grid Margin="12,10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -299,10 +299,10 @@
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="⚡" FontSize="15" Margin="0,0,6,0"/>
-                            <TextBlock Text="Active Tasks &amp; Status" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            <TextBlock Text="{Binding Activity.CurrentOperation}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                         </StackPanel>
                         <Button Grid.Column="1" Content="✕" 
-                                Command="{Binding AppsVM.CloseActivityPanelCommand}"
+                                Command="{Binding Activity.CloseDrawerCommand}"
                                 Padding="6,2" FontSize="12" Background="Transparent" BorderThickness="0"
                                 Foreground="{DynamicResource TextFillColorSecondaryBrush}" Cursor="Hand"/>
                     </Grid>
@@ -312,12 +312,12 @@
                             CornerRadius="6" Padding="10,8" Margin="0,0,0,10">
                         <StackPanel>
                             <Grid Margin="0,0,0,5">
-                                <TextBlock Text="{Binding AppsVM.StatusText}" FontSize="11" FontWeight="SemiBold"
+                                <TextBlock Text="{Binding Activity.StatusText}" FontSize="11" FontWeight="SemiBold"
                                            TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                <TextBlock Text="{Binding AppsVM.OverallProgress, StringFormat={}{0:0}%}" 
+                                <TextBlock Text="{Binding Activity.OverallProgress, StringFormat={}{0:0}%}" 
                                            HorizontalAlignment="Right" FontSize="11" FontWeight="Bold" Foreground="#38bdf8"/>
                             </Grid>
-                            <ProgressBar Value="{Binding AppsVM.OverallProgress}" Maximum="100" Height="5" 
+                            <ProgressBar Value="{Binding Activity.OverallProgress}" Maximum="100" Height="5" 
                                          Foreground="#38bdf8" Background="#1e293b" BorderThickness="0"/>
                         </StackPanel>
                     </Border>
@@ -327,18 +327,18 @@
                         <StackPanel>
                             <!-- Empty State Notice if no active tasks -->
                             <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="6" Padding="12" Margin="0,0,0,6"
-                                    Visibility="{Binding AppsVM.ActiveTasks.Count, Converter={StaticResource ZeroToVis}}">
+                                    Visibility="{Binding Activity.ActiveTasks.Count, Converter={StaticResource ZeroToVis}}">
                                 <StackPanel HorizontalAlignment="Center">
                                     <TextBlock Text="📋" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,6"/>
                                     <TextBlock Text="No active tasks in progress." FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                    <TextBlock Text="Select apps in Software Installer and click 'Install Selected' to track live progress." 
+                                    <TextBlock Text="Trigger an action from any tab (Software Installer, Debloater, Optimizer, Cleaner, etc.) to track live progress here." 
                                                FontSize="11" TextWrapping="Wrap" TextAlignment="Center" Margin="0,4,0,0"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 </StackPanel>
                             </Border>
 
                             <!-- Items list -->
-                            <ItemsControl ItemsSource="{Binding AppsVM.ActiveTasks}">
+                            <ItemsControl ItemsSource="{Binding Activity.ActiveTasks}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
@@ -367,19 +367,16 @@
                                                             <Style TargetType="Border">
                                                                 <Setter Property="Background" Value="#334155"/>
                                                                 <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static models:InstallStatus.Queued}">
+                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static models:ActivityTaskStatus.Queued}">
                                                                         <Setter Property="Background" Value="#334155"/>
                                                                     </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static models:InstallStatus.Downloading}">
+                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static models:ActivityTaskStatus.Running}">
                                                                         <Setter Property="Background" Value="#1e3a8a"/>
                                                                     </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static models:InstallStatus.Installing}">
-                                                                        <Setter Property="Background" Value="#854d0e"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static models:InstallStatus.Installed}">
+                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static models:ActivityTaskStatus.Completed}">
                                                                         <Setter Property="Background" Value="#14532d"/>
                                                                     </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static models:InstallStatus.Failed}">
+                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static models:ActivityTaskStatus.Failed}">
                                                                         <Setter Property="Background" Value="#7f1d1d"/>
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
@@ -390,19 +387,16 @@
                                                                 <Style TargetType="TextBlock">
                                                                     <Setter Property="Foreground" Value="#94a3b8"/>
                                                                     <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding Status}" Value="{x:Static models:InstallStatus.Queued}">
+                                                                        <DataTrigger Binding="{Binding Status}" Value="{x:Static models:ActivityTaskStatus.Queued}">
                                                                             <Setter Property="Foreground" Value="#cbd5e1"/>
                                                                         </DataTrigger>
-                                                                        <DataTrigger Binding="{Binding Status}" Value="{x:Static models:InstallStatus.Downloading}">
+                                                                        <DataTrigger Binding="{Binding Status}" Value="{x:Static models:ActivityTaskStatus.Running}">
                                                                             <Setter Property="Foreground" Value="#60a5fa"/>
                                                                         </DataTrigger>
-                                                                        <DataTrigger Binding="{Binding Status}" Value="{x:Static models:InstallStatus.Installing}">
-                                                                            <Setter Property="Foreground" Value="#facc15"/>
-                                                                        </DataTrigger>
-                                                                        <DataTrigger Binding="{Binding Status}" Value="{x:Static models:InstallStatus.Installed}">
+                                                                        <DataTrigger Binding="{Binding Status}" Value="{x:Static models:ActivityTaskStatus.Completed}">
                                                                             <Setter Property="Foreground" Value="#4ade80"/>
                                                                         </DataTrigger>
-                                                                        <DataTrigger Binding="{Binding Status}" Value="{x:Static models:InstallStatus.Failed}">
+                                                                        <DataTrigger Binding="{Binding Status}" Value="{x:Static models:ActivityTaskStatus.Failed}">
                                                                             <Setter Property="Foreground" Value="#f87171"/>
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
@@ -424,14 +418,14 @@
                                                         <Style TargetType="ProgressBar">
                                                             <Setter Property="IsIndeterminate" Value="False"/>
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Status}" Value="{x:Static models:InstallStatus.Installing}">
+                                                                <DataTrigger Binding="{Binding Status}" Value="{x:Static models:ActivityTaskStatus.Running}">
                                                                     <Setter Property="IsIndeterminate" Value="True"/>
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding Status}" Value="{x:Static models:InstallStatus.Installed}">
+                                                                <DataTrigger Binding="{Binding Status}" Value="{x:Static models:ActivityTaskStatus.Completed}">
                                                                     <Setter Property="Value" Value="100"/>
                                                                     <Setter Property="Foreground" Value="#22c55e"/>
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding Status}" Value="{x:Static models:InstallStatus.Failed}">
+                                                                <DataTrigger Binding="{Binding Status}" Value="{x:Static models:ActivityTaskStatus.Failed}">
                                                                     <Setter Property="Value" Value="100"/>
                                                                     <Setter Property="Foreground" Value="#ef4444"/>
                                                                 </DataTrigger>
@@ -451,7 +445,7 @@
                     <Expander Grid.Row="3" Header="Detailed Console Logs" IsExpanded="False" 
                               Margin="0,8,0,0" Padding="0">
                         <Border Background="#090d16" CornerRadius="4" Padding="6" Height="150">
-                            <ListBox ItemsSource="{Binding AppsVM.Logs}" 
+                            <ListBox ItemsSource="{Binding Activity.Logs}" 
                                      Background="Transparent" BorderThickness="0"
                                      FontFamily="Consolas" FontSize="10" Foreground="#38bdf8"
                                      ScrollViewer.HorizontalScrollBarVisibility="Auto"

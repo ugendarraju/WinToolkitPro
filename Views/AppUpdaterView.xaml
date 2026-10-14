@@ -13,7 +13,6 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="120"/>
         </Grid.RowDefinitions>
 
         <!-- Top Header & Action Controls -->
@@ -224,31 +223,5 @@
                              IsIndeterminate="{Binding IsScanning}"/>
             </StackPanel>
         </Grid>
-
-        <!-- Bottom Log Output Console -->
-        <Border Grid.Row="4" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
-                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                BorderThickness="1" CornerRadius="6" Padding="8">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <TextBlock Text="Activity &amp; Command Logs" FontSize="11" FontWeight="SemiBold" 
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,0,0,4"/>
-
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding Logs}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding}" FontFamily="Consolas" FontSize="11" 
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,1"/>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-            </Grid>
-        </Border>
     </Grid>
 </UserControl>

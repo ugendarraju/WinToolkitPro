@@ -94,13 +94,55 @@ public partial class CleanerViewModel : ObservableObject
         StatusText = "Cleaning selected items...";
         _cleanerCts = new CancellationTokenSource();
 
-        var cleaned = await _cleanerService.CleanTargetsAsync(selected, AddLog, _cleanerCts.Token);
+        var taskItems = selected.Select(t => new ActivityTaskItem
+        {
+            Id = t.Id,
+            Name = t.Name,
+            Category = t.Category,
+            StatusMessage = "Queued..."
+        }).ToList();
 
-        UpdateSummaryMetrics();
-        IsCleaning = false;
-        HasSummary = true;
-        SummaryMessage = $"🎉 Successfully freed up {SystemCleanerService.FormatBytes(cleaned)} of disk space!";
-        StatusText = "Cleaning routine completed.";
+        ActivityService.Instance.StartSession("System Cleaner", taskItems);
+
+        void OnTargetPropertyChanged(object? s, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (s is CleanerTargetItem item)
+            {
+                if (item.IsBusy)
+                {
+                    ActivityService.Instance.UpdateTask(item.Id, ActivityTaskStatus.Running, "Purging temporary files...", 50);
+                }
+                else if (item.Status == "Cleaned")
+                {
+                    ActivityService.Instance.UpdateTask(item.Id, ActivityTaskStatus.Completed, "Cleaned", 100);
+                }
+            }
+        }
+
+        foreach (var t in selected)
+        {
+            t.PropertyChanged += OnTargetPropertyChanged;
+        }
+
+        try
+        {
+            var cleaned = await _cleanerService.CleanTargetsAsync(selected, AddLog, _cleanerCts.Token);
+
+            UpdateSummaryMetrics();
+            IsCleaning = false;
+            HasSummary = true;
+            SummaryMessage = $"🎉 Successfully freed up {SystemCleanerService.FormatBytes(cleaned)} of disk space!";
+            StatusText = "Cleaning routine completed.";
+            ActivityService.Instance.CompleteSession(SummaryMessage);
+        }
+        finally
+        {
+            foreach (var t in selected)
+            {
+                t.PropertyChanged -= OnTargetPropertyChanged;
+            }
+            IsCleaning = false;
+        }
     }
 
     [RelayCommand]
@@ -134,6 +176,7 @@ public partial class CleanerViewModel : ObservableObject
             {
                 Logs.RemoveAt(Logs.Count - 1);
             }
+            ActivityService.Instance.AddLog(msg);
         });
     }
 }

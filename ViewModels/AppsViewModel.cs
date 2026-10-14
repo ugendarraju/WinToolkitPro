@@ -52,12 +52,14 @@ public partial class AppsViewModel : ObservableObject
     [RelayCommand]
     private void ToggleActivityPanel()
     {
-        IsActivityPanelOpen = !IsActivityPanelOpen;
+        ActivityService.Instance.ToggleDrawer();
+        IsActivityPanelOpen = ActivityService.Instance.IsOpen;
     }
 
     [RelayCommand]
     private void CloseActivityPanel()
     {
+        ActivityService.Instance.CloseDrawer();
         IsActivityPanelOpen = false;
     }
 
@@ -197,13 +199,25 @@ public partial class AppsViewModel : ObservableObject
         var completedCount = 0;
 
         ActiveTasks.Clear();
+        var taskItems = new List<ActivityTaskItem>();
         foreach (var app in selectedApps)
         {
             ActiveTasks.Add(app);
             app.Status = InstallStatus.Queued;
             app.StatusMessage = "Waiting in queue...";
             app.Progress = 0;
+
+            taskItems.Add(new ActivityTaskItem
+            {
+                Id = app.Id,
+                Name = app.Name,
+                Category = app.Category,
+                Status = ActivityTaskStatus.Queued,
+                StatusMessage = "Waiting in queue...",
+                Progress = 0
+            });
         }
+        ActivityService.Instance.StartSession("Software Installation", taskItems);
         IsActivityPanelOpen = true;
 
         AddLog($"Starting background download & installation pipeline for {total} app(s)...");
@@ -230,6 +244,7 @@ public partial class AppsViewModel : ObservableObject
                 {
                     if (ct.IsCancellationRequested) return;
                     AddLog($"[{app.Name}] Downloading in background...");
+                    ActivityService.Instance.UpdateTask(app.Id, ActivityTaskStatus.Running, "Downloading...", 30);
                     await _wingetService.PreDownloadAppAsync(app, AddLog, ct);
                 }
                 catch (OperationCanceledException) { return; }
@@ -248,6 +263,7 @@ public partial class AppsViewModel : ObservableObject
                 var isMsi = WingetService.IsMsiPackage(app);
                 app.Status = InstallStatus.Queued;
                 app.StatusMessage = isMsi ? "Waiting for MSI installer slot..." : "Waiting for installation slot...";
+                ActivityService.Instance.UpdateTask(app.Id, ActivityTaskStatus.Running, app.StatusMessage, 50);
 
                 await generalInstallSemaphore.WaitAsync(ct);
                 try
@@ -266,15 +282,21 @@ public partial class AppsViewModel : ObservableObject
 
                         StatusText = $"Installing {app.Name}...";
                         AddLog($"[{app.Name}] Starting installation...");
+                        ActivityService.Instance.UpdateTask(app.Id, ActivityTaskStatus.Running, "Installing package...", 75);
                         await _wingetService.InstallAppAsync(app, AddLog, ct);
 
                         if (app.Status == InstallStatus.Installed)
                         {
+                            ActivityService.Instance.UpdateTask(app.Id, ActivityTaskStatus.Completed, "Installed", 100);
                             System.Windows.Application.Current?.Dispatcher.Invoke(() =>
                             {
                                 app.IsSelected = false;
                                 UpdateSelectedCount();
                             });
+                        }
+                        else
+                        {
+                            ActivityService.Instance.UpdateTask(app.Id, ActivityTaskStatus.Failed, app.StatusMessage, 100);
                         }
                     }
                     finally
@@ -292,6 +314,7 @@ public partial class AppsViewModel : ObservableObject
                     var done = Interlocked.Increment(ref completedCount);
                     OverallProgress = ((double)done / total) * 100.0;
                     StatusText = $"Progress: {done}/{total} app(s) processed";
+                    ActivityService.Instance.UpdateOverallProgress(OverallProgress, StatusText);
                 }
             });
 
@@ -299,6 +322,7 @@ public partial class AppsViewModel : ObservableObject
 
             StatusText = ct.IsCancellationRequested ? "Installation cancelled." : "All selected apps processed!";
             AddLog(StatusText);
+            ActivityService.Instance.CompleteSession(StatusText);
         }
         finally
         {
@@ -334,6 +358,7 @@ public partial class AppsViewModel : ObservableObject
 
     private void AddLog(string message)
     {
+        ActivityService.Instance.AddLog(message);
         System.Windows.Application.Current?.Dispatcher.Invoke(() =>
         {
             var line = $"[{DateTime.Now:HH:mm:ss}] {message}";
