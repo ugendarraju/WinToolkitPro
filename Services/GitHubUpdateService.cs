@@ -20,8 +20,8 @@ public class GitHubUpdateService
 
     static GitHubUpdateService()
     {
-        HttpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("WinToolkitPro-Updater", "1.4.0"));
-        HttpClient.Timeout = TimeSpan.FromSeconds(30);
+        HttpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("WinToolkitPro-Updater", "1.5.0"));
+        HttpClient.Timeout = TimeSpan.FromSeconds(8);
     }
 
     public record ReleaseUpdateInfo(
@@ -38,7 +38,7 @@ public class GitHubUpdateService
     public static string GetCurrentVersion()
     {
         var ver = Assembly.GetExecutingAssembly().GetName().Version;
-        return ver != null ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "1.4.0";
+        return ver != null ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : "1.5.0";
     }
 
     public async Task<ReleaseUpdateInfo> CheckForUpdatesAsync(CancellationToken ct = default)
@@ -47,14 +47,14 @@ public class GitHubUpdateService
         try
         {
             var url = $"https://api.github.com/repos/{RepoOwner}/{RepoName}/releases/latest";
-            using var response = await HttpClient.GetAsync(url, ct);
+            using var response = await HttpClient.GetAsync(url, ct).ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
                 return new ReleaseUpdateInfo(false, currentVerStr, currentVerStr, string.Empty, string.Empty, null, null, 0);
             }
 
-            var json = await response.Content.ReadAsStringAsync(ct);
+            var json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 

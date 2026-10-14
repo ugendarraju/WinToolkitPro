@@ -81,12 +81,25 @@ public partial class MainViewModel : ObservableObject
         CheckPrivilegesAndSystem();
     }
 
+    private int _isCheckingUpdates = 0;
+
     public async Task InitializeAsync()
     {
-        await AppsVM.InitializeAsync();
-        await OptimizerVM.InitializeAsync();
-        await SystemToolsVM.InitializeAsync();
-        await DriversVM.InitializeAsync();
+        // 1. Immediately launch update check concurrently in background (finishes in <1s)
+        _ = CheckForAppUpdatesAsync();
+
+        // 2. Prioritize active tab (Software Installer) initialization
+        var appsInit = AppsVM.InitializeAsync();
+
+        // 3. Initialize background tabs concurrently without blocking UI or startup
+        _ = Task.Run(async () =>
+        {
+            try { await OptimizerVM.InitializeAsync(); } catch { }
+            try { await SystemToolsVM.InitializeAsync(); } catch { }
+            try { await DriversVM.InitializeAsync(); } catch { }
+        });
+
+        await appsInit;
 
         // Auto-register Defender exclusion for WinToolkitPro to prevent 10-second cloud scan delay
         if (IsAdministrator)
@@ -114,30 +127,35 @@ public partial class MainViewModel : ObservableObject
                 catch { }
             });
         }
-
-        // Check for App updates in background
-        _ = CheckForAppUpdatesAsync();
     }
 
     [RelayCommand]
     public async Task CheckForAppUpdatesAsync()
     {
+        if (Interlocked.Exchange(ref _isCheckingUpdates, 1) == 1) return;
         try
         {
             var update = await GitHubUpdater.CheckForUpdatesAsync();
-            if (update.UpdateAvailable && !string.IsNullOrEmpty(update.DownloadUrl))
+            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
             {
-                _pendingRelease = update;
-                LatestVersionTag = $"v{update.LatestVersion}";
-                UpdateStatusText = $"New WinToolkit Pro update ({LatestVersionTag}) available!";
-                IsUpdateAvailable = true;
-            }
-            else
-            {
-                IsUpdateAvailable = false;
-            }
+                if (update.UpdateAvailable && !string.IsNullOrEmpty(update.DownloadUrl))
+                {
+                    _pendingRelease = update;
+                    LatestVersionTag = $"v{update.LatestVersion}";
+                    UpdateStatusText = $"New WinToolkit Pro update ({LatestVersionTag}) available!";
+                    IsUpdateAvailable = true;
+                }
+                else
+                {
+                    IsUpdateAvailable = false;
+                }
+            });
         }
         catch { }
+        finally
+        {
+            Interlocked.Exchange(ref _isCheckingUpdates, 0);
+        }
     }
 
     [RelayCommand]

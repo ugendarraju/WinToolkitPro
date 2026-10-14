@@ -38,6 +38,9 @@ public partial class MainWindow : FluentWindow
         _viewModel = new MainViewModel(appsVM, appUpdaterVM, optimizerVM, driversVM, updateVM, cleanerVM, systemToolsVM, activationVM, gitHubUpdateService);
         DataContext = _viewModel;
 
+        // Instantly start checking for updates in parallel as window is created
+        _ = _viewModel.CheckForAppUpdatesAsync();
+
         Loaded += MainWindow_Loaded;
     }
 
