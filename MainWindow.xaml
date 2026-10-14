@@ -109,7 +109,7 @@
                             <TextBlock Text="WinToolkit Pro" FontWeight="Bold" FontSize="16" 
                                        Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Text="v1.4 • Power User Suite" FontSize="11" 
+                        <TextBlock Text="{Binding AppVersionDisplay}" FontSize="11" 
                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}" Margin="34,2,0,0"/>
 
                         <!-- GitHub Update Notification Banner -->

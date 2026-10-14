@@ -52,6 +52,9 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _latestVersionTag = string.Empty;
 
+    [ObservableProperty]
+    private string _appVersionDisplay = $"v{GitHubUpdateService.GetCurrentVersion()} • Power User Suite";
+
     private GitHubUpdateService.ReleaseUpdateInfo? _pendingRelease;
 
     public MainViewModel(
