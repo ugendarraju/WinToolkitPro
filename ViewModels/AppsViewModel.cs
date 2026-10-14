@@ -39,11 +39,27 @@ public partial class AppsViewModel : ObservableObject
     [ObservableProperty]
     private double _overallProgress;
 
+    [ObservableProperty]
+    private bool _isActivityPanelOpen;
+
+    public ObservableCollection<AppItem> ActiveTasks { get; } = new();
     public ObservableCollection<AppItem> AllApps { get; } = new();
     public ObservableCollection<AppItem> FilteredApps { get; } = new();
     public ObservableCollection<AppCategoryGroup> GroupedApps { get; } = new();
     public ObservableCollection<string> Categories { get; } = new();
     public ObservableCollection<string> Logs { get; } = new();
+
+    [RelayCommand]
+    private void ToggleActivityPanel()
+    {
+        IsActivityPanelOpen = !IsActivityPanelOpen;
+    }
+
+    [RelayCommand]
+    private void CloseActivityPanel()
+    {
+        IsActivityPanelOpen = false;
+    }
 
     public AppsViewModel(WingetService wingetService, CatalogService catalogService)
     {
@@ -180,15 +196,17 @@ public partial class AppsViewModel : ObservableObject
         var total = selectedApps.Count;
         var completedCount = 0;
 
-        AddLog($"Starting background download & installation pipeline for {total} app(s)...");
-
-        // Mark all selected apps as Queued initially
+        ActiveTasks.Clear();
         foreach (var app in selectedApps)
         {
+            ActiveTasks.Add(app);
             app.Status = InstallStatus.Queued;
             app.StatusMessage = "Waiting in queue...";
             app.Progress = 0;
         }
+        IsActivityPanelOpen = true;
+
+        AddLog($"Starting background download & installation pipeline for {total} app(s)...");
 
         // Semaphores:
         // 1. Up to 3 simultaneous background downloads
@@ -249,6 +267,15 @@ public partial class AppsViewModel : ObservableObject
                         StatusText = $"Installing {app.Name}...";
                         AddLog($"[{app.Name}] Starting installation...");
                         await _wingetService.InstallAppAsync(app, AddLog, ct);
+
+                        if (app.Status == InstallStatus.Installed)
+                        {
+                            System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                            {
+                                app.IsSelected = false;
+                                UpdateSelectedCount();
+                            });
+                        }
                     }
                     finally
                     {
@@ -277,6 +304,17 @@ public partial class AppsViewModel : ObservableObject
         {
             await _wingetService.CleanTempFilesAsync(AddLog);
             IsInstalling = false;
+            System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+            {
+                foreach (var app in selectedApps)
+                {
+                    if (app.Status == InstallStatus.Installed)
+                    {
+                        app.IsSelected = false;
+                    }
+                }
+                UpdateSelectedCount();
+            });
         }
     }
 

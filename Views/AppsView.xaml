@@ -12,8 +12,6 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="100"/>
         </Grid.RowDefinitions>
 
         <!-- Top Header & Controls -->
@@ -46,6 +44,9 @@
 
                 <Button Content="Select All" Command="{Binding SelectAllCommand}" Margin="0,0,5,4" Padding="10,5" FontSize="11"/>
                 <Button Content="Clear" Command="{Binding DeselectAllCommand}" Margin="0,0,5,4" Padding="10,5" FontSize="11"/>
+                <Button Content="📊 Activity" Command="{Binding ToggleActivityPanelCommand}" 
+                        Background="#0369a1" Foreground="White" FontWeight="SemiBold" Margin="0,0,5,4" Padding="10,5" FontSize="11"
+                        ToolTip="Toggle the installation progress drawer"/>
                 <Button Content="🧹 Clean Temp" Command="{Binding CleanTempCacheCommand}" Margin="0,0,5,4" Padding="9,5" FontSize="11"/>
                 
                 <Button Content="Cancel" Command="{Binding CancelInstallationCommand}" 
@@ -141,25 +142,6 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
-        </Border>
-
-        <!-- Overall Progress Bar (Visible while installing) -->
-        <ProgressBar Grid.Row="3" Value="{Binding OverallProgress}" Maximum="100" Height="5" 
-                     Margin="0,0,0,6"
-                     Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
-
-        <!-- Live Output Log Terminal -->
-        <Border Grid.Row="4" Background="#111116" BorderBrush="#33333e" BorderThickness="1" CornerRadius="6" Padding="6">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <TextBlock Text="Installation Console Logs" FontSize="11" FontWeight="SemiBold" Foreground="#888899" Margin="2,0,0,2"/>
-                <ListBox Grid.Row="1" ItemsSource="{Binding Logs}" 
-                         Background="Transparent" BorderThickness="0" 
-                         FontFamily="Consolas, Cascadia Code, Courier New" FontSize="11" Foreground="#c0caf5"/>
-            </Grid>
         </Border>
     </Grid>
 </UserControl>
