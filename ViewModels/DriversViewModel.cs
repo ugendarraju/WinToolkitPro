@@ -40,6 +40,16 @@ public partial class DriversViewModel : ObservableObject
     private bool _hasSummary;
 
     [ObservableProperty]
+    private string _selectedDriverSource = "⚡ Snappy / SamDrivers (Newest)";
+
+    public ObservableCollection<string> DriverSources { get; } = new()
+    {
+        "⚡ Snappy / SamDrivers (Newest)",
+        "🌐 Microsoft Update Catalog (WHQL)",
+        "🏢 Direct Vendor Repositories"
+    };
+
+    [ObservableProperty]
     private HardwareInfo _hardware = new();
 
     public ObservableCollection<DriverItem> Devices { get; } = new();
@@ -119,15 +129,22 @@ public partial class DriversViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public async Task LaunchSnappyGui()
+    {
+        AddLog("Launching Snappy Driver Installer Origin GUI...");
+        await _driverService.LaunchSnappyGuiAsync(AddLog);
+    }
+
+    [RelayCommand]
     private async Task CheckOnlineUpdates()
     {
         IsScanning = true;
-        StatusText = "Searching Windows Update Catalog for certified drivers...";
+        StatusText = $"Searching {SelectedDriverSource} for drivers...";
         HasSummary = false;
         _driverCts = new CancellationTokenSource();
 
         PendingUpdates.Clear();
-        var updates = await _driverService.CheckOnlineDriverUpdatesAsync(AddLog, _driverCts.Token);
+        var updates = await _driverService.CheckDriverUpdatesBySourceAsync(SelectedDriverSource, AddLog, _driverCts.Token);
         foreach (var item in updates)
         {
             item.PropertyChanged += (s, e) =>
@@ -150,8 +167,8 @@ public partial class DriversViewModel : ObservableObject
                 Devices.Add(item);
             }
             UpdateSelectedDriverCount();
-            StatusText = $"Found {UpdateCount} certified driver update(s) ready to install.";
-            SummaryMessage = $"{UpdateCount} certified driver update(s) available. Select the required drivers and click Install.";
+            StatusText = $"Found {UpdateCount} driver(s) via {SelectedDriverSource}.";
+            SummaryMessage = $"{UpdateCount} driver update(s) ready. Select drivers and click Install.";
             HasSummary = true;
         }
         else
@@ -200,17 +217,26 @@ public partial class DriversViewModel : ObservableObject
         }
 
         IsInstalling = true;
-        StatusText = $"Downloading and installing {selected.Count} selected driver(s)...";
+        StatusText = $"Installing {selected.Count} driver(s) via {SelectedDriverSource}...";
         _driverCts = new CancellationTokenSource();
 
         var selectedIds = selected.Select(d => !string.IsNullOrEmpty(d.HardwareId) ? d.HardwareId : d.DeviceName);
-        var success = await _driverService.InstallDriverUpdatesAsync(selectedIds, AddLog, cancellationToken: _driverCts.Token);
+        bool success;
+
+        if (SelectedDriverSource.Contains("Snappy", StringComparison.OrdinalIgnoreCase))
+        {
+            success = await _driverService.InstallSnappyDriverUpdatesAsync(selectedIds, AddLog, cancellationToken: _driverCts.Token);
+        }
+        else
+        {
+            success = await _driverService.InstallDriverUpdatesAsync(selectedIds, AddLog, cancellationToken: _driverCts.Token);
+        }
 
         IsInstalling = false;
         if (success)
         {
             StatusText = $"Driver installation completed!";
-            SummaryMessage = $"Successfully processed {selected.Count} driver update(s). A reboot may be recommended.";
+            SummaryMessage = $"Successfully processed {selected.Count} driver update(s) via {SelectedDriverSource}. A reboot may be recommended.";
             HasSummary = true;
             PendingUpdates.Clear();
             UpdateCount = 0;

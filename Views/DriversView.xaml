@@ -262,30 +262,56 @@
                             BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
                             BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,8">
                         <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
 
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" FontWeight="Medium" FontSize="12"
-                                           Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                                <Border Background="#1e293b" CornerRadius="4" Padding="8,2" Margin="12,0,0,0"
-                                        Visibility="{Binding SelectedDriverCount, Converter={StaticResource IntToVis}}">
-                                    <TextBlock Text="{Binding SelectedDriverCount, StringFormat='{}Selected: {0}'}" FontSize="11" FontWeight="SemiBold" Foreground="#38bdf8"/>
-                                </Border>
-                            </StackPanel>
+                            <!-- Row 0: Driver Source Selection & Snappy GUI -->
+                            <Grid Grid.Row="0" Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="260"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                <Button Content="Select All" Command="{Binding SelectAllDriversCommand}" Margin="0,0,6,0" Padding="10,5" FontSize="11"/>
-                                <Button Content="Clear All" Command="{Binding DeselectAllDriversCommand}" Margin="0,0,8,0" Padding="10,5" FontSize="11"/>
-                                <Button Content="🔍 Scan Hardware" Command="{Binding ScanHardwareCommand}" Margin="0,0,6,0" Padding="12,5" FontSize="11"/>
-                                <Button Content="🌐 Check Online Drivers" Command="{Binding CheckOnlineUpdatesCommand}" Margin="0,0,6,0" Padding="12,5" FontSize="11"/>
-                                <Button Content="{Binding SelectedDriverCount, StringFormat='⚡ Install Selected Drivers ({0})'}" 
-                                        Command="{Binding InstallDriverUpdatesCommand}"
-                                        Background="{DynamicResource AccentFillColorDefaultBrush}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
-                                        FontWeight="SemiBold" Padding="14,5" FontSize="12"/>
-                            </StackPanel>
+                                <TextBlock Grid.Column="0" Text="Driver Source:" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="11" Margin="0,0,8,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding DriverSources}" SelectedItem="{Binding SelectedDriverSource}" FontSize="11" Padding="8,4" VerticalAlignment="Center"/>
+
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                                    <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" FontWeight="Medium" FontSize="11" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                    <Border Background="#1e293b" CornerRadius="4" Padding="6,2" Margin="8,0,0,0" Visibility="{Binding SelectedDriverCount, Converter={StaticResource IntToVis}}">
+                                        <TextBlock Text="{Binding SelectedDriverCount, StringFormat='{}Selected: {0}'}" FontSize="11" FontWeight="SemiBold" Foreground="#38bdf8"/>
+                                    </Border>
+                                </StackPanel>
+
+                                <Button Grid.Column="3" Content="🚀 Launch Snappy GUI" Command="{Binding LaunchSnappyGuiCommand}" 
+                                        Background="#0284c7" Foreground="White" FontWeight="SemiBold" Padding="10,4" FontSize="11"
+                                        ToolTip="Open full standalone Snappy Driver Installer Origin GUI"/>
+                            </Grid>
+
+                            <!-- Row 1: Actions & Installation Buttons -->
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Content="Select All" Command="{Binding SelectAllDriversCommand}" Margin="0,0,6,0" Padding="10,5" FontSize="11"/>
+                                    <Button Content="Clear All" Command="{Binding DeselectAllDriversCommand}" Margin="0,0,8,0" Padding="10,5" FontSize="11"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <Button Content="🔍 Scan Hardware" Command="{Binding ScanHardwareCommand}" Margin="0,0,6,0" Padding="12,5" FontSize="11"/>
+                                    <Button Content="🌐 Check Updates" Command="{Binding CheckOnlineUpdatesCommand}" Margin="0,0,6,0" Padding="12,5" FontSize="11"/>
+                                    <Button Content="{Binding SelectedDriverCount, StringFormat='⚡ Install Selected Drivers ({0})'}" 
+                                            Command="{Binding InstallDriverUpdatesCommand}"
+                                            Background="{DynamicResource AccentFillColorDefaultBrush}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                                            FontWeight="SemiBold" Padding="14,5" FontSize="12"/>
+                                </StackPanel>
+                            </Grid>
                         </Grid>
                     </Border>
 
