@@ -1,6 +1,14 @@
-# ⚡ WinToolkit Pro
+# <img src="Assets/logo.png" width="36" height="36" align="center" style="border-radius: 8px; margin-right: 8px;" /> WinToolkit Pro
 
-A modern, high-performance Windows 11 utility application built with **.NET 9** and **WPF-UI (Fluent Windows 11 Design)**. It combines unattended silent software installation, Windows Update certified driver scanning & installation, and OS debloating/optimizations (Winhance-style).
+A modern, high-performance Windows 11 utility application built with **.NET 9** and **WPF-UI (Fluent Windows 11 Design)**. It combines unattended silent software installation, Windows Update certified driver scanning & installation, and OS debloating/optimizations.
+
+[![Release](https://img.shields.io/github/v/release/ugendarraju/WinToolkitPro?color=38bdf8&label=Latest%20Release)](https://github.com/ugendarraju/WinToolkitPro/releases/latest)
+[![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-0078d4)](https://github.com/ugendarraju/WinToolkitPro)
+[![License](https://img.shields.io/badge/License-MIT-emerald)](https://github.com/ugendarraju/WinToolkitPro)
+
+### 🚀 Direct Standalone Downloads (No Setup Required)
+* **[⚡ Download WinToolkitPro.exe (Standalone Single File)](https://github.com/ugendarraju/WinToolkitPro/releases/latest/download/WinToolkitPro.exe)**
+* **[📦 Download WinToolkitPro Standalone ZIP](https://github.com/ugendarraju/WinToolkitPro/releases/latest/download/WinToolkitPro-v1.4.6-standalone-win-x64.zip)**
 
 ---
 
