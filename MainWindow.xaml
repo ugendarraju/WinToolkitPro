@@ -8,11 +8,14 @@
         xmlns:views="clr-namespace:WinToolkit.Views"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
-        Title="WinToolkit Pro" Height="840" Width="1240"
-        MinHeight="680" MinWidth="1020"
+        Title="WinToolkit Pro" Height="720" Width="1120"
+        MinHeight="580" MinWidth="960"
         WindowStartupLocation="CenterScreen"
+        WindowState="Normal"
+        ShowInTaskbar="True"
+        Background="{DynamicResource ApplicationBackgroundBrush}"
         ExtendsContentIntoTitleBar="True"
-        WindowBackdropType="Mica">
+        WindowBackdropType="None">
 
     <Window.Resources>
         <!-- Sidebar Navigation Item Style -->
@@ -67,14 +70,14 @@
         </Style>
     </Window.Resources>
 
-    <Grid>
+    <Grid Background="{DynamicResource ApplicationBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <!-- Fluent Window TitleBar -->
-        <ui:TitleBar Grid.Row="0" Title="WinToolkit Pro"/>
+        <ui:TitleBar Grid.Row="0" Title="WinToolkit Pro" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"/>
 
         <!-- Main Work Area with Vertical Sidebar Navigation -->
         <Grid Grid.Row="1">
