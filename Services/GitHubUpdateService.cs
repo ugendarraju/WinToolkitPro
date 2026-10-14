@@ -192,6 +192,9 @@ if (Get-Process -Id $procId -ErrorAction SilentlyContinue) {{
 Write-Output 'Copying updated version files...'
 Copy-Item -Path ""$sourceDir\*"" -Destination ""$targetDir"" -Recurse -Force -ErrorAction SilentlyContinue
 
+# Unblock files to eliminate Windows SmartScreen Mark-of-the-Web
+Get-ChildItem -Path ""$targetDir"" -Recurse -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue
+
 # Launch new updated instance elevated
 Write-Output 'Relaunching WinToolkit Pro...'
 Start-Sleep -Milliseconds 500
