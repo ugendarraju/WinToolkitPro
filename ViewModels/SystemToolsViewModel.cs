@@ -19,6 +19,9 @@ public partial class SystemToolsViewModel : ObservableObject
     [ObservableProperty]
     private bool _isBusy;
 
+    [ObservableProperty]
+    private bool _isScanningApps;
+
     // Bloatware tab properties
     [ObservableProperty]
     private string _searchQuery = string.Empty;
@@ -95,23 +98,31 @@ public partial class SystemToolsViewModel : ObservableObject
 
     private void ApplyFilter()
     {
-        FilteredApps.Clear();
-        var q = SearchQuery?.Trim() ?? string.Empty;
+        void Update()
+        {
+            FilteredApps.Clear();
+            var q = SearchQuery?.Trim() ?? string.Empty;
 
-        var baseList = ShowBloatwareOnly 
-            ? AllApps.Where(a => a.IsBloatware) 
-            : AllApps;
+            var baseList = ShowBloatwareOnly 
+                ? AllApps.Where(a => a.IsBloatware) 
+                : AllApps;
 
-        var matches = string.IsNullOrWhiteSpace(q)
-            ? baseList
-            : baseList.Where(a =>
-                a.DisplayName.Contains(q, StringComparison.OrdinalIgnoreCase) ||
-                a.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
-                a.Category.Contains(q, StringComparison.OrdinalIgnoreCase) ||
-                a.Description.Contains(q, StringComparison.OrdinalIgnoreCase) ||
-                a.Publisher.Contains(q, StringComparison.OrdinalIgnoreCase));
+            var matches = string.IsNullOrWhiteSpace(q)
+                ? baseList
+                : baseList.Where(a =>
+                    a.DisplayName.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    a.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    a.Category.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    a.Description.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    a.Publisher.Contains(q, StringComparison.OrdinalIgnoreCase));
 
-        foreach (var item in matches) FilteredApps.Add(item);
+            foreach (var item in matches) FilteredApps.Add(item);
+        }
+
+        if (System.Windows.Application.Current?.Dispatcher?.CheckAccess() == false)
+            System.Windows.Application.Current.Dispatcher.Invoke(Update);
+        else
+            Update();
     }
 
     // ========================================================
@@ -120,40 +131,62 @@ public partial class SystemToolsViewModel : ObservableObject
     [RelayCommand]
     public async Task ScanApps()
     {
-        if (IsBusy) return;
+        if (IsScanningApps) return;
 
-        IsBusy = true;
+        IsScanningApps = true;
         StatusMessage = "Scanning for preinstalled Windows bloatware packages...";
-        AllApps.Clear();
-        FilteredApps.Clear();
+
+        void ClearApps()
+        {
+            AllApps.Clear();
+            FilteredApps.Clear();
+        }
+
+        if (System.Windows.Application.Current?.Dispatcher?.CheckAccess() == false)
+            System.Windows.Application.Current.Dispatcher.Invoke(ClearApps);
+        else
+            ClearApps();
 
         try
         {
             var apps = await _systemToolsService.ScanUwpAppsAsync(AddLog);
-            foreach (var a in apps)
+
+            void PopulateApps()
             {
-                a.PropertyChanged += (s, e) =>
+                foreach (var a in apps)
                 {
-                    if (e.PropertyName == nameof(UwpAppItem.IsSelected))
+                    a.PropertyChanged += (s, e) =>
                     {
-                        UpdateSelectedCount();
-                    }
-                };
-                AllApps.Add(a);
+                        if (e.PropertyName == nameof(UwpAppItem.IsSelected))
+                        {
+                            UpdateSelectedCount();
+                        }
+                    };
+                    AllApps.Add(a);
+                }
+
+                ApplyFilter();
+                TotalAppCount = AllApps.Count;
+                BloatwareCount = AllApps.Count(a => a.IsBloatware);
+                UpdateSelectedCount();
             }
 
-            ApplyFilter();
-            TotalAppCount = AllApps.Count;
-            BloatwareCount = AllApps.Count(a => a.IsBloatware);
-            UpdateSelectedCount();
+            if (System.Windows.Application.Current?.Dispatcher?.CheckAccess() == false)
+                System.Windows.Application.Current.Dispatcher.Invoke(PopulateApps);
+            else
+                PopulateApps();
 
             StatusMessage = BloatwareCount > 0
                 ? $"Scan completed: {BloatwareCount} bloatware packages detected ({SelectedAppCount} selected for debloat)."
                 : "Scan completed: No Windows bloatware packages detected on this system.";
         }
+        catch (Exception ex)
+        {
+            AddLog($"Scan notice: {ex.Message}");
+        }
         finally
         {
-            IsBusy = false;
+            IsScanningApps = false;
         }
     }
 

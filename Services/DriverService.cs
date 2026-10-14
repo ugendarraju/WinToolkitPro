@@ -10,8 +10,18 @@ public class DriverService
 {
     private static readonly HttpClient HttpClient = new(new HttpClientHandler
     {
-        AutomaticDecompression = System.Net.DecompressionMethods.All
+        AutomaticDecompression = System.Net.DecompressionMethods.All,
+        AllowAutoRedirect = true
     }) { Timeout = TimeSpan.FromMinutes(5) };
+
+    static DriverService()
+    {
+        try
+        {
+            HttpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        }
+        catch { }
+    }
 
     private readonly PowerShellService _powerShellService;
 
@@ -33,16 +43,18 @@ public class DriverService
         if (!Directory.Exists(dir)) return null;
 
         var files = Directory.GetFiles(dir, "SDIO*.exe");
+        if (files.Length == 0) return null;
+
         if (OsEnvironmentService.Instance.Is64BitOperatingSystem)
         {
-            var x64 = files.FirstOrDefault(f => f.Contains("x64", StringComparison.OrdinalIgnoreCase));
+            var x64 = files.FirstOrDefault(f => f.Contains("x64", StringComparison.OrdinalIgnoreCase) && !f.Contains("XP", StringComparison.OrdinalIgnoreCase));
             if (x64 != null) return x64;
-            return files.FirstOrDefault();
+            return files.FirstOrDefault(f => !f.Contains("XP", StringComparison.OrdinalIgnoreCase)) ?? files.FirstOrDefault();
         }
         else
         {
             // On 32-bit Windows, pick the 32-bit native SDI binary
-            var x86 = files.FirstOrDefault(f => !f.Contains("x64", StringComparison.OrdinalIgnoreCase));
+            var x86 = files.FirstOrDefault(f => !f.Contains("x64", StringComparison.OrdinalIgnoreCase) && !f.Contains("XP", StringComparison.OrdinalIgnoreCase));
             if (x86 != null) return x86;
             return files.FirstOrDefault();
         }
@@ -263,31 +275,49 @@ public class DriverService
                 $_.ConfigManagerErrorCode -ne 0 -and $_.Name -ne $null 
             }
 
-            # Priority 2: Installed peripherals (Printers, Scanners, USB, Network, Audio, Display, etc.)
-            $standardDevices = Get-CimInstance Win32_PnPEntity | Where-Object { 
-                $_.ConfigManagerErrorCode -eq 0 -and $_.Name -ne $null -and
-                $_.PNPClass -in @('Printer', 'PrintQueue', 'Image', 'USB', 'USBDevice', 'Display', 'Net', 'MEDIA', 'Bluetooth', 'Storage', 'System', 'Processor', 'Ports', 'HIDClass')
-            } | Select-Object -First 60
+            # Priority 2: Installed peripherals with real driver versions from PnP Signed Driver database
+            $classes = @('DISPLAY', 'NET', 'MEDIA', 'BLUETOOTH', 'IMAGE', 'PRINTER', 'USB', 'HDC', 'SCSIADAPTER', 'SYSTEM', 'PORTS', 'KEYBOARD', 'MOUSE', 'PRINTQUEUE')
+            $signedDrivers = Get-CimInstance Win32_PnPSignedDriver | Where-Object { 
+                $_.DeviceName -ne $null -and $_.DeviceClass -in $classes -and $_.DriverVersion -ne $null 
+            } | Select-Object -First 50
 
-            $all = @($problemDevices) + @($standardDevices)
+            $result = @()
 
-            $result = foreach ($d in $all) {
-                $hasIssue = ($d.ConfigManagerErrorCode -ne 0 -or $d.Status -ne 'OK')
-                $statusText = if ($d.ConfigManagerErrorCode -eq 28) {
+            foreach ($p in $problemDevices) {
+                $statusText = if ($p.ConfigManagerErrorCode -eq 28) {
                     'Driver Missing (Code 28)'
-                } elseif ($d.ConfigManagerErrorCode -ne 0) {
-                    ""Hardware Notice (Code $($d.ConfigManagerErrorCode))""
                 } else {
-                    'Healthy'
+                    ""Hardware Notice (Code $($p.ConfigManagerErrorCode))""
                 }
 
-                [PSCustomObject]@{
-                    DeviceName = $d.Name
-                    DeviceClass = if ($d.PNPClass) { $d.PNPClass } else { 'Peripheral Device' }
-                    Manufacturer = if ($d.Manufacturer) { $d.Manufacturer } else { 'Unknown' }
-                    HardwareId = $d.DeviceID
+                $result += [PSCustomObject]@{
+                    DeviceName = $p.Name
+                    DeviceClass = if ($p.PNPClass) { $p.PNPClass } else { 'Peripheral Device' }
+                    Manufacturer = if ($p.Manufacturer) { $p.Manufacturer } else { 'Unknown' }
+                    HardwareId = $p.DeviceID
+                    DriverVersion = 'Missing'
+                    AvailableVersion = 'Driver Required'
+                    DriverDate = ''
                     Status = $statusText
-                    HasUpdate = $hasIssue
+                    HasUpdate = $true
+                }
+            }
+
+            foreach ($d in $signedDrivers) {
+                $dateStr = if ($d.DriverDate) { 
+                    try { $d.DriverDate.ToString('yyyy-MM-dd') } catch { '' } 
+                } else { '' }
+
+                $result += [PSCustomObject]@{
+                    DeviceName = $d.DeviceName
+                    DeviceClass = if ($d.DeviceClass) { $d.DeviceClass } else { 'System Device' }
+                    Manufacturer = if ($d.Manufacturer) { $d.Manufacturer } else { 'OEM / Microsoft' }
+                    HardwareId = if ($d.HardWareID) { $d.HardWareID } else { '' }
+                    DriverVersion = if ($d.DriverVersion) { $d.DriverVersion } else { '10.0.0.0' }
+                    AvailableVersion = ''
+                    DriverDate = $dateStr
+                    Status = 'Healthy'
+                    HasUpdate = $false
                 }
             }
 
@@ -343,11 +373,15 @@ public class DriverService
                 
                 $updates = @()
                 foreach ($update in $searchResult.Updates) {
+                    $ver = if ($update.Title -match '(\d+\.[\d\.]+)') { $matches[1] } else { 'Latest WHQL' }
                     $updates += [PSCustomObject]@{
                         DeviceName = $update.Title
                         DeviceClass = 'Driver Update'
                         Manufacturer = if ($update.DriverModel) { $update.DriverModel } else { 'Microsoft Catalog' }
                         HardwareId = $update.Identity.UpdateID
+                        DriverVersion = 'Installed'
+                        AvailableVersion = $ver
+                        DriverDate = ''
                         Status = 'Update Available'
                         HasUpdate = $true
                     }
@@ -529,8 +563,11 @@ public class DriverService
         var pnpClass = element.TryGetProperty("DeviceClass", out var c) ? c.GetString() ?? "System" : "System";
         var mfr = element.TryGetProperty("Manufacturer", out var m) ? m.GetString() ?? "Unknown" : "Unknown";
         var hwId = element.TryGetProperty("HardwareId", out var h) ? h.GetString() ?? "" : "";
-        var status = element.TryGetProperty("Status", out var s) ? s.GetString() ?? "Update Available" : "Update Available";
+        var status = element.TryGetProperty("Status", out var s) ? s.GetString() ?? "Healthy" : "Healthy";
         var hasUpd = element.TryGetProperty("HasUpdate", out var u) && u.GetBoolean();
+        var currentVer = element.TryGetProperty("DriverVersion", out var cv) ? cv.GetString() ?? "" : "";
+        var availVer = element.TryGetProperty("AvailableVersion", out var av) ? av.GetString() ?? "" : "";
+        var date = element.TryGetProperty("DriverDate", out var d) ? d.GetString() ?? "" : "";
 
         return new DriverItem
         {
@@ -538,6 +575,9 @@ public class DriverService
             DeviceClass = pnpClass,
             Manufacturer = mfr,
             HardwareId = hwId,
+            CurrentDriverVersion = currentVer,
+            AvailableDriverVersion = availVer,
+            DriverDate = date,
             Status = status,
             StatusMessage = "Ready to install",
             HasUpdate = hasUpd,

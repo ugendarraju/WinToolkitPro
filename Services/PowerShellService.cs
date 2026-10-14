@@ -55,7 +55,10 @@ public class PowerShellService
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
 
-            using (cancellationToken.Register(() =>
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+
+            using (linkedCts.Token.Register(() =>
             {
                 try
                 {
@@ -67,7 +70,7 @@ public class PowerShellService
                 catch { }
             }))
             {
-                await process.WaitForExitAsync(cancellationToken);
+                await process.WaitForExitAsync(linkedCts.Token);
             }
 
             var success = process.ExitCode == 0;

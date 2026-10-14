@@ -217,6 +217,14 @@
                             BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
                             BorderThickness="1" CornerRadius="6" Padding="6">
                         <Grid>
+                            <!-- Scanning Progress Overlay -->
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,50,0,50"
+                                        Visibility="{Binding IsScanningApps, Converter={StaticResource BoolToVis}}">
+                                <ProgressBar IsIndeterminate="True" Width="240" Height="4" Margin="0,0,0,12" Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
+                                <TextBlock Text="Scanning installed Windows packages and bloatware..." HorizontalAlignment="Center"
+                                           FontSize="12" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" FontWeight="SemiBold"/>
+                            </StackPanel>
+
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding FilteredApps}">
                                     <ItemsControl.ItemTemplate>
@@ -271,8 +279,22 @@
 
                             <TextBlock Text="🎉 No bloatware packages detected! Your Windows installation is already clean." 
                                        HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,40,0,40" 
-                                       FontSize="14" Foreground="#10b981" FontWeight="SemiBold" 
-                                       Visibility="{Binding FilteredApps.Count, Converter={StaticResource ZeroToVis}}"/>
+                                       FontSize="14" Foreground="#10b981" FontWeight="SemiBold">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding FilteredApps.Count}" Value="0"/>
+                                                    <Condition Binding="{Binding IsScanningApps}" Value="False"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </Grid>
                     </Border>
                 </Grid>

@@ -90,18 +90,17 @@ public partial class MainViewModel : ObservableObject
         // 1. Immediately launch update check concurrently in background (finishes in <1s)
         _ = CheckForAppUpdatesAsync();
 
-        // 2. Prioritize active tab (Software Installer) initialization
+        // 2. Prioritize active tab (Software Installer) and OS Optimizer initialization
         var appsInit = AppsVM.InitializeAsync();
+        var optInit = OptimizerVM.InitializeAsync();
 
-        // 3. Initialize background tabs concurrently without blocking UI or startup
+        // 3. Initialize background hardware specs concurrently without blocking UI
         _ = Task.Run(async () =>
         {
-            try { await OptimizerVM.InitializeAsync(); } catch { }
-            try { await SystemToolsVM.InitializeAsync(); } catch { }
             try { await DriversVM.InitializeAsync(); } catch { }
         });
 
-        await appsInit;
+        await Task.WhenAll(appsInit, optInit);
 
         // Auto-register Defender exclusion for WinToolkitPro to prevent 10-second cloud scan delay
         if (IsAdministrator)

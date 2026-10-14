@@ -46,44 +46,69 @@ public partial class OptimizerViewModel : ObservableObject
     public async Task InitializeAsync()
     {
         var tweaks = await _catalogService.LoadTweaksAsync();
-        AllTweaks.Clear();
-        Categories.Clear();
-        Categories.Add("All");
 
-        var distinctCategories = tweaks.Select(t => t.Category).Distinct();
-        foreach (var cat in distinctCategories)
+        void UpdateUi()
         {
-            Categories.Add(cat);
-        }
+            AllTweaks.Clear();
+            Categories.Clear();
+            Categories.Add("All");
 
-        foreach (var tweak in tweaks)
-        {
-            if (!OsEnvironmentService.Instance.IsTweakSupported(tweak)) continue;
-
-            tweak.PropertyChanged += (s, e) =>
+            var distinctCategories = tweaks.Select(t => t.Category).Distinct();
+            foreach (var cat in distinctCategories)
             {
-                if (e.PropertyName == nameof(TweakItem.IsChecked))
+                Categories.Add(cat);
+            }
+
+            foreach (var tweak in tweaks)
+            {
+                if (!OsEnvironmentService.Instance.IsTweakSupported(tweak)) continue;
+
+                tweak.PropertyChanged += (s, e) =>
                 {
-                    UpdateSelectedCount();
-                }
-            };
-            AllTweaks.Add(tweak);
+                    if (e.PropertyName == nameof(TweakItem.IsChecked))
+                    {
+                        UpdateSelectedCount();
+                    }
+                };
+                AllTweaks.Add(tweak);
+            }
+
+            ApplyFilter();
         }
 
-        ApplyFilter();
+        if (System.Windows.Application.Current?.Dispatcher?.CheckAccess() == false)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(UpdateUi);
+        }
+        else
+        {
+            UpdateUi();
+        }
     }
 
     partial void OnSelectedCategoryChanged(string value) => ApplyFilter();
 
     private void ApplyFilter()
     {
-        FilteredTweaks.Clear();
-        var filtered = AllTweaks.Where(t =>
-            SelectedCategory == "All" || t.Category.Equals(SelectedCategory, StringComparison.OrdinalIgnoreCase));
-
-        foreach (var item in filtered)
+        void UpdateFiltered()
         {
-            FilteredTweaks.Add(item);
+            FilteredTweaks.Clear();
+            var filtered = AllTweaks.Where(t =>
+                SelectedCategory == "All" || t.Category.Equals(SelectedCategory, StringComparison.OrdinalIgnoreCase));
+
+            foreach (var item in filtered)
+            {
+                FilteredTweaks.Add(item);
+            }
+        }
+
+        if (System.Windows.Application.Current?.Dispatcher?.CheckAccess() == false)
+        {
+            System.Windows.Application.Current.Dispatcher.Invoke(UpdateFiltered);
+        }
+        else
+        {
+            UpdateFiltered();
         }
     }
 

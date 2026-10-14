@@ -360,8 +360,14 @@
                                                     <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
                                                         <TextBlock Text="Manufacturer: " FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                         <TextBlock Text="{Binding Manufacturer}" FontSize="10" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,10,0"/>
-                                                        <TextBlock Text="Driver Version: " FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                        <TextBlock Text="{Binding CurrentDriverVersion}" FontSize="10" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                        <TextBlock Text="Installed: " FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        <TextBlock Text="{Binding CurrentDriverVersion}" FontSize="10" Foreground="{DynamicResource TextFillColorPrimaryBrush}" Margin="0,0,10,0"/>
+                                                        <TextBlock Text="Update: " FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                                   Visibility="{Binding AvailableDriverVersion, Converter={StaticResource StringNotEmptyToVis}}"/>
+                                                        <TextBlock Text="{Binding AvailableDriverVersion}" FontSize="10" Foreground="#38bdf8" FontWeight="SemiBold" Margin="0,0,10,0"
+                                                                   Visibility="{Binding AvailableDriverVersion, Converter={StaticResource StringNotEmptyToVis}}"/>
+                                                        <TextBlock Text="{Binding DriverDate, StringFormat='({0})'}" FontSize="10" Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                                   Visibility="{Binding DriverDate, Converter={StaticResource StringNotEmptyToVis}}"/>
                                                     </StackPanel>
                                                 </StackPanel>
 

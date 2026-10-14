@@ -82,17 +82,20 @@ public class SystemToolsService
         return _powerShellService.ExecuteCommandAsync(script, onLog);
     }
 
-    public async Task<List<UwpAppItem>> ScanUwpAppsAsync(Action<string>? onLog = null)
+    public async Task<List<UwpAppItem>> ScanUwpAppsAsync(Action<string>? onLog = null, CancellationToken cancellationToken = default)
     {
         onLog?.Invoke("Scanning installed Windows packages and bloatware...");
+        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
         var script = @"
-            $apps = Get-AppxPackage | Where-Object { -not $_.IsFramework -and -not $_.NonRemovable } | 
+            $raw = try { Get-AppxPackage -AllUsers -ErrorAction Stop } catch { Get-AppxPackage -ErrorAction SilentlyContinue }
+            $apps = $raw | Where-Object { -not $_.IsFramework -and -not $_.NonRemovable } | 
                 Select-Object Name, PackageFullName, Publisher
-            $apps | ConvertTo-Json -Compress
+            if ($apps) { $apps | ConvertTo-Json -Compress } else { '[]' }
         ";
 
-        var result = await _powerShellService.ExecuteCommandAsync(script);
+        var result = await _powerShellService.ExecuteCommandAsync(script, cancellationToken: linkedCts.Token);
         var list = new List<UwpAppItem>();
 
         if (string.IsNullOrWhiteSpace(result.Output))

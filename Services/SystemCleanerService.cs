@@ -48,6 +48,67 @@ public class SystemCleanerService
             },
             new()
             {
+                Id = "win_wer",
+                Name = "Windows Error Reporting & Crash Dumps",
+                Category = "Windows System",
+                Description = "Diagnostic crash reports, memory dumps, and telemetry queues from Windows Error Reporting.",
+                PathPatterns = new()
+                {
+                    Path.Combine(localAppData, "CrashDumps"),
+                    @"C:\ProgramData\Microsoft\Windows\WER\ReportArchive",
+                    @"C:\ProgramData\Microsoft\Windows\WER\ReportQueue",
+                    @"C:\ProgramData\Microsoft\Windows\WER\Temp"
+                }
+            },
+            new()
+            {
+                Id = "win_dx_shader",
+                Name = "DirectX Shader Cache & GPU Caches",
+                Category = "Windows System",
+                Description = "Precompiled GPU shader caches for DirectX applications and graphics drivers.",
+                PathPatterns = new()
+                {
+                    Path.Combine(localAppData, "D3DSCache"),
+                    Path.Combine(localAppData, @"NVIDIA\DXCache"),
+                    Path.Combine(localAppData, @"AMD\DxCache"),
+                    Path.Combine(localAppData, @"Intel\ShaderCache")
+                }
+            },
+            new()
+            {
+                Id = "win_delivery_opt",
+                Name = "Delivery Optimization Download Cache",
+                Category = "Windows System",
+                Description = "Peer-to-peer Windows Update files cached by Delivery Optimization service.",
+                PathPatterns = new()
+                {
+                    Path.Combine(winDir, @"ServiceProfiles\NetworkService\AppData\Local\Microsoft\Windows\DeliveryOptimization\Cache")
+                }
+            },
+            new()
+            {
+                Id = "win_thumbnails",
+                Name = "Windows Thumbnail & Icon Cache",
+                Category = "Windows System",
+                Description = "Cached image and video thumbnails in File Explorer.",
+                PathPatterns = new()
+                {
+                    Path.Combine(localAppData, @"Microsoft\Windows\Explorer")
+                }
+            },
+            new()
+            {
+                Id = "win_recent",
+                Name = "Recent Documents & Taskbar Jump Lists",
+                Category = "Windows System",
+                Description = "Recent file history, run dialog history, and taskbar quick access jump lists.",
+                PathPatterns = new()
+                {
+                    Path.Combine(appData, @"Microsoft\Windows\Recent")
+                }
+            },
+            new()
+            {
                 Id = "win_logs",
                 Name = "Windows Diagnostic & Setup Logs",
                 Category = "Windows System",
@@ -61,6 +122,25 @@ public class SystemCleanerService
                 Category = "Windows System",
                 Description = "Old downloaded Windows Update installer packages already applied.",
                 PathPatterns = new() { Path.Combine(winDir, "SoftwareDistribution", "Download") }
+            },
+            new()
+            {
+                Id = "win_font_cache",
+                Name = "Windows Font Rendering Cache",
+                Category = "Windows System",
+                Description = "Operating system font rendering cache buffers.",
+                PathPatterns = new()
+                {
+                    Path.Combine(winDir, @"ServiceProfiles\LocalService\AppData\Local\FontCache")
+                }
+            },
+            new()
+            {
+                Id = "win_dns",
+                Name = "Windows DNS Resolver Cache",
+                Category = "Windows System",
+                Description = "Flushes and purges outdated or corrupted local DNS name resolution records.",
+                PathPatterns = new()
             },
 
             // Web Browsers
@@ -111,6 +191,30 @@ public class SystemCleanerService
                     Path.Combine(localAppData, @"BraveSoftware\Brave-Browser\User Data\Default\Code Cache")
                 }
             },
+            new()
+            {
+                Id = "opera_cache",
+                Name = "Opera & Opera GX Cache",
+                Category = "Web Browsers",
+                Description = "Web content cache and temporary GPU buffers for Opera and Opera GX browsers.",
+                PathPatterns = new()
+                {
+                    Path.Combine(localAppData, @"Opera Software\Opera Stable\Default\Cache"),
+                    Path.Combine(localAppData, @"Opera Software\Opera GX Stable\Cache")
+                }
+            },
+            new()
+            {
+                Id = "vivaldi_cache",
+                Name = "Vivaldi Browser Cache",
+                Category = "Web Browsers",
+                Description = "Temporary offline web cache for Vivaldi browser.",
+                PathPatterns = new()
+                {
+                    Path.Combine(localAppData, @"Vivaldi\User Data\Default\Cache"),
+                    Path.Combine(localAppData, @"Vivaldi\User Data\Default\Code Cache")
+                }
+            },
 
             // Application Caches
             new()
@@ -135,6 +239,42 @@ public class SystemCleanerService
                 {
                     Path.Combine(localAppData, @"Spotify\Storage"),
                     Path.Combine(localAppData, @"Spotify\Data")
+                }
+            },
+            new()
+            {
+                Id = "steam_cache",
+                Name = "Steam Download & Web Cache",
+                Category = "Application Caches",
+                Description = "Temporary web browser buffer and installer cache for Steam client.",
+                PathPatterns = new()
+                {
+                    Path.Combine(localAppData, @"Steam\htmlcache"),
+                    @"C:\Program Files (x86)\Steam\appcache\httpcache"
+                }
+            },
+            new()
+            {
+                Id = "epic_cache",
+                Name = "Epic Games Launcher Cache",
+                Category = "Application Caches",
+                Description = "Web caches and temporary logs from Epic Games Launcher.",
+                PathPatterns = new()
+                {
+                    Path.Combine(localAppData, @"EpicGamesLauncher\Saved\webcache"),
+                    Path.Combine(localAppData, @"EpicGamesLauncher\Saved\Logs")
+                }
+            },
+            new()
+            {
+                Id = "office_cache",
+                Name = "Microsoft Office Cache & Telemetry",
+                Category = "Application Caches",
+                Description = "Temporary cached document streams and web service caches for Office apps.",
+                PathPatterns = new()
+                {
+                    Path.Combine(localAppData, @"Microsoft\Office\16.0\WebServiceCache"),
+                    Path.Combine(localAppData, @"Microsoft\Office\16.0\OfficeFileCache")
                 }
             },
             new()
@@ -187,12 +327,17 @@ public class SystemCleanerService
 
                 if (target.Id == "win_recycle")
                 {
-                    // Special check for Recycle bin
-                    var drive = new DriveInfo("C");
-                    // We can estimate or query recycle bin
                     target.BytesFound = GetRecycleBinSize();
                     target.ItemsFound = target.BytesFound > 0 ? 1 : 0;
                     target.Status = $"{target.FormattedSize} to clean";
+                    continue;
+                }
+
+                if (target.Id == "win_dns")
+                {
+                    target.BytesFound = 0;
+                    target.ItemsFound = 1;
+                    target.Status = "Ready to flush";
                     continue;
                 }
 
@@ -265,6 +410,15 @@ public class SystemCleanerService
                         await _powerShellService.ExecuteCommandAsync("Clear-RecycleBin -Force -ErrorAction SilentlyContinue", cancellationToken: cancellationToken);
                         targetCleaned = target.BytesFound;
                         onLog?.Invoke("✅ Recycle Bin emptied.");
+                    }
+                    catch { }
+                }
+                else if (target.Id == "win_dns")
+                {
+                    try
+                    {
+                        await _powerShellService.ExecuteCommandAsync("Clear-DnsClientCache -ErrorAction SilentlyContinue; ipconfig /flushdns", cancellationToken: cancellationToken);
+                        onLog?.Invoke("✅ DNS Resolver cache flushed.");
                     }
                     catch { }
                 }

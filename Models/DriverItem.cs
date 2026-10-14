@@ -9,6 +9,7 @@ public partial class DriverItem : ObservableObject
     public string Manufacturer { get; set; } = "Unknown";
     public string HardwareId { get; set; } = string.Empty;
     public string CurrentDriverVersion { get; set; } = string.Empty;
+    public string AvailableDriverVersion { get; set; } = string.Empty;
     public string DriverDate { get; set; } = string.Empty;
 
     [ObservableProperty]
