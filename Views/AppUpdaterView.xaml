@@ -30,36 +30,36 @@
             </StackPanel>
 
             <!-- Prominent Action Buttons Bar -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button Command="{Binding ScanUpgradesCommand}" Margin="0,0,6,0" Padding="14,7" FontSize="12">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="🔍 " FontSize="12"/>
-                        <TextBlock Text="Check for Updates" FontSize="12"/>
-                    </StackPanel>
-                </Button>
-
-                <Button Content="Select All" Command="{Binding SelectAllCommand}" Margin="0,0,6,0" Padding="12,7" FontSize="12"/>
-                <Button Content="Clear" Command="{Binding DeselectAllCommand}" Margin="0,0,10,0" Padding="12,7" FontSize="12"/>
-
+            <WrapPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
                 <!-- Primary START UPDATE button -->
                 <Button Command="{Binding UpgradeSelectedCommand}"
                         Background="{DynamicResource AccentFillColorDefaultBrush}"
                         Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
                         FontWeight="Bold"
-                        Padding="18,7"
-                        FontSize="13"
-                        Margin="0,0,6,0"
+                        Padding="14,6"
+                        FontSize="12"
+                        Margin="0,0,6,4"
                         Cursor="Hand">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="⚡ Start Update " FontWeight="Bold" FontSize="13"/>
-                        <TextBlock Text="{Binding SelectedUpgradeCount, StringFormat='({0})'}" FontWeight="Bold" FontSize="13"/>
+                        <TextBlock Text="⚡ Start Update " FontWeight="Bold" FontSize="12"/>
+                        <TextBlock Text="{Binding SelectedUpgradeCount, StringFormat='({0})'}" FontWeight="Bold" FontSize="12"/>
                     </StackPanel>
                 </Button>
 
+                <Button Command="{Binding ScanUpgradesCommand}" Margin="0,0,5,4" Padding="10,5" FontSize="11">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🔍 " FontSize="11"/>
+                        <TextBlock Text="Check for Updates" FontSize="11"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Content="Select All" Command="{Binding SelectAllCommand}" Margin="0,0,5,4" Padding="10,5" FontSize="11"/>
+                <Button Content="Clear" Command="{Binding DeselectAllCommand}" Margin="0,0,5,4" Padding="10,5" FontSize="11"/>
+
                 <Button Content="Cancel" Command="{Binding CancelUpgradeCommand}" 
                         Visibility="{Binding IsUpgrading, Converter={StaticResource BoolToVis}}"
-                        Padding="12,7" FontSize="12"/>
-            </StackPanel>
+                        Padding="10,5" FontSize="11" Margin="0,0,0,4"/>
+            </WrapPanel>
         </Grid>
 
         <!-- Search & Filter Bar + Status Summary -->

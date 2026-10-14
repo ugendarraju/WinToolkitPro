@@ -34,10 +34,14 @@ public partial class MainViewModel : ObservableObject
 
     // Automatic GitHub Update Properties
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanApplyUpdate))]
     private bool _isUpdateAvailable;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanApplyUpdate))]
     private bool _isUpdatingApp;
+
+    public bool CanApplyUpdate => !IsUpdatingApp && IsUpdateAvailable;
 
     [ObservableProperty]
     private double _updateDownloadProgress;
@@ -116,8 +120,11 @@ public partial class MainViewModel : ObservableObject
 
         var progress = new Progress<double>(p =>
         {
-            UpdateDownloadProgress = p;
-            UpdateStatusText = $"Downloading update ({p:F0}%)...";
+            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+            {
+                UpdateDownloadProgress = p;
+                UpdateStatusText = $"Downloading update ({p:F0}%)...";
+            });
         });
 
         try
@@ -125,13 +132,22 @@ public partial class MainViewModel : ObservableObject
             await GitHubUpdater.DownloadAndApplyUpdateAsync(
                 _pendingRelease,
                 progress: progress,
-                statusCallback: s => UpdateStatusText = s
+                statusCallback: s =>
+                {
+                    System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                    {
+                        UpdateStatusText = s;
+                    });
+                }
             );
         }
         catch (Exception ex)
         {
-            IsUpdatingApp = false;
-            UpdateStatusText = $"Update failed: {ex.Message}";
+            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+            {
+                IsUpdatingApp = false;
+                UpdateStatusText = $"Update failed: {ex.Message}";
+            });
         }
     }
 

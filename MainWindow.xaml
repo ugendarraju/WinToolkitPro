@@ -117,7 +117,7 @@
                                              Visibility="{Binding IsUpdatingApp, Converter={StaticResource BoolToVis}}"
                                              Foreground="#34d399"/>
                                 <Button Content="⚡ Install &amp; Restart" Command="{Binding ApplyAppUpdateCommand}"
-                                        IsEnabled="{Binding IsUpdatingApp, Converter={x:Null}}"
+                                        IsEnabled="{Binding CanApplyUpdate}"
                                         Background="#10b981" Foreground="White" FontWeight="Bold" 
                                         FontSize="10" Padding="6,4" HorizontalAlignment="Stretch" Cursor="Hand"/>
                             </StackPanel>
