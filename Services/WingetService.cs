@@ -91,12 +91,16 @@ public partial class WingetService
             if (app.Id.Equals("chrome", StringComparison.OrdinalIgnoreCase) || 
                 app.WingetId.Equals("Google.Chrome", StringComparison.OrdinalIgnoreCase))
             {
+                var is64 = OsEnvironmentService.Instance.Is64BitOperatingSystem;
                 var chromeDir = Path.Combine(Path.GetTempPath(), "WinToolkit", "GoogleChrome");
                 Directory.CreateDirectory(chromeDir);
-                var msiTarget = Path.Combine(chromeDir, "googlechromestandaloneenterprise64.msi");
+                var msiFilename = is64 ? "googlechromestandaloneenterprise64.msi" : "googlechromestandaloneenterprise.msi";
+                var msiTarget = Path.Combine(chromeDir, msiFilename);
                 if (!File.Exists(msiTarget))
                 {
-                    const string msiUrl = "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise64.msi";
+                    var msiUrl = is64
+                        ? "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise64.msi"
+                        : "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise.msi";
                     using var response = await HttpClient.GetAsync(msiUrl, cancellationToken);
                     response.EnsureSuccessStatusCode();
                     await using var fs = File.Create(msiTarget);
@@ -232,18 +236,22 @@ public partial class WingetService
     {
         try
         {
+            var is64 = OsEnvironmentService.Instance.Is64BitOperatingSystem;
             var tempDir = Path.Combine(Path.GetTempPath(), "WinToolkit", "GoogleChrome");
             Directory.CreateDirectory(tempDir);
-            var msiPath = Path.Combine(tempDir, "googlechromestandaloneenterprise64.msi");
+            var msiFilename = is64 ? "googlechromestandaloneenterprise64.msi" : "googlechromestandaloneenterprise.msi";
+            var msiPath = Path.Combine(tempDir, msiFilename);
 
             if (!File.Exists(msiPath))
             {
                 app.Status = InstallStatus.Downloading;
-                app.StatusMessage = "Downloading Google Chrome Enterprise MSI...";
+                app.StatusMessage = $"Downloading Google Chrome Enterprise {(is64 ? "64-bit" : "32-bit")} MSI...";
                 app.Progress = 10;
-                onLog?.Invoke($"[{app.Name}] Downloading official Google Chrome Enterprise 64-bit MSI...");
+                onLog?.Invoke($"[{app.Name}] Downloading official Google Chrome Enterprise {(is64 ? "64-bit" : "32-bit")} MSI...");
 
-                const string msiUrl = "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise64.msi";
+                var msiUrl = is64
+                    ? "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise64.msi"
+                    : "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise.msi";
                 using var response = await HttpClient.GetAsync(msiUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 response.EnsureSuccessStatusCode();
                 var totalBytes = response.Content.Headers.ContentLength ?? -1L;
@@ -471,6 +479,10 @@ public partial class WingetService
         app.StatusMessage = "Starting download...";
         app.Progress = 5;
 
+        var is64 = OsEnvironmentService.Instance.Is64BitOperatingSystem;
+        var pkgId = (!is64 && !string.IsNullOrWhiteSpace(app.X86WingetId)) ? app.X86WingetId : app.WingetId;
+        var archArg = !is64 ? "--architecture x86" : "";
+
         var sourceArg = !string.IsNullOrWhiteSpace(app.Source) && !app.Source.Equals("winget", StringComparison.OrdinalIgnoreCase)
             ? $"--source \"{app.Source}\""
             : "";
@@ -478,7 +490,7 @@ public partial class WingetService
         var startInfo = new ProcessStartInfo
         {
             FileName = "winget",
-            Arguments = $"install --id \"{app.WingetId}\" --exact {sourceArg} --silent --accept-package-agreements --accept-source-agreements --ignore-security-hash --ignore-checksum --force --include-unknown --skip-dependencies --disable-interactivity",
+            Arguments = $"install --id \"{pkgId}\" --exact {archArg} {sourceArg} --silent --accept-package-agreements --accept-source-agreements --ignore-security-hash --ignore-checksum --force --include-unknown --skip-dependencies --disable-interactivity",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,

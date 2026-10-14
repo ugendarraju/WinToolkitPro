@@ -47,7 +47,13 @@
         <!-- Top Header -->
         <Grid Grid.Row="0" Margin="0,0,0,10">
             <StackPanel Orientation="Vertical">
-                <TextBlock Text="Hardware Specifications &amp; Driver Center" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Hardware Specifications &amp; Driver Center" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    <Border Background="#1e293b" BorderBrush="#3b82f6" BorderThickness="1" CornerRadius="4" 
+                            Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding DriverArchNotice}" FontSize="10" FontWeight="SemiBold" Foreground="#60a5fa"/>
+                    </Border>
+                </StackPanel>
                 <TextBlock Text="Hardware components dashboard, laptop battery health reports, and certified driver update servicing." 
                            FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
             </StackPanel>

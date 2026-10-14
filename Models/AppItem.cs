@@ -46,6 +46,26 @@ public partial class AppItem : ObservableObject
     /// </summary>
     public string? BatArguments { get; set; }
 
+    /// <summary>
+    /// Supported architectures: "all" (default), "x64", or "x86"
+    /// </summary>
+    public string SupportedArchitectures { get; set; } = "all";
+
+    /// <summary>
+    /// Minimum Windows version: "7", "8", "10" (default), "11"
+    /// </summary>
+    public string MinWindowsVersion { get; set; } = "7";
+
+    /// <summary>
+    /// Dedicated 32-bit Winget package ID if different from WingetId
+    /// </summary>
+    public string? X86WingetId { get; set; }
+
+    /// <summary>
+    /// Dedicated 32-bit direct download URL if different from DownloadUrl
+    /// </summary>
+    public string? X86DownloadUrl { get; set; }
+
     [ObservableProperty]
     private bool _isSelected;
 

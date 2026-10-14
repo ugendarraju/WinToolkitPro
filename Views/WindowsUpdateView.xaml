@@ -23,7 +23,13 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Orientation="Vertical">
-                <TextBlock Text="Windows &amp; Microsoft Update Manager" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Windows &amp; Microsoft Update Manager" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    <Border Background="#1e293b" BorderBrush="#3b82f6" BorderThickness="1" CornerRadius="4" 
+                            Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding TargetOsNotice}" FontSize="10" FontWeight="SemiBold" Foreground="#60a5fa"/>
+                    </Border>
+                </StackPanel>
                 <TextBlock Text="Scan for missing Microsoft updates (Quality, Cumulative, Security, .NET), review details, and install them safely." 
                            FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
             </StackPanel>

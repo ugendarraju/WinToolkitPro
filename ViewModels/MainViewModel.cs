@@ -18,6 +18,7 @@ public partial class MainViewModel : ObservableObject
     public ActivationViewModel ActivationVM { get; }
     public GitHubUpdateService GitHubUpdater { get; }
     public ActivityService Activity => ActivityService.Instance;
+    public OsEnvironmentService OsEnv => OsEnvironmentService.Instance;
 
     [ObservableProperty]
     private int _selectedNavigationIndex = 0;
@@ -54,7 +55,7 @@ public partial class MainViewModel : ObservableObject
     private string _latestVersionTag = string.Empty;
 
     [ObservableProperty]
-    private string _appVersionDisplay = $"v{GitHubUpdateService.GetCurrentVersion()} • Power User Suite";
+    private string _appVersionDisplay = $"v{GitHubUpdateService.GetCurrentVersion()} • {OsEnvironmentService.Instance.ArchitectureBadge}";
 
     private GitHubUpdateService.ReleaseUpdateInfo? _pendingRelease;
 
@@ -206,11 +207,10 @@ public partial class MainViewModel : ObservableObject
         var principal = new WindowsPrincipal(identity);
         IsAdministrator = principal.IsInRole(WindowsBuiltInRole.Administrator);
 
-        var os = Environment.OSVersion;
+        var osEnv = OsEnvironmentService.Instance;
         var machine = Environment.MachineName;
-        var arch = Environment.Is64BitOperatingSystem ? "64-bit" : "32-bit";
 
-        SystemInfo = $"{machine} | Windows {os.Version.Major}.{os.Version.Build} ({arch}) | Admin: {(IsAdministrator ? "Yes" : "No")}";
+        SystemInfo = $"{machine} | {osEnv.OsDisplayName} | Admin: {(IsAdministrator ? "Yes" : "No")}";
     }
 
     [RelayCommand]

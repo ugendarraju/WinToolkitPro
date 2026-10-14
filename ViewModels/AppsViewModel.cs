@@ -42,6 +42,10 @@ public partial class AppsViewModel : ObservableObject
     [ObservableProperty]
     private bool _isActivityPanelOpen;
 
+    public string ArchitectureNotice => OsEnvironmentService.Instance.Is64BitOperatingSystem 
+        ? "64-bit Mode" 
+        : "32-bit (x86) Mode Active";
+
     public ObservableCollection<AppItem> ActiveTasks { get; } = new();
     public ObservableCollection<AppItem> AllApps { get; } = new();
     public ObservableCollection<AppItem> FilteredApps { get; } = new();
@@ -109,6 +113,8 @@ public partial class AppsViewModel : ObservableObject
 
         foreach (var app in apps)
         {
+            if (!OsEnvironmentService.Instance.IsAppSupported(app)) continue;
+
             app.PropertyChanged += (s, e) =>
             {
                 if (e.PropertyName == nameof(AppItem.IsSelected))

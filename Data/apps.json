@@ -229,6 +229,7 @@
         "WingetId":  "BlenderFoundation.Blender",
         "Category":  "Imaging",
         "Description":  "Free and open-source 3D creation suite.",
+        "SupportedArchitectures": "x64",
         "Icon":  "Design24"
     },
     {
@@ -831,6 +832,7 @@
         "Source":  "winget",
         "WingetId":  "OBSProject.OBSStudio",
         "Description":  "Free and open-source software for video recording and live streaming.",
+        "SupportedArchitectures": "x64",
         "Icon":  "Video24",
         "Category":  "Media"
     },

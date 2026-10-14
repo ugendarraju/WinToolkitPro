@@ -5,6 +5,8 @@
     "Category": "UI & Customization",
     "Description": "Restores the immediate full classic right-click context menu in Windows 11, completely eliminating the need to click 'Show more options'.",
     "Impact": "Recommended",
+    "SupportedOs": "win11",
+    "SupportedArch": "all",
     "ApplyScript": "reg.exe add 'HKCU\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\\InprocServer32' /f /ve; Stop-Process -Name explorer -Force",
     "RevertScript": "reg.exe delete 'HKCU\\Software\\Classes\\CLSID\\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}' /f; Stop-Process -Name explorer -Force"
   },

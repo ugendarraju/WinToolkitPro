@@ -11,6 +11,8 @@ public partial class TweakItem : ObservableObject
     public string Impact { get; set; } = "Safe"; // Safe, Recommended, Advanced
     public string ApplyScript { get; set; } = string.Empty;
     public string RevertScript { get; set; } = string.Empty;
+    public string SupportedOs { get; set; } = "all"; // all, win11, win10+, win7+
+    public string SupportedArch { get; set; } = "all"; // all, x64, x86
 
     [ObservableProperty]
     private bool _isChecked;

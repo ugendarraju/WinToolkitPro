@@ -56,6 +56,10 @@ public partial class DriversViewModel : ObservableObject
     public ObservableCollection<DriverItem> PendingUpdates { get; } = new();
     public ObservableCollection<string> Logs { get; } = new();
 
+    public string DriverArchNotice => OsEnvironmentService.Instance.Is64BitOperatingSystem 
+        ? "Target: x64 Drivers" 
+        : "Target: x86 Drivers";
+
     public DriversViewModel(DriverService driverService, HardwareService hardwareService)
     {
         _driverService = driverService;

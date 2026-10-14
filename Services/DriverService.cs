@@ -33,9 +33,19 @@ public class DriverService
         if (!Directory.Exists(dir)) return null;
 
         var files = Directory.GetFiles(dir, "SDIO*.exe");
-        var x64 = files.FirstOrDefault(f => f.Contains("x64", StringComparison.OrdinalIgnoreCase));
-        if (x64 != null) return x64;
-        return files.FirstOrDefault();
+        if (OsEnvironmentService.Instance.Is64BitOperatingSystem)
+        {
+            var x64 = files.FirstOrDefault(f => f.Contains("x64", StringComparison.OrdinalIgnoreCase));
+            if (x64 != null) return x64;
+            return files.FirstOrDefault();
+        }
+        else
+        {
+            // On 32-bit Windows, pick the 32-bit native SDI binary
+            var x86 = files.FirstOrDefault(f => !f.Contains("x64", StringComparison.OrdinalIgnoreCase));
+            if (x86 != null) return x86;
+            return files.FirstOrDefault();
+        }
     }
 
     public async Task<bool> EnsureSnappyEngineAsync(Action<string>? onLog = null, CancellationToken cancellationToken = default)

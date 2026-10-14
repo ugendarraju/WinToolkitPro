@@ -30,6 +30,8 @@ public partial class OptimizerViewModel : ObservableObject
     [ObservableProperty]
     private double _overallProgress;
 
+    public string TargetOsNotice => $"Tailored for {OsEnvironmentService.Instance.OsDisplayName}";
+
     public ObservableCollection<TweakItem> AllTweaks { get; } = new();
     public ObservableCollection<TweakItem> FilteredTweaks { get; } = new();
     public ObservableCollection<string> Categories { get; } = new();
@@ -56,6 +58,8 @@ public partial class OptimizerViewModel : ObservableObject
 
         foreach (var tweak in tweaks)
         {
+            if (!OsEnvironmentService.Instance.IsTweakSupported(tweak)) continue;
+
             tweak.PropertyChanged += (s, e) =>
             {
                 if (e.PropertyName == nameof(TweakItem.IsChecked))

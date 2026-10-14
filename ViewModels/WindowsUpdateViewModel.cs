@@ -49,6 +49,8 @@ public partial class WindowsUpdateViewModel : ObservableObject
     public ObservableCollection<WindowsUpdateItem> FilteredUpdates { get; } = new();
     public ObservableCollection<string> Logs { get; } = new();
 
+    public string TargetOsNotice => $"Target: {OsEnvironmentService.Instance.OsDisplayName}";
+
     public WindowsUpdateViewModel(WindowsUpdateService updateService, PowerShellService powerShellService)
     {
         _updateService = updateService;
