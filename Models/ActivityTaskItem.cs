@@ -15,6 +15,7 @@ public partial class ActivityTaskItem : ObservableObject
     public required string Id { get; set; }
     public required string Name { get; set; }
     public string Category { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; } = DateTime.Now;
 
     [ObservableProperty]
     private ActivityTaskStatus _status = ActivityTaskStatus.Queued;

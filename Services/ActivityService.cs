@@ -64,40 +64,91 @@ public partial class ActivityService : ObservableObject
         });
     }
 
-    public void StartSession(string operationTitle, IEnumerable<ActivityTaskItem> tasks)
+    [RelayCommand]
+    public void ClearFinished()
     {
         Application.Current?.Dispatcher?.Invoke(() =>
         {
-            CurrentOperation = operationTitle;
-            StatusText = $"Running {operationTitle}...";
-            OverallProgress = 0;
-            IsBusy = true;
-            IsOpen = true;
-
-            ActiveTasks.Clear();
-            foreach (var task in tasks)
+            var finished = ActiveTasks.Where(t => t.Status == ActivityTaskStatus.Completed || t.Status == ActivityTaskStatus.Failed).ToList();
+            foreach (var task in finished)
             {
-                ActiveTasks.Add(task);
+                ActiveTasks.Remove(task);
+            }
+            RecalculateMetrics();
+        });
+    }
+
+    [RelayCommand]
+    public void ClearAll()
+    {
+        Application.Current?.Dispatcher?.Invoke(() =>
+        {
+            ActiveTasks.Clear();
+            RecalculateMetrics();
+        });
+    }
+
+    [RelayCommand]
+    public void RemoveTask(ActivityTaskItem task)
+    {
+        Application.Current?.Dispatcher?.Invoke(() =>
+        {
+            if (task != null)
+            {
+                ActiveTasks.Remove(task);
+                RecalculateMetrics();
             }
         });
+    }
 
-        AddLog($"Started operation: {operationTitle}");
+    public void StartSession(string operationTitle, IEnumerable<ActivityTaskItem> tasks)
+    {
+        var taskList = tasks.ToList();
+        Application.Current?.Dispatcher?.Invoke(() =>
+        {
+            IsOpen = true;
+
+            foreach (var task in taskList)
+            {
+                if (string.IsNullOrEmpty(task.Category))
+                {
+                    task.Category = operationTitle;
+                }
+
+                // Append or update existing task by Id so previous actions are never erased
+                var existing = ActiveTasks.FirstOrDefault(t => t.Id.Equals(task.Id, StringComparison.OrdinalIgnoreCase));
+                if (existing != null)
+                {
+                    existing.Name = task.Name;
+                    existing.Category = task.Category;
+                    existing.Status = task.Status;
+                    existing.StatusMessage = task.StatusMessage;
+                    existing.Progress = task.Progress;
+                }
+                else
+                {
+                    ActiveTasks.Add(task);
+                }
+            }
+
+            RecalculateMetrics();
+        });
+
+        AddLog($"Started {operationTitle} ({taskList.Count} item(s))");
     }
 
     public void UpdateTask(string taskId, ActivityTaskStatus status, string statusMessage, double progress = 0)
     {
         Application.Current?.Dispatcher?.Invoke(() =>
         {
-            foreach (var task in ActiveTasks)
+            var existing = ActiveTasks.FirstOrDefault(t => t.Id.Equals(taskId, StringComparison.OrdinalIgnoreCase));
+            if (existing != null)
             {
-                if (task.Id.Equals(taskId, StringComparison.OrdinalIgnoreCase))
-                {
-                    task.Status = status;
-                    task.StatusMessage = statusMessage;
-                    task.Progress = progress;
-                    break;
-                }
+                existing.Status = status;
+                existing.StatusMessage = statusMessage;
+                existing.Progress = Math.Clamp(progress, 0, 100);
             }
+            RecalculateMetrics();
         });
     }
 
@@ -105,10 +156,17 @@ public partial class ActivityService : ObservableObject
     {
         Application.Current?.Dispatcher?.Invoke(() =>
         {
-            OverallProgress = Math.Clamp(progress, 0, 100);
-            if (!string.IsNullOrEmpty(status))
+            if (ActiveTasks.Count <= 1)
             {
-                StatusText = status;
+                OverallProgress = Math.Clamp(progress, 0, 100);
+                if (!string.IsNullOrEmpty(status))
+                {
+                    StatusText = status;
+                }
+            }
+            else
+            {
+                RecalculateMetrics();
             }
         });
     }
@@ -117,11 +175,58 @@ public partial class ActivityService : ObservableObject
     {
         Application.Current?.Dispatcher?.Invoke(() =>
         {
-            IsBusy = false;
-            OverallProgress = 100;
-            StatusText = completionMessage;
+            AddLog(completionMessage);
+            RecalculateMetrics();
         });
+    }
 
-        AddLog(completionMessage);
+    private void RecalculateMetrics()
+    {
+        if (ActiveTasks.Count == 0)
+        {
+            CurrentOperation = "Active Tasks & Status";
+            StatusText = "No active tasks.";
+            OverallProgress = 0;
+            IsBusy = false;
+            return;
+        }
+
+        var running = ActiveTasks.Count(t => t.Status == ActivityTaskStatus.Running);
+        var queued = ActiveTasks.Count(t => t.Status == ActivityTaskStatus.Queued);
+        var completed = ActiveTasks.Count(t => t.Status == ActivityTaskStatus.Completed);
+        var failed = ActiveTasks.Count(t => t.Status == ActivityTaskStatus.Failed);
+        var finished = completed + failed;
+        var total = ActiveTasks.Count;
+
+        IsBusy = (running > 0 || queued > 0);
+
+        if (!IsBusy)
+        {
+            OverallProgress = 100;
+            StatusText = failed > 0
+                ? $"{completed} succeeded, {failed} failed"
+                : $"All {total} tasks completed!";
+            CurrentOperation = "Tasks Completed";
+        }
+        else
+        {
+            var sumProgress = ActiveTasks.Sum(t => t.Progress);
+            OverallProgress = Math.Clamp(sumProgress / total, 0, 99.9);
+            StatusText = $"{running} in progress • {finished} of {total} completed";
+
+            var activeOps = ActiveTasks.Where(t => t.Status == ActivityTaskStatus.Running || t.Status == ActivityTaskStatus.Queued)
+                                       .Select(t => t.Category)
+                                       .Where(c => !string.IsNullOrEmpty(c))
+                                       .Distinct()
+                                       .ToList();
+            if (activeOps.Count == 1)
+            {
+                CurrentOperation = activeOps[0];
+            }
+            else
+            {
+                CurrentOperation = $"Active Tasks ({running} Running)";
+            }
+        }
     }
 }

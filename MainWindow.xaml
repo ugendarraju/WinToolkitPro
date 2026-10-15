@@ -300,12 +300,22 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="⚡" FontSize="15" Margin="0,0,6,0"/>
-                            <TextBlock Text="{Binding Activity.CurrentOperation}" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            <TextBlock Text="{Binding Activity.CurrentOperation}" FontWeight="Bold" FontSize="13" 
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
-                        <Button Grid.Column="1" Content="✕" 
+
+                        <!-- Clear Finished Tasks Button -->
+                        <Button Grid.Column="1" Content="Clear Finished" 
+                                Command="{Binding Activity.ClearFinishedCommand}"
+                                Padding="8,3" FontSize="10" Margin="0,0,6,0"
+                                Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
+                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" Cursor="Hand"/>
+
+                        <Button Grid.Column="2" Content="✕" 
                                 Command="{Binding Activity.CloseDrawerCommand}"
                                 Padding="6,2" FontSize="12" Background="Transparent" BorderThickness="0"
                                 Foreground="{DynamicResource TextFillColorSecondaryBrush}" Cursor="Hand"/>
@@ -355,18 +365,27 @@
                                                     <RowDefinition Height="Auto"/>
                                                 </Grid.RowDefinitions>
 
-                                                <!-- Row 0: App Name & Status Pill -->
+                                                <!-- Row 0: App Name, Category Badge, Status Pill, and Dismiss Button -->
                                                 <Grid Grid.Row="0">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
 
-                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" 
+                                                    <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" 
                                                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
 
+                                                    <!-- Category Badge -->
+                                                    <Border Grid.Column="1" Background="{DynamicResource SubtleFillColorTertiaryBrush}" 
+                                                            CornerRadius="3" Padding="5,1" Margin="6,0,6,0" VerticalAlignment="Center"
+                                                            Visibility="{Binding Category, Converter={StaticResource StringNotEmptyToVis}}">
+                                                        <TextBlock Text="{Binding Category}" FontSize="9.5" Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+                                                    </Border>
+
                                                     <!-- Status Badge Pill -->
-                                                    <Border Grid.Column="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                                    <Border Grid.Column="2" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
                                                         <Border.Style>
                                                             <Style TargetType="Border">
                                                                 <Setter Property="Background" Value="#334155"/>
@@ -408,6 +427,13 @@
                                                             </TextBlock.Style>
                                                         </TextBlock>
                                                     </Border>
+
+                                                    <!-- Dismiss Task Button -->
+                                                    <Button Grid.Column="3" Content="✕" 
+                                                            Command="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=DataContext.Activity.RemoveTaskCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            Padding="4,1" Margin="4,0,0,0" FontSize="10" Background="Transparent" BorderThickness="0"
+                                                            Foreground="{DynamicResource TextFillColorTertiaryBrush}" Cursor="Hand" ToolTip="Dismiss"/>
                                                 </Grid>
 
                                                 <!-- Row 1: Status Message description -->
