@@ -16,6 +16,9 @@ public partial class OptimizerViewModel : ObservableObject
     private string _selectedCategory = "All";
 
     [ObservableProperty]
+    private string _searchQuery = string.Empty;
+
+    [ObservableProperty]
     private bool _createRestorePointFirst = true;
 
     [ObservableProperty]
@@ -34,6 +37,8 @@ public partial class OptimizerViewModel : ObservableObject
 
     public ObservableCollection<TweakItem> AllTweaks { get; } = new();
     public ObservableCollection<TweakItem> FilteredTweaks { get; } = new();
+    public ObservableCollection<TweakSectionGroup> SectionGroups { get; } = new();
+    public ObservableCollection<CategoryFilterItem> FilterChips { get; } = new();
     public ObservableCollection<string> Categories { get; } = new();
     public ObservableCollection<string> Logs { get; } = new();
 
@@ -42,6 +47,19 @@ public partial class OptimizerViewModel : ObservableObject
         _tweakService = tweakService;
         _catalogService = catalogService;
     }
+
+    public static (string Icon, string Description) GetCategoryMeta(string category) => category switch
+    {
+        "Privacy & Telemetry" => ("🛡️", "Disable Windows telemetry, diagnostics, user tracking, CEIP tasks, and feedback daemons."),
+        "AI & Windows Copilot" => ("🤖", "Disable Windows Copilot, Recall snapshot tracking, Edge AI sidebars, and Click-To-Do."),
+        "Start Menu & Search" => ("🔍", "Remove Bing web suggestions, taskbar search highlights, and Cortana search daemons."),
+        "Windows Ads & Tips" => ("📢", "Block lock screen suggestions, Settings promotions, File Explorer ads, and Welcome tips."),
+        "Taskbar & Navigation" => ("📌", "Disable Taskbar Widgets, Chat/Meet, search box size, badges, and system tray clutter."),
+        "File Explorer" => ("📁", "Show file extensions, hidden files, restore classic context menu, and remove Home clutter."),
+        "Gaming & Performance" => ("⚡", "Optimize Game DVR, Mouse Acceleration, Delivery Optimization, and visual responsiveness."),
+        "Bloatware & Preinstalled Apps" => ("📦", "Remove bundled bloatware, consumer apps, Xbox services, and prevent automatic app installations."),
+        _ => ("⚙️", "Fine-tune and optimize Windows system components.")
+    };
 
     public async Task InitializeAsync()
     {
@@ -53,7 +71,7 @@ public partial class OptimizerViewModel : ObservableObject
             Categories.Clear();
             Categories.Add("All");
 
-            var distinctCategories = tweaks.Select(t => t.Category).Distinct();
+            var distinctCategories = tweaks.Select(t => t.Category).Distinct().ToList();
             foreach (var cat in distinctCategories)
             {
                 Categories.Add(cat);
@@ -73,7 +91,36 @@ public partial class OptimizerViewModel : ObservableObject
                 AllTweaks.Add(tweak);
             }
 
+            // Build navigation chips
+            FilterChips.Clear();
+            FilterChips.Add(new CategoryFilterItem
+            {
+                Name = "All",
+                DisplayName = "All Sections",
+                Icon = "🌟",
+                Count = AllTweaks.Count,
+                IsSelected = SelectedCategory.Equals("All", StringComparison.OrdinalIgnoreCase)
+            });
+
+            foreach (var cat in distinctCategories)
+            {
+                var meta = GetCategoryMeta(cat);
+                var catCount = AllTweaks.Count(t => t.Category.Equals(cat, StringComparison.OrdinalIgnoreCase));
+                if (catCount > 0)
+                {
+                    FilterChips.Add(new CategoryFilterItem
+                    {
+                        Name = cat,
+                        DisplayName = cat,
+                        Icon = meta.Icon,
+                        Count = catCount,
+                        IsSelected = SelectedCategory.Equals(cat, StringComparison.OrdinalIgnoreCase)
+                    });
+                }
+            }
+
             ApplyFilter();
+            UpdateSelectedCount();
         }
 
         if (System.Windows.Application.Current?.Dispatcher?.CheckAccess() == false)
@@ -87,18 +134,62 @@ public partial class OptimizerViewModel : ObservableObject
     }
 
     partial void OnSelectedCategoryChanged(string value) => ApplyFilter();
+    partial void OnSearchQueryChanged(string value) => ApplyFilter();
+
+    [RelayCommand]
+    public void SelectCategoryFilter(string categoryName)
+    {
+        SelectedCategory = categoryName;
+    }
 
     private void ApplyFilter()
     {
         void UpdateFiltered()
         {
             FilteredTweaks.Clear();
-            var filtered = AllTweaks.Where(t =>
-                SelectedCategory == "All" || t.Category.Equals(SelectedCategory, StringComparison.OrdinalIgnoreCase));
+            SectionGroups.Clear();
 
-            foreach (var item in filtered)
+            var query = SearchQuery?.Trim() ?? string.Empty;
+
+            var distinctCategories = AllTweaks.Select(t => t.Category).Distinct().ToList();
+            var categoriesToProcess = SelectedCategory.Equals("All", StringComparison.OrdinalIgnoreCase)
+                ? distinctCategories
+                : distinctCategories.Where(c => c.Equals(SelectedCategory, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            foreach (var cat in categoriesToProcess)
             {
-                FilteredTweaks.Add(item);
+                var matching = AllTweaks
+                    .Where(t => t.Category.Equals(cat, StringComparison.OrdinalIgnoreCase))
+                    .Where(t => string.IsNullOrEmpty(query) ||
+                                t.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                                t.Description.Contains(query, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                if (matching.Count > 0)
+                {
+                    var meta = GetCategoryMeta(cat);
+                    var group = new TweakSectionGroup
+                    {
+                        Name = cat,
+                        Icon = meta.Icon,
+                        Description = meta.Description,
+                        IsExpanded = true
+                    };
+
+                    foreach (var tweak in matching)
+                    {
+                        group.AddTweak(tweak);
+                        FilteredTweaks.Add(tweak);
+                    }
+
+                    SectionGroups.Add(group);
+                }
+            }
+
+            // Update filter chip selection highlights
+            foreach (var chip in FilterChips)
+            {
+                chip.IsSelected = chip.Name.Equals(SelectedCategory, StringComparison.OrdinalIgnoreCase);
             }
         }
 
@@ -115,6 +206,10 @@ public partial class OptimizerViewModel : ObservableObject
     private void UpdateSelectedCount()
     {
         SelectedCount = AllTweaks.Count(t => t.IsChecked);
+        foreach (var group in SectionGroups)
+        {
+            group.UpdateCounts();
+        }
     }
 
     [RelayCommand]
@@ -130,9 +225,13 @@ public partial class OptimizerViewModel : ObservableObject
     [RelayCommand]
     private void SelectAll()
     {
-        foreach (var tweak in FilteredTweaks)
+        foreach (var group in SectionGroups)
         {
-            tweak.IsChecked = true;
+            foreach (var tweak in group.Tweaks)
+            {
+                tweak.IsChecked = true;
+            }
+            group.UpdateCounts();
         }
         UpdateSelectedCount();
     }
@@ -145,6 +244,24 @@ public partial class OptimizerViewModel : ObservableObject
             tweak.IsChecked = false;
         }
         UpdateSelectedCount();
+    }
+
+    [RelayCommand]
+    public void ExpandAll()
+    {
+        foreach (var group in SectionGroups)
+        {
+            group.IsExpanded = true;
+        }
+    }
+
+    [RelayCommand]
+    public void CollapseAll()
+    {
+        foreach (var group in SectionGroups)
+        {
+            group.IsExpanded = false;
+        }
     }
 
     [RelayCommand]
