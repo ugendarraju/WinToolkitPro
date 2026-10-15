@@ -103,6 +103,91 @@ public class DriverService
         }
     }
 
+    public async Task<bool> EnsureSnappyIndexesAsync(Action<string>? onLog = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var sdioDir = GetSdioDirectory();
+            var indexesDir = Path.Combine(sdioDir, "indexes");
+            var sdioIndexesDir = Path.Combine(indexesDir, "SDIO");
+
+            // Check if indexes already exist locally
+            if (Directory.Exists(sdioIndexesDir) && Directory.GetFiles(sdioIndexesDir, "*.*").Length > 5)
+            {
+                onLog?.Invoke("[Snappy / SamDrivers] Hardware driver indexes verified locally.");
+                return true;
+            }
+
+            Directory.CreateDirectory(sdioIndexesDir);
+
+            // Configure optimal sdi.cfg before launching
+            var cfgPath = Path.Combine(sdioDir, "sdi.cfg");
+            var cfgContent = "-drpdir:drivers\r\n-indexdir:indexes\r\n-outputdir:logs\r\n-finishaction:0\r\n-showdrpnames\r\n";
+            try { await File.WriteAllTextAsync(cfgPath, cfgContent, cancellationToken); } catch { }
+
+            // Ensure firewall rules are registered so SDIO is not blocked from peer discovery
+            var exe = FindSdioExe();
+            if (exe != null && File.Exists(exe))
+            {
+                _ = Task.Run(() =>
+                {
+                    try
+                    {
+                        var ps = $"New-NetFirewallRule -DisplayName 'WinToolkit Snappy Driver Installer' -Direction Inbound -Program '{exe}' -Action Allow -ErrorAction SilentlyContinue; New-NetFirewallRule -DisplayName 'WinToolkit Snappy Driver Installer Out' -Direction Outbound -Program '{exe}' -Action Allow -ErrorAction SilentlyContinue";
+                        _powerShellService.ExecuteCommandAsync(ps).Wait(3000);
+                    }
+                    catch { }
+                });
+            }
+
+            onLog?.Invoke("[Snappy / SamDrivers] Checking direct CDN mirror for pre-compiled hardware indexes...");
+
+            var urls = new[]
+            {
+                "https://github.com/ugendarraju/WinToolkitPro/releases/download/v1.5.8/SDIO_indexes.zip",
+                "https://raw.githubusercontent.com/ugendarraju/WinToolkitPro/main/Data/indexes.zip"
+            };
+
+            var zipPath = Path.Combine(sdioDir, "indexes_temp.zip");
+            var downloaded = false;
+
+            foreach (var url in urls)
+            {
+                if (cancellationToken.IsCancellationRequested) break;
+                try
+                {
+                    using var response = await HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        await using var readStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                        await using var writeStream = File.Create(zipPath);
+                        await readStream.CopyToAsync(writeStream, cancellationToken);
+                        downloaded = true;
+                        break;
+                    }
+                }
+                catch { }
+            }
+
+            if (downloaded && File.Exists(zipPath))
+            {
+                onLog?.Invoke("[Snappy / SamDrivers] Extracting indexes to local database...");
+                ZipFile.ExtractToDirectory(zipPath, indexesDir, overwriteFiles: true);
+                try { File.Delete(zipPath); } catch { }
+                onLog?.Invoke("[Snappy / SamDrivers] Hardware driver indexes installed. Ready for instant offline scan.");
+                return true;
+            }
+
+            onLog?.Invoke("[Snappy / SamDrivers] Indexes directory initialized. Snappy will process hardware lookup.");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            onLog?.Invoke($"[Snappy / SamDrivers] Index notice: {ex.Message}");
+            return false;
+        }
+    }
+
     public async Task<bool> LaunchSnappyGuiAsync(Action<string>? onLog = null, CancellationToken cancellationToken = default)
     {
         onLog?.Invoke("Preparing Snappy Driver Installer Origin (SamDrivers Engine)...");
@@ -111,6 +196,9 @@ public class DriverService
 
         if (ready && exe != null && File.Exists(exe))
         {
+            // Download indexes via fast direct CDN only when Snappy is executed!
+            await EnsureSnappyIndexesAsync(onLog, cancellationToken);
+
             onLog?.Invoke($"Launching Snappy Driver Installer GUI ({Path.GetFileName(exe)})...");
             var psi = new System.Diagnostics.ProcessStartInfo
             {
@@ -139,6 +227,9 @@ public class DriverService
             onLog?.Invoke("[Snappy / SamDrivers] Engine downloading in background. Scanning hardware inventory...");
             return await ScanDevicesAsync(onLog, cancellationToken);
         }
+
+        // Ensure indexes and config exist before querying hardware matches
+        await EnsureSnappyIndexesAsync(onLog, cancellationToken);
 
         onLog?.Invoke("[Snappy / SamDrivers] Querying hardware driver pack matches (-checkupdates)...");
         try
@@ -184,6 +275,8 @@ public class DriverService
             onLog?.Invoke("[Snappy / SamDrivers] Falling back to standard catalog installation.");
             return await InstallDriverUpdatesAsync(targetIdentifiers, onLog, null, cancellationToken);
         }
+
+        await EnsureSnappyIndexesAsync(onLog, cancellationToken);
 
         onLog?.Invoke("[Snappy / SamDrivers] Running SDIO unattended driver install (-autoupdate -autoinstall -filter:2)...");
 
