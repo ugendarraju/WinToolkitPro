@@ -7,6 +7,48 @@
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:AppsViewModel}"
              d:DesignHeight="750" d:DesignWidth="1150">
+
+    <UserControl.Resources>
+        <!-- Filter Chip Button Style -->
+        <Style x:Key="AppCategoryChipButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}"/>
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="Margin" Value="0,0,6,6"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ChipBorder" 
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="14"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ChipBorder" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
     <Grid Margin="16,12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -14,7 +56,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Top Header & Controls -->
+        <!-- Top Header & Global Actions -->
         <Grid Grid.Row="0" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -29,11 +71,11 @@
                         <TextBlock Text="{Binding ArchitectureNotice}" FontSize="10" FontWeight="SemiBold" Foreground="#60a5fa"/>
                     </Border>
                 </StackPanel>
-                <TextBlock Text="Select softwares and click install to download and install them automatically." 
-                           FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
+                <TextBlock Text="Segregated by software category. Select apps to download and silently install them in batch." 
+                           FontSize="11.5" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
             </StackPanel>
 
-            <!-- Action Buttons WrapPanel ensuring Install button is NEVER clipped off screen -->
+            <!-- Action Buttons WrapPanel ensuring controls never clip -->
             <WrapPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
                 <Button Command="{Binding InstallSelectedCommand}"
                         Background="{DynamicResource AccentFillColorDefaultBrush}"
@@ -49,10 +91,12 @@
                 </Button>
 
                 <Button Content="Select All" Command="{Binding SelectAllCommand}" Margin="0,0,5,4" Padding="10,5" FontSize="11"/>
-                <Button Content="Clear" Command="{Binding DeselectAllCommand}" Margin="0,0,5,4" Padding="10,5" FontSize="11"/>
+                <Button Content="Clear All" Command="{Binding DeselectAllCommand}" Margin="0,0,5,4" Padding="10,5" FontSize="11"/>
+                <Button Content="Expand All" Command="{Binding ExpandAllCommand}" Margin="0,0,5,4" Padding="9,5" FontSize="11"/>
+                <Button Content="Collapse All" Command="{Binding CollapseAllCommand}" Margin="0,0,6,4" Padding="9,5" FontSize="11"/>
                 <Button Content="📊 Activity" Command="{Binding ToggleActivityPanelCommand}" 
                         Background="#0369a1" Foreground="White" FontWeight="SemiBold" Margin="0,0,5,4" Padding="10,5" FontSize="11"
-                        ToolTip="Toggle the installation progress drawer"/>
+                        ToolTip="Toggle the installation activity drawer"/>
                 <Button Content="🧹 Clean Temp" Command="{Binding CleanTempCacheCommand}" Margin="0,0,5,4" Padding="9,5" FontSize="11"/>
                 
                 <Button Content="Cancel" Command="{Binding CancelInstallationCommand}" 
@@ -61,93 +105,186 @@
             </WrapPanel>
         </Grid>
 
-        <!-- Search & Filter Bar -->
+        <!-- Search Bar & Category Navigation Chips -->
         <Border Grid.Row="1" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
                 BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,10">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="200"/>
-                </Grid.ColumnDefinitions>
+                BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,10">
+            <StackPanel Orientation="Vertical">
+                <!-- Search Box Row -->
+                <Grid Margin="0,0,0,8">
+                    <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" 
+                             VerticalContentAlignment="Center"
+                             Padding="10,5"
+                             FontSize="12"
+                             ToolTip="Type to filter applications across all categories by name, winget ID, or description"/>
+                </Grid>
 
-                <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" 
-                         VerticalContentAlignment="Center"
-                         Padding="8,5"
-                         FontSize="12"
-                         Margin="0,0,10,0"/>
-
-                <ComboBox Grid.Column="1" 
-                          ItemsSource="{Binding Categories}" 
-                          SelectedItem="{Binding SelectedCategory}"
-                          Padding="8,5"
-                          FontSize="12"/>
-            </Grid>
-        </Border>
-
-        <!-- Software Catalog (Ninite Style) -->
-        <Border Grid.Row="2" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
-                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,8">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <ItemsControl ItemsSource="{Binding GroupedApps}">
+                <!-- Category Navigation Filter Chips -->
+                <ItemsControl ItemsSource="{Binding FilterChips}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" />
+                            <WrapPanel Orientation="Horizontal"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Width="215" Margin="0,0,12,14" VerticalAlignment="Top"
-                                    Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
-                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                                    BorderThickness="1" 
-                                    CornerRadius="6" 
-                                    Padding="10,8">
-                                <StackPanel>
-                                    <!-- Category Title Header -->
-                                    <Border BorderBrush="{DynamicResource AccentFillColorDefaultBrush}" 
-                                            BorderThickness="0,0,0,2" Padding="0,0,0,5" Margin="0,0,0,6">
-                                        <TextBlock Text="{Binding CategoryName}" FontWeight="Bold" FontSize="13" 
-                                                   Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                            <Button Style="{StaticResource AppCategoryChipButtonStyle}"
+                                    Command="{Binding DataContext.SelectCategoryFilterCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding Name}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Icon}" Margin="0,0,5,0" FontSize="11.5" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="11" VerticalAlignment="Center"/>
+                                    <Border Background="#20ffffff" CornerRadius="8" Padding="5,0" Margin="5,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Count}" FontSize="10" FontWeight="SemiBold"/>
                                     </Border>
-
-                                    <!-- Compact App Checkboxes List with MaxHeight ScrollViewer -->
-                                    <ScrollViewer MaxHeight="320" VerticalScrollBarVisibility="Auto">
-                                        <ItemsControl ItemsSource="{Binding Apps}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Grid Margin="0,2" ToolTip="{Binding Description}">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
-
-                                                        <!-- Checkbox with Name -->
-                                                        <CheckBox IsChecked="{Binding IsSelected}" 
-                                                                  Content="{Binding Name}" 
-                                                                  FontSize="12"
-                                                                  VerticalAlignment="Center"/>
-
-                                                        <!-- Status Badge (only shown during/after install) -->
-                                                        <Border Grid.Column="1" VerticalAlignment="Center" Margin="4,0,0,0"
-                                                                CornerRadius="3" Padding="4,1"
-                                                                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                                                                Visibility="{Binding HasActiveStatus, Converter={StaticResource BoolToVis}}">
-                                                            <TextBlock Text="{Binding StatusMessage}" FontSize="9" 
-                                                                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
-                                                        </Border>
-                                                    </Grid>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </ScrollViewer>
                                 </StackPanel>
-                            </Border>
+                            </Button>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-            </ScrollViewer>
+            </StackPanel>
         </Border>
+
+        <!-- Segregated Software Catalog Section Cards -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,0,6">
+            <ItemsControl ItemsSource="{Binding GroupedApps}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <!-- Section Card -->
+                        <Border Margin="0,0,0,14" 
+                                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                                BorderThickness="1" 
+                                CornerRadius="8">
+                            <StackPanel Orientation="Vertical">
+                                <!-- Section Header Banner -->
+                                <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
+                                        CornerRadius="8,8,0,0" 
+                                        Padding="12,8"
+                                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="0,0,0,1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Left: Chevron Toggle, Section Icon, Name, Count Badge, Description -->
+                                        <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Button Command="{Binding ToggleExpandedCommand}" 
+                                                        Background="Transparent" BorderThickness="0" 
+                                                        Padding="4,2" Margin="0,0,6,0" Cursor="Hand"
+                                                        ToolTip="Toggle Section Expand/Collapse">
+                                                    <TextBlock Text="{Binding ChevronText}" FontSize="11" FontWeight="Bold" 
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                </Button>
+
+                                                <TextBlock Text="{Binding Icon}" FontSize="15" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding CategoryName}" FontWeight="Bold" FontSize="14" 
+                                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
+
+                                                <!-- Section Selection Status Badge -->
+                                                <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" 
+                                                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="4" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding SelectionBadgeText}" FontSize="10.5" 
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                </Border>
+                                            </StackPanel>
+
+                                            <!-- Section Description Subtitle -->
+                                            <TextBlock Text="{Binding Description}" FontSize="11" 
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                       Margin="26,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+
+                                        <!-- Right: Section Quick Selection Actions -->
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button Content="Select Section" 
+                                                    Command="{Binding SelectSectionCommand}" 
+                                                    Padding="8,3" FontSize="10.5" Margin="0,0,5,0"
+                                                    Background="{DynamicResource SubtleFillColorTertiaryBrush}"
+                                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                    Cursor="Hand" ToolTip="Select all apps in this section"/>
+
+                                            <Button Content="Clear" 
+                                                    Command="{Binding ClearSectionCommand}" 
+                                                    Padding="8,3" FontSize="10.5" Margin="0,0,5,0"
+                                                    Background="Transparent" BorderThickness="1"
+                                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                    Cursor="Hand" ToolTip="Clear selections in this section"/>
+
+                                            <Button Content="{Binding ExpandCollapseButtonText}" 
+                                                    Command="{Binding ToggleExpandedCommand}" 
+                                                    Padding="6,3" FontSize="10.5"
+                                                    Background="Transparent" BorderThickness="0"
+                                                    Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                    Cursor="Hand"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Apps Grid inside this Section with Generous Tile Width (No Truncation) -->
+                                <ItemsControl ItemsSource="{Binding Apps}" 
+                                              Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}"
+                                              Margin="10,10,2,2">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <!-- App Tile with 290px width ensuring full software names fit -->
+                                            <Border Width="290" Margin="0,0,10,10" 
+                                                    Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
+                                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                                                    BorderThickness="1" 
+                                                    CornerRadius="6" 
+                                                    Padding="10,8">
+                                                <Grid ToolTip="{Binding Description}">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <!-- CheckBox -->
+                                                    <CheckBox IsChecked="{Binding IsSelected}" 
+                                                              VerticalAlignment="Center" 
+                                                              Margin="0,0,8,0"/>
+
+                                                    <!-- App Name and Description -->
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12.5" 
+                                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding Description}" FontSize="10.5" 
+                                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                                   TextTrimming="CharacterEllipsis" Margin="0,1,0,0"/>
+                                                    </StackPanel>
+
+                                                    <!-- Status Badge (e.g. Installing, Installed, etc.) -->
+                                                    <Border Grid.Column="2" VerticalAlignment="Center" Margin="6,0,0,0"
+                                                            CornerRadius="4" Padding="6,2"
+                                                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                                            Visibility="{Binding HasActiveStatus, Converter={StaticResource BoolToVis}}">
+                                                        <TextBlock Text="{Binding StatusMessage}" FontSize="9.5" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                                                    </Border>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
     </Grid>
 </UserControl>

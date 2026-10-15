@@ -6,12 +6,6 @@ using WinToolkit.Services;
 
 namespace WinToolkit.ViewModels;
 
-public class AppCategoryGroup
-{
-    public required string CategoryName { get; set; }
-    public ObservableCollection<AppItem> Apps { get; set; } = new();
-}
-
 public partial class AppsViewModel : ObservableObject
 {
     private readonly WingetService _wingetService;
@@ -50,8 +44,33 @@ public partial class AppsViewModel : ObservableObject
     public ObservableCollection<AppItem> AllApps { get; } = new();
     public ObservableCollection<AppItem> FilteredApps { get; } = new();
     public ObservableCollection<AppCategoryGroup> GroupedApps { get; } = new();
+    public ObservableCollection<CategoryFilterItem> FilterChips { get; } = new();
     public ObservableCollection<string> Categories { get; } = new();
     public ObservableCollection<string> Logs { get; } = new();
+
+    public static (string Icon, string Description) GetCategoryMeta(string category) => category switch
+    {
+        "Web Browsers" => ("🌐", "Fast, modern web browsers for everyday surfing and web productivity."),
+        "Messaging" => ("💬", "Chat, collaboration, instant messaging, and team conferencing."),
+        "Media" => ("🎬", "Audio and video players, streaming suites, and media encoders."),
+        ".NET" => ("⚙️", ".NET Desktop Runtimes, ASP.NET Core, and SDK environments."),
+        "Java" => ("☕", "Oracle JRE and Eclipse Temurin Java runtimes for Java software."),
+        "Imaging" => ("🎨", "Photo editing, vector design, screen capture, and 3D creation."),
+        "3D Printing" => ("🖨️", "Slicing software and 3D printing preparation suites."),
+        "Documents" => ("📄", "Office productivity suites, PDF readers, and document editors."),
+        "Security" => ("🛡️", "Antivirus suites, malware removal, and endpoint protection."),
+        "Compression" => ("🗜️", "Archive managers, zip tools, and file compression utilities."),
+        "File Sharing" => ("🔄", "Local file transfer and peer-to-peer downloading utilities."),
+        "Online Storage" => ("☁️", "Cloud synchronization and desktop cloud drive clients."),
+        "Developer Tools" => ("💻", "IDEs, command-line shells, Git version control, and API testing."),
+        "VC++ Redistributables" => ("🧩", "Microsoft Visual C++ universal runtime libraries."),
+        "Remote Desktop" => ("🖥️", "Remote desktop control, assistance, and VNC utilities."),
+        "Hardware & Diagnostics" => ("🔍", "System hardware sensors, CPU/GPU identification, and benchmarking."),
+        "System Tools" => ("🧰", "Uninstallers, power tools, shell enhancers, and maintenance utilities."),
+        "File & Disk Tools" => ("💾", "Disk space analyzers, rapid file searchers, and drive tools."),
+        "Utilities" => ("🛠️", "Handy everyday PC utilities and workflow boosters."),
+        _ => ("📦", "Popular desktop software and utilities.")
+    };
 
     [RelayCommand]
     private void ToggleActivityPanel()
@@ -91,8 +110,9 @@ public partial class AppsViewModel : ObservableObject
         {
             "Web Browsers", "Messaging", "Media", ".NET", "Java",
             "Imaging", "3D Printing", "Documents", "Security",
-            "Utilities", "Compression", "File Sharing", "Other",
-            "Online Storage", "Developer Tools", "VC++ Redistributables"
+            "Compression", "File Sharing", "Other",
+            "Online Storage", "Developer Tools", "VC++ Redistributables",
+            "Remote Desktop", "Hardware & Diagnostics", "System Tools", "File & Disk Tools", "Utilities"
         };
 
         var loadedCategories = apps.Select(a => a.Category).Distinct().ToList();
@@ -125,11 +145,47 @@ public partial class AppsViewModel : ObservableObject
             AllApps.Add(app);
         }
 
+        // Build Navigation Filter Chips
+        FilterChips.Clear();
+        FilterChips.Add(new CategoryFilterItem
+        {
+            Name = "All",
+            DisplayName = "All Sections",
+            Icon = "🌟",
+            Count = AllApps.Count,
+            IsSelected = SelectedCategory.Equals("All", StringComparison.OrdinalIgnoreCase)
+        });
+
+        foreach (var cat in Categories)
+        {
+            if (cat.Equals("All", StringComparison.OrdinalIgnoreCase)) continue;
+            var meta = GetCategoryMeta(cat);
+            var catCount = AllApps.Count(a => a.Category.Equals(cat, StringComparison.OrdinalIgnoreCase));
+            if (catCount > 0)
+            {
+                FilterChips.Add(new CategoryFilterItem
+                {
+                    Name = cat,
+                    DisplayName = cat,
+                    Icon = meta.Icon,
+                    Count = catCount,
+                    IsSelected = SelectedCategory.Equals(cat, StringComparison.OrdinalIgnoreCase)
+                });
+            }
+        }
+
         ApplyFilter();
+        UpdateSelectedCount();
     }
 
     partial void OnSearchQueryChanged(string value) => ApplyFilter();
     partial void OnSelectedCategoryChanged(string value) => ApplyFilter();
+
+    [RelayCommand]
+    public void SelectCategoryFilter(string categoryName)
+    {
+        SelectedCategory = categoryName;
+    }
 
     private void ApplyFilter()
     {
@@ -157,18 +213,35 @@ public partial class AppsViewModel : ObservableObject
 
         foreach (var group in groups)
         {
-            var grp = new AppCategoryGroup { CategoryName = group.Key };
+            var meta = GetCategoryMeta(group.Key);
+            var grp = new AppCategoryGroup
+            {
+                CategoryName = group.Key,
+                Icon = meta.Icon,
+                Description = meta.Description,
+                IsExpanded = true
+            };
             foreach (var app in group)
             {
-                grp.Apps.Add(app);
+                grp.AddApp(app);
             }
             GroupedApps.Add(grp);
+        }
+
+        // Update chips selection highlights
+        foreach (var chip in FilterChips)
+        {
+            chip.IsSelected = chip.Name.Equals(SelectedCategory, StringComparison.OrdinalIgnoreCase);
         }
     }
 
     private void UpdateSelectedCount()
     {
         SelectedCount = AllApps.Count(a => a.IsSelected);
+        foreach (var group in GroupedApps)
+        {
+            group.UpdateCounts();
+        }
     }
 
     [RelayCommand]
@@ -189,6 +262,24 @@ public partial class AppsViewModel : ObservableObject
             app.IsSelected = false;
         }
         UpdateSelectedCount();
+    }
+
+    [RelayCommand]
+    public void ExpandAll()
+    {
+        foreach (var group in GroupedApps)
+        {
+            group.IsExpanded = true;
+        }
+    }
+
+    [RelayCommand]
+    public void CollapseAll()
+    {
+        foreach (var group in GroupedApps)
+        {
+            group.IsExpanded = false;
+        }
     }
 
     [RelayCommand]
@@ -237,9 +328,6 @@ public partial class AppsViewModel : ObservableObject
 
         try
         {
-            // Launch simultaneous background download tasks
-            // Each app starts downloading in background as downloadSemaphore allows.
-            // When downloaded, it acquires installation locks and installs.
             var tasks = selectedApps.Select(async app =>
             {
                 if (ct.IsCancellationRequested) return;
