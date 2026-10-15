@@ -203,6 +203,7 @@ public class DriverService
             var psi = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = exe,
+                Arguments = "-autoupdate",
                 WorkingDirectory = Path.GetDirectoryName(exe),
                 UseShellExecute = true,
                 Verb = "runas"
