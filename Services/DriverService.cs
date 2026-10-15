@@ -30,286 +30,21 @@ public class DriverService
         _powerShellService = powerShellService;
     }
 
-    public string GetSdioDirectory()
-    {
-        var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WinToolkit", "SDIO");
-        Directory.CreateDirectory(dir);
-        return dir;
-    }
-
-    public string? FindSdioExe()
-    {
-        var dir = GetSdioDirectory();
-        if (!Directory.Exists(dir)) return null;
-
-        var files = Directory.GetFiles(dir, "SDIO*.exe");
-        if (files.Length == 0) return null;
-
-        if (OsEnvironmentService.Instance.Is64BitOperatingSystem)
-        {
-            var x64 = files.FirstOrDefault(f => f.Contains("x64", StringComparison.OrdinalIgnoreCase) && !f.Contains("XP", StringComparison.OrdinalIgnoreCase));
-            if (x64 != null) return x64;
-            return files.FirstOrDefault(f => !f.Contains("XP", StringComparison.OrdinalIgnoreCase)) ?? files.FirstOrDefault();
-        }
-        else
-        {
-            // On 32-bit Windows, pick the 32-bit native SDI binary
-            var x86 = files.FirstOrDefault(f => !f.Contains("x64", StringComparison.OrdinalIgnoreCase) && !f.Contains("XP", StringComparison.OrdinalIgnoreCase));
-            if (x86 != null) return x86;
-            return files.FirstOrDefault();
-        }
-    }
-
-    public async Task<bool> EnsureSnappyEngineAsync(Action<string>? onLog = null, CancellationToken cancellationToken = default)
-    {
-        var existingExe = FindSdioExe();
-        if (existingExe != null && File.Exists(existingExe))
-        {
-            return true;
-        }
-
-        try
-        {
-            var dir = GetSdioDirectory();
-            var zipPath = Path.Combine(dir, "SDIO.zip");
-            onLog?.Invoke("[Snappy / SamDrivers] Downloading portable Snappy Driver Installer Origin engine (11 MB)...");
-
-            const string url = "https://glenn.delahoy.com/downloads/sdio/SDIO_latest.zip";
-            using (var response = await HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
-            {
-                response.EnsureSuccessStatusCode();
-                await using var streamToReadFrom = await response.Content.ReadAsStreamAsync(cancellationToken);
-                await using var streamToWriteTo = File.Create(zipPath);
-                await streamToReadFrom.CopyToAsync(streamToWriteTo, cancellationToken);
-            }
-
-            onLog?.Invoke("[Snappy / SamDrivers] Extracting Snappy Driver Installer Origin engine...");
-            ZipFile.ExtractToDirectory(zipPath, dir, overwriteFiles: true);
-            try { File.Delete(zipPath); } catch { }
-
-            var exe = FindSdioExe();
-            if (exe != null && File.Exists(exe))
-            {
-                onLog?.Invoke($"[Snappy / SamDrivers] Engine ready: {Path.GetFileName(exe)}");
-                return true;
-            }
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            onLog?.Invoke($"[Snappy / SamDrivers] Engine notice: {ex.Message}");
-            return false;
-        }
-    }
-
-    public async Task<bool> EnsureSnappyIndexesAsync(Action<string>? onLog = null, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Launches standard Windows Device Manager (devmgmt.msc).
+    /// </summary>
+    public void OpenDeviceManager()
     {
         try
         {
-            var sdioDir = GetSdioDirectory();
-            var indexesDir = Path.Combine(sdioDir, "indexes");
-            var sdioIndexesDir = Path.Combine(indexesDir, "SDIO");
-
-            // Check if indexes already exist locally
-            if (Directory.Exists(sdioIndexesDir) && Directory.GetFiles(sdioIndexesDir, "*.*").Length > 5)
-            {
-                onLog?.Invoke("[Snappy / SamDrivers] Hardware driver indexes verified locally.");
-                return true;
-            }
-
-            Directory.CreateDirectory(sdioIndexesDir);
-
-            // Configure optimal sdi.cfg before launching
-            var cfgPath = Path.Combine(sdioDir, "sdi.cfg");
-            var cfgContent = "-drpdir:drivers\r\n-indexdir:indexes\r\n-outputdir:logs\r\n-finishaction:0\r\n-showdrpnames\r\n";
-            try { await File.WriteAllTextAsync(cfgPath, cfgContent, cancellationToken); } catch { }
-
-            // Ensure firewall rules are registered so SDIO is not blocked from peer discovery
-            var exe = FindSdioExe();
-            if (exe != null && File.Exists(exe))
-            {
-                _ = Task.Run(() =>
-                {
-                    try
-                    {
-                        var ps = $"New-NetFirewallRule -DisplayName 'WinToolkit Snappy Driver Installer' -Direction Inbound -Program '{exe}' -Action Allow -ErrorAction SilentlyContinue; New-NetFirewallRule -DisplayName 'WinToolkit Snappy Driver Installer Out' -Direction Outbound -Program '{exe}' -Action Allow -ErrorAction SilentlyContinue";
-                        _powerShellService.ExecuteCommandAsync(ps).Wait(3000);
-                    }
-                    catch { }
-                });
-            }
-
-            onLog?.Invoke("[Snappy / SamDrivers] Checking direct CDN mirror for pre-compiled hardware indexes...");
-
-            var urls = new[]
-            {
-                "https://github.com/ugendarraju/WinToolkitPro/releases/download/v1.5.8/SDIO_indexes.zip",
-                "https://raw.githubusercontent.com/ugendarraju/WinToolkitPro/main/Data/indexes.zip"
-            };
-
-            var zipPath = Path.Combine(sdioDir, "indexes_temp.zip");
-            var downloaded = false;
-
-            foreach (var url in urls)
-            {
-                if (cancellationToken.IsCancellationRequested) break;
-                try
-                {
-                    using var response = await HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-                    if (response.IsSuccessStatusCode)
-                    {
-                        await using var readStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                        await using var writeStream = File.Create(zipPath);
-                        await readStream.CopyToAsync(writeStream, cancellationToken);
-                        downloaded = true;
-                        break;
-                    }
-                }
-                catch { }
-            }
-
-            if (downloaded && File.Exists(zipPath))
-            {
-                onLog?.Invoke("[Snappy / SamDrivers] Extracting indexes to local database...");
-                ZipFile.ExtractToDirectory(zipPath, indexesDir, overwriteFiles: true);
-                try { File.Delete(zipPath); } catch { }
-                onLog?.Invoke("[Snappy / SamDrivers] Hardware driver indexes installed. Ready for instant offline scan.");
-                return true;
-            }
-
-            onLog?.Invoke("[Snappy / SamDrivers] Indexes directory initialized. Snappy will process hardware lookup.");
-            return true;
-        }
-        catch (Exception ex)
-        {
-            onLog?.Invoke($"[Snappy / SamDrivers] Index notice: {ex.Message}");
-            return false;
-        }
-    }
-
-    public async Task<bool> LaunchSnappyGuiAsync(Action<string>? onLog = null, CancellationToken cancellationToken = default)
-    {
-        onLog?.Invoke("Preparing Snappy Driver Installer Origin (SamDrivers Engine)...");
-        var ready = await EnsureSnappyEngineAsync(onLog, cancellationToken);
-        var exe = FindSdioExe();
-
-        if (ready && exe != null && File.Exists(exe))
-        {
-            // Download indexes via fast direct CDN only when Snappy is executed!
-            await EnsureSnappyIndexesAsync(onLog, cancellationToken);
-
-            onLog?.Invoke($"Launching Snappy Driver Installer GUI ({Path.GetFileName(exe)})...");
             var psi = new System.Diagnostics.ProcessStartInfo
             {
-                FileName = exe,
-                Arguments = "-autoupdate",
-                WorkingDirectory = Path.GetDirectoryName(exe),
-                UseShellExecute = true,
-                Verb = "runas"
+                FileName = "devmgmt.msc",
+                UseShellExecute = true
             };
             System.Diagnostics.Process.Start(psi);
-            onLog?.Invoke("Snappy Driver Installer GUI is now open on your desktop.");
-            return true;
         }
-
-        onLog?.Invoke("Failed to launch Snappy Driver Installer GUI.");
-        return false;
-    }
-
-    public async Task<List<DriverItem>> CheckSnappyDriverUpdatesAsync(Action<string>? onLog = null, CancellationToken cancellationToken = default)
-    {
-        onLog?.Invoke("[Snappy / SamDrivers] Initializing SamDrivers hardware index check...");
-        var ready = await EnsureSnappyEngineAsync(onLog, cancellationToken);
-        var exe = FindSdioExe();
-
-        if (!ready || exe == null || !File.Exists(exe))
-        {
-            onLog?.Invoke("[Snappy / SamDrivers] Engine downloading in background. Scanning hardware inventory...");
-            return await ScanDevicesAsync(onLog, cancellationToken);
-        }
-
-        // Ensure indexes and config exist before querying hardware matches
-        await EnsureSnappyIndexesAsync(onLog, cancellationToken);
-
-        onLog?.Invoke("[Snappy / SamDrivers] Querying hardware driver pack matches (-checkupdates)...");
-        try
-        {
-            var psi = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = exe,
-                Arguments = "-checkupdates -showdrpnames -nosnapshot",
-                WorkingDirectory = Path.GetDirectoryName(exe),
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-
-            using var p = System.Diagnostics.Process.Start(psi);
-            if (p != null)
-            {
-                p.OutputDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) onLog?.Invoke($"[Snappy] {e.Data}"); };
-                p.BeginOutputReadLine();
-                await p.WaitForExitAsync(cancellationToken);
-            }
-        }
-        catch (Exception ex)
-        {
-            onLog?.Invoke($"[Snappy / SamDrivers] Index notice: {ex.Message}");
-        }
-
-        return await ScanDevicesAsync(onLog, cancellationToken);
-    }
-
-    public async Task<bool> InstallSnappyDriverUpdatesAsync(
-        IEnumerable<string>? targetIdentifiers = null,
-        Action<string>? onLog = null,
-        CancellationToken cancellationToken = default)
-    {
-        onLog?.Invoke("[Snappy / SamDrivers] Starting automated driver pack installation engine...");
-        var ready = await EnsureSnappyEngineAsync(onLog, cancellationToken);
-        var exe = FindSdioExe();
-
-        if (!ready || exe == null || !File.Exists(exe))
-        {
-            onLog?.Invoke("[Snappy / SamDrivers] Falling back to standard catalog installation.");
-            return await InstallDriverUpdatesAsync(targetIdentifiers, onLog, null, cancellationToken);
-        }
-
-        await EnsureSnappyIndexesAsync(onLog, cancellationToken);
-
-        onLog?.Invoke("[Snappy / SamDrivers] Running SDIO unattended driver install (-autoupdate -autoinstall -filter:2)...");
-
-        try
-        {
-            var psi = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = exe,
-                Arguments = "-autoupdate -autoinstall -filter:2 -showdrpnames -nosnapshot",
-                WorkingDirectory = Path.GetDirectoryName(exe),
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-
-            using var p = System.Diagnostics.Process.Start(psi);
-            if (p != null)
-            {
-                p.OutputDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) onLog?.Invoke($"[Snappy Install] {e.Data}"); };
-                p.BeginOutputReadLine();
-                await p.WaitForExitAsync(cancellationToken);
-                onLog?.Invoke("[Snappy / SamDrivers] Driver installation cycle completed!");
-                return true;
-            }
-        }
-        catch (Exception ex)
-        {
-            onLog?.Invoke($"[Snappy / SamDrivers] Error: {ex.Message}");
-        }
-
-        return false;
+        catch { }
     }
 
     public async Task<List<DriverItem>> CheckVendorDriverUpdatesAsync(Action<string>? onLog = null, CancellationToken cancellationToken = default)
@@ -327,6 +62,14 @@ public class DriverService
             {
                 d.Status = "Vendor Verified (AMD Enterprise)";
             }
+            else if (d.Manufacturer.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase) || d.DeviceName.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase) || d.DeviceName.Contains("GeForce", StringComparison.OrdinalIgnoreCase))
+            {
+                d.Status = "Vendor Verified (NVIDIA WHQL)";
+            }
+            else if (d.Manufacturer.Contains("Realtek", StringComparison.OrdinalIgnoreCase) || d.DeviceName.Contains("Realtek", StringComparison.OrdinalIgnoreCase))
+            {
+                d.Status = "Vendor Verified (Realtek HD)";
+            }
             else if (d.Manufacturer.Contains("Broadcom", StringComparison.OrdinalIgnoreCase))
             {
                 d.Status = "Vendor Verified (Broadcom OEM)";
@@ -342,10 +85,6 @@ public class DriverService
         Action<string>? onLog = null,
         CancellationToken cancellationToken = default)
     {
-        if (source.Contains("Snappy", StringComparison.OrdinalIgnoreCase) || source.Contains("SamDrivers", StringComparison.OrdinalIgnoreCase))
-        {
-            return await CheckSnappyDriverUpdatesAsync(onLog, cancellationToken);
-        }
         if (source.Contains("Vendor", StringComparison.OrdinalIgnoreCase))
         {
             return await CheckVendorDriverUpdatesAsync(onLog, cancellationToken);

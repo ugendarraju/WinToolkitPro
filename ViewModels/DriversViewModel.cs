@@ -40,13 +40,12 @@ public partial class DriversViewModel : ObservableObject
     private bool _hasSummary;
 
     [ObservableProperty]
-    private string _selectedDriverSource = "⚡ Snappy / SamDrivers (Newest)";
+    private string _selectedDriverSource = "🌐 Microsoft Update Catalog (WHQL - Direct HTTPS)";
 
     public ObservableCollection<string> DriverSources { get; } = new()
     {
-        "⚡ Snappy / SamDrivers (Newest)",
-        "🌐 Microsoft Update Catalog (WHQL)",
-        "🏢 Direct Vendor Repositories"
+        "🌐 Microsoft Update Catalog (WHQL - Direct HTTPS)",
+        "🏢 Direct Vendor Repositories (Intel / AMD / NVIDIA)"
     };
 
     [ObservableProperty]
@@ -133,10 +132,10 @@ public partial class DriversViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public async Task LaunchSnappyGui()
+    public void OpenDeviceManager()
     {
-        AddLog("Launching Snappy Driver Installer Origin GUI...");
-        await _driverService.LaunchSnappyGuiAsync(AddLog);
+        AddLog("Opening Windows Device Manager (devmgmt.msc)...");
+        _driverService.OpenDeviceManager();
     }
 
     [RelayCommand]
@@ -240,16 +239,7 @@ public partial class DriversViewModel : ObservableObject
         }
 
         var selectedIds = selected.Select(d => !string.IsNullOrEmpty(d.HardwareId) ? d.HardwareId : d.DeviceName);
-        bool success;
-
-        if (SelectedDriverSource.Contains("Snappy", StringComparison.OrdinalIgnoreCase))
-        {
-            success = await _driverService.InstallSnappyDriverUpdatesAsync(selectedIds, AddLog, cancellationToken: _driverCts.Token);
-        }
-        else
-        {
-            success = await _driverService.InstallDriverUpdatesAsync(selectedIds, AddLog, cancellationToken: _driverCts.Token);
-        }
+        var success = await _driverService.InstallDriverUpdatesAsync(selectedIds, AddLog, cancellationToken: _driverCts.Token);
 
         IsInstalling = false;
         foreach (var task in taskItems)

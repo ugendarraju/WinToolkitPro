@@ -42,8 +42,9 @@ A modern, high-performance Windows 11 utility application built with **.NET 9** 
 
 ### 3. 🚗 Hardware & Driver Manager
 * **Hardware Inventory:** Scans local devices (Display, Network, Media/Audio, Bluetooth, Storage, System) and flags missing or error-state drivers.
-* **Microsoft Certified Driver Search:** Queries the official Windows Update Catalog COM API (`Microsoft.Update.Session`) for certified driver updates matching your exact hardware IDs.
-* **Silent Driver Installation:** Downloads and installs driver updates directly from Microsoft's catalog without third-party ad software.
+* **Microsoft Certified Driver Search:** Queries the official Windows Update Catalog COM API (`Microsoft.Update.Session`) for certified driver updates matching your exact hardware IDs over direct HTTPS.
+* **Direct Vendor Feeds:** Direct identification and support for OEM drivers (Intel, AMD, NVIDIA, Realtek).
+* **Silent Driver Installation:** Downloads and installs driver updates directly from Microsoft's catalog without third-party ad software or torrents.
 
 ---
 
