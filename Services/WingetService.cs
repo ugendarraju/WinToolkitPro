@@ -75,7 +75,8 @@ public partial class WingetService
     }
 
     /// <summary>
-    /// Pre-downloads package installer files in the background before the installation step runs.
+    /// Pre-downloads package installer files in the background before the installation step runs,
+    /// tracking real-time download percentages and megabytes.
     /// </summary>
     public async Task<bool> PreDownloadAppAsync(
         AppItem app,
@@ -85,8 +86,8 @@ public partial class WingetService
         try
         {
             app.Status = InstallStatus.Downloading;
-            app.StatusMessage = "Downloading in background...";
-            app.Progress = 10;
+            app.StatusMessage = "Downloading...";
+            app.Progress = 5;
 
             if (app.Id.Equals("chrome", StringComparison.OrdinalIgnoreCase) || 
                 app.WingetId.Equals("Google.Chrome", StringComparison.OrdinalIgnoreCase))
@@ -101,10 +102,7 @@ public partial class WingetService
                     var msiUrl = is64
                         ? "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise64.msi"
                         : "https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise.msi";
-                    using var response = await HttpClient.GetAsync(msiUrl, cancellationToken);
-                    response.EnsureSuccessStatusCode();
-                    await using var fs = File.Create(msiTarget);
-                    await response.Content.CopyToAsync(fs, cancellationToken);
+                    await DownloadFileWithProgressAsync(msiUrl, msiTarget, app, onLog, cancellationToken);
                 }
                 app.Status = InstallStatus.Queued;
                 app.StatusMessage = "Downloaded (In Queue)";
@@ -127,12 +125,7 @@ public partial class WingetService
 
                 var odtInstallerPath = Path.Combine(odtDir, "officedeploymenttool.exe");
                 const string odtUrl = "https://download.microsoft.com/download/6c1eeb25-cf8b-41d9-8d0d-cc1dbc032140/officedeploymenttool_20326-20112.exe";
-                using (var response = await HttpClient.GetAsync(odtUrl, cancellationToken))
-                {
-                    response.EnsureSuccessStatusCode();
-                    await using var fs = File.Create(odtInstallerPath);
-                    await response.Content.CopyToAsync(fs, cancellationToken);
-                }
+                await DownloadFileWithProgressAsync(odtUrl, odtInstallerPath, app, onLog, cancellationToken);
 
                 var extractPsi = new ProcessStartInfo
                 {
@@ -169,10 +162,7 @@ public partial class WingetService
 
                     if (!File.Exists(targetFile))
                     {
-                        using var response = await HttpClient.GetAsync(downloadUrl, cancellationToken);
-                        response.EnsureSuccessStatusCode();
-                        await using var fs = File.Create(targetFile);
-                        await response.Content.CopyToAsync(fs, cancellationToken);
+                        await DownloadFileWithProgressAsync(downloadUrl, targetFile, app, onLog, cancellationToken);
                     }
 
                     app.Status = InstallStatus.Queued;
@@ -182,36 +172,103 @@ public partial class WingetService
                 }
             }
 
-            // For standard winget apps, trigger background download cache
+            // For standard winget apps, trigger background download cache with streaming progress
             var tempCacheDir = Path.Combine(Path.GetTempPath(), "WinToolkit", "Downloads", app.Id);
             Directory.CreateDirectory(tempCacheDir);
 
             var startInfo = new ProcessStartInfo
             {
                 FileName = "winget",
-                Arguments = $"download --id \"{app.WingetId}\" --exact -d \"{tempCacheDir}\" --silent --accept-package-agreements --accept-source-agreements --ignore-security-hash --disable-interactivity",
+                Arguments = $"download --id \"{app.WingetId}\" --exact -d \"{tempCacheDir}\" --accept-package-agreements --accept-source-agreements --ignore-security-hash --disable-interactivity",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                StandardOutputEncoding = Encoding.UTF8,
+                StandardErrorEncoding = Encoding.UTF8
             };
 
-            using var proc = Process.Start(startInfo);
-            if (proc != null)
+            using var proc = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+            proc.OutputDataReceived += (_, e) =>
             {
-                await proc.WaitForExitAsync(cancellationToken);
-            }
+                if (string.IsNullOrWhiteSpace(e.Data)) return;
+                onLog?.Invoke($"[{app.Name}] {e.Data}");
+
+                var match = ProgressRegex.Match(e.Data);
+                if (match.Success && double.TryParse(match.Groups[1].Value, out var percent))
+                {
+                    app.Progress = Math.Clamp(percent, 0, 99);
+                    app.StatusMessage = $"Downloading: {percent:0}%";
+                }
+                else if (e.Data.Contains("MB") || e.Data.Contains("KB") || e.Data.Contains("GB"))
+                {
+                    app.StatusMessage = $"Downloading: {e.Data.Trim()}";
+                }
+            };
+            proc.ErrorDataReceived += (_, e) =>
+            {
+                if (!string.IsNullOrWhiteSpace(e.Data))
+                {
+                    onLog?.Invoke($"[{app.Name}] {e.Data}");
+                }
+            };
+
+            proc.Start();
+            proc.BeginOutputReadLine();
+            proc.BeginErrorReadLine();
+            await proc.WaitForExitAsync(cancellationToken);
 
             app.Status = InstallStatus.Queued;
             app.StatusMessage = "Downloaded (In Queue)";
             app.Progress = 50;
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            onLog?.Invoke($"[{app.Name}] Download notice: {ex.Message}");
             app.Status = InstallStatus.Queued;
             app.StatusMessage = "In queue";
             return false;
+        }
+    }
+
+    private async Task DownloadFileWithProgressAsync(
+        string url,
+        string destinationPath,
+        AppItem app,
+        Action<string>? onLog,
+        CancellationToken cancellationToken)
+    {
+        onLog?.Invoke($"[{app.Name}] Starting download from: {url}");
+        using var response = await HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+        await using var streamToReadFrom = await response.Content.ReadAsStreamAsync(cancellationToken);
+        await using var streamToWriteTo = File.Create(destinationPath);
+
+        var buffer = new byte[81920];
+        int bytesRead;
+        long totalBytesRead = 0L;
+
+        while ((bytesRead = await streamToReadFrom.ReadAsync(buffer, cancellationToken)) > 0)
+        {
+            await streamToWriteTo.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+            totalBytesRead += bytesRead;
+
+            if (totalBytes > 0)
+            {
+                var percent = Math.Round((double)totalBytesRead / totalBytes * 100.0, 0);
+                var mbRead = totalBytesRead / (1024.0 * 1024.0);
+                var mbTotal = totalBytes / (1024.0 * 1024.0);
+                app.Progress = Math.Clamp(percent, 0, 99);
+                app.StatusMessage = $"Downloading: {percent:0}% ({mbRead:0.1}/{mbTotal:0.1} MB)";
+            }
+            else
+            {
+                var mbRead = totalBytesRead / (1024.0 * 1024.0);
+                app.StatusMessage = $"Downloading: {mbRead:0.1} MB";
+            }
         }
     }
 
@@ -268,9 +325,11 @@ public partial class WingetService
                     totalBytesRead += bytesRead;
                     if (totalBytes > 0)
                     {
-                        var pct = (double)totalBytesRead / totalBytes * 50.0;
-                        app.Progress = Math.Min(50.0, pct);
-                        app.StatusMessage = $"Downloading Chrome MSI: {(int)(pct * 2)}%";
+                        var percent = Math.Round((double)totalBytesRead / totalBytes * 100.0, 0);
+                        var mbRead = totalBytesRead / (1024.0 * 1024.0);
+                        var mbTotal = totalBytes / (1024.0 * 1024.0);
+                        app.Progress = Math.Clamp(percent, 0, 99);
+                        app.StatusMessage = $"Downloading Chrome: {percent:0}% ({mbRead:0.1}/{mbTotal:0.1} MB)";
                     }
                 }
             }
@@ -635,9 +694,16 @@ public partial class WingetService
 
                     if (totalBytes > 0)
                     {
-                        var pct = (double)totalBytesRead / totalBytes * 50.0;
-                        app.Progress = Math.Min(50.0, pct);
-                        app.StatusMessage = $"Downloading: {(int)(pct * 2)}%";
+                        var percent = Math.Round((double)totalBytesRead / totalBytes * 100.0, 0);
+                        var mbRead = totalBytesRead / (1024.0 * 1024.0);
+                        var mbTotal = totalBytes / (1024.0 * 1024.0);
+                        app.Progress = Math.Clamp(percent, 0, 99);
+                        app.StatusMessage = $"Downloading: {percent:0}% ({mbRead:0.1}/{mbTotal:0.1} MB)";
+                    }
+                    else
+                    {
+                        var mbRead = totalBytesRead / (1024.0 * 1024.0);
+                        app.StatusMessage = $"Downloading: {mbRead:0.1} MB";
                     }
                 }
             }

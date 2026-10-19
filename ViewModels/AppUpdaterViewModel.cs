@@ -169,20 +169,37 @@ public partial class AppUpdaterViewModel : ObservableObject
             {
                 if (ct.IsCancellationRequested) break;
 
-                current++;
-                StatusText = $"Updating {item.Name} ({current}/{total})...";
-                OverallProgress = ((double)(current - 1) / total) * 100.0;
-                ActivityService.Instance.UpdateOverallProgress(OverallProgress);
-                ActivityService.Instance.UpdateTask(item.PackageId, ActivityTaskStatus.Running, $"Updating to {item.AvailableVersion}...", 30);
+                void OnItemPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+                {
+                    if (e.PropertyName == nameof(AppUpgradeItem.Progress) || e.PropertyName == nameof(AppUpgradeItem.StatusMessage))
+                    {
+                        ActivityService.Instance.UpdateTask(item.PackageId, ActivityTaskStatus.Running, item.StatusMessage, item.Progress);
+                    }
+                }
 
-                await _wingetService.UpgradeAppAsync(item, AddLog, ct);
+                item.PropertyChanged += OnItemPropertyChanged;
 
-                var finalStatus = item.IsSuccess ? ActivityTaskStatus.Completed :
-                                  item.IsFailed ? ActivityTaskStatus.Failed : ActivityTaskStatus.Completed;
-                ActivityService.Instance.UpdateTask(item.PackageId, finalStatus, item.StatusMessage, 100);
+                try
+                {
+                    current++;
+                    StatusText = $"Updating {item.Name} ({current}/{total})...";
+                    OverallProgress = ((double)(current - 1) / total) * 100.0;
+                    ActivityService.Instance.UpdateOverallProgress(OverallProgress);
+                    ActivityService.Instance.UpdateTask(item.PackageId, ActivityTaskStatus.Running, $"Updating to {item.AvailableVersion}...", item.Progress > 0 ? item.Progress : 15);
 
-                OverallProgress = ((double)current / total) * 100.0;
-                ActivityService.Instance.UpdateOverallProgress(OverallProgress);
+                    await _wingetService.UpgradeAppAsync(item, AddLog, ct);
+
+                    var finalStatus = item.IsSuccess ? ActivityTaskStatus.Completed :
+                                      item.IsFailed ? ActivityTaskStatus.Failed : ActivityTaskStatus.Completed;
+                    ActivityService.Instance.UpdateTask(item.PackageId, finalStatus, item.StatusMessage, 100);
+
+                    OverallProgress = ((double)current / total) * 100.0;
+                    ActivityService.Instance.UpdateOverallProgress(OverallProgress);
+                }
+                finally
+                {
+                    item.PropertyChanged -= OnItemPropertyChanged;
+                }
             }
 
             StatusText = ct.IsCancellationRequested ? "App upgrade cancelled." : "All selected applications updated successfully!";

@@ -139,7 +139,10 @@ public partial class ActivityService : ObservableObject
 
     public void UpdateTask(string taskId, ActivityTaskStatus status, string statusMessage, double progress = 0)
     {
-        Application.Current?.Dispatcher?.Invoke(() =>
+        var dispatcher = Application.Current?.Dispatcher;
+        if (dispatcher == null) return;
+
+        void ApplyUpdate()
         {
             var existing = ActiveTasks.FirstOrDefault(t => t.Id.Equals(taskId, StringComparison.OrdinalIgnoreCase));
             if (existing != null)
@@ -149,7 +152,16 @@ public partial class ActivityService : ObservableObject
                 existing.Progress = Math.Clamp(progress, 0, 100);
             }
             RecalculateMetrics();
-        });
+        }
+
+        if (dispatcher.CheckAccess())
+        {
+            ApplyUpdate();
+        }
+        else
+        {
+            dispatcher.BeginInvoke(ApplyUpdate);
+        }
     }
 
     public void UpdateOverallProgress(double progress, string? status = null)

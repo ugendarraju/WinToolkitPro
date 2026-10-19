@@ -436,21 +436,37 @@
                                                             Foreground="{DynamicResource TextFillColorTertiaryBrush}" Cursor="Hand" ToolTip="Dismiss"/>
                                                 </Grid>
 
-                                                <!-- Row 1: Status Message description -->
-                                                <TextBlock Grid.Row="1" Text="{Binding StatusMessage}" FontSize="10.5" 
-                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                                           Margin="0,3,0,4" TextTrimming="CharacterEllipsis"/>
+                                                <!-- Row 1: Status Message description & Live Progress Percentage -->
+                                                <Grid Grid.Row="1" Margin="0,3,0,5">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" FontSize="10.5" 
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Progress, StringFormat='{}{0:0}%'}" 
+                                                               FontSize="10.5" FontWeight="Bold" Foreground="#38bdf8" Margin="6,0,0,0">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Status}" Value="{x:Static models:ActivityTaskStatus.Running}">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Grid>
 
                                                 <!-- Row 2: Micro Progress Bar -->
-                                                <ProgressBar Grid.Row="2" Height="3" BorderThickness="0" Background="#1e293b"
-                                                             Foreground="#38bdf8" Value="{Binding Progress}">
+                                                <ProgressBar Grid.Row="2" Height="4" BorderThickness="0" Background="#1e293b"
+                                                             Foreground="#38bdf8" Value="{Binding Progress}" Maximum="100">
                                                     <ProgressBar.Style>
                                                         <Style TargetType="ProgressBar">
                                                             <Setter Property="IsIndeterminate" Value="False"/>
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Status}" Value="{x:Static models:ActivityTaskStatus.Running}">
-                                                                    <Setter Property="IsIndeterminate" Value="True"/>
-                                                                </DataTrigger>
                                                                 <DataTrigger Binding="{Binding Status}" Value="{x:Static models:ActivityTaskStatus.Completed}">
                                                                     <Setter Property="Value" Value="100"/>
                                                                     <Setter Property="Foreground" Value="#22c55e"/>

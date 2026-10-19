@@ -107,12 +107,15 @@
                         Margin="0,0,6,4" Padding="10,5" FontSize="11" Cursor="Hand"/>
 
                 <Button Command="{Binding ToggleActivityPanelCommand}" 
-                        Background="#0284c7" Foreground="White" BorderBrush="#38bdf8" BorderThickness="1"
-                        FontWeight="SemiBold" Margin="0,0,5,4" Padding="11,5" FontSize="11" Cursor="Hand"
-                        ToolTip="Toggle the installation activity drawer">
+                        Background="#0284c7" Foreground="White" BorderBrush="#38bdf8" BorderThickness="1.5"
+                        FontWeight="Bold" Margin="0,0,6,4" Padding="12,5" FontSize="11" Cursor="Hand"
+                        ToolTip="Toggle the active tasks and download progress panel">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="📊 " FontSize="11"/>
-                        <TextBlock Text="Activity"/>
+                        <TextBlock Text="Activity" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding OverallProgress, StringFormat=' ({0:0}%)'}" 
+                                   Visibility="{Binding IsInstalling, Converter={StaticResource BoolToVis}}" 
+                                   FontWeight="Bold" Foreground="#fef08a"/>
                     </StackPanel>
                 </Button>
 
