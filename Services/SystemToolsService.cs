@@ -578,7 +578,7 @@ public class SystemToolsService
         var list = new List<ServiceItem>();
 
         var script = @"
-            Get-CimInstance Win32_Service | Select-Object Name, DisplayName, State, StartMode, Description |
+            Get-CimInstance Win32_Service | Select-Object Name, DisplayName, State, StartMode, Description, PathName |
                 ConvertTo-Json -Compress
         ";
 
@@ -596,18 +596,23 @@ public class SystemToolsService
                     var state = el.TryGetProperty("State", out var s) ? s.GetString() ?? "" : "";
                     var mode = el.TryGetProperty("StartMode", out var m) ? m.GetString() ?? "" : "";
                     var desc = el.TryGetProperty("Description", out var ds) ? ds.GetString() ?? "" : "";
+                    var path = el.TryGetProperty("PathName", out var p) ? p.GetString() ?? "" : "";
 
                     if (string.IsNullOrWhiteSpace(name)) continue;
 
-                    list.Add(new ServiceItem
+                    var item = new ServiceItem
                     {
                         Name = name,
                         DisplayName = string.IsNullOrWhiteSpace(disp) ? name : disp,
                         Status = state,
                         StartupType = mode,
                         IsRunning = state.Equals("Running", StringComparison.OrdinalIgnoreCase),
-                        Description = desc
-                    });
+                        Description = desc,
+                        PathName = path
+                    };
+
+                    ServiceClassifier.Classify(item);
+                    list.Add(item);
                 }
             }
             catch { }

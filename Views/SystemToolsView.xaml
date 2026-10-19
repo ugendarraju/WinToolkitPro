@@ -36,6 +36,45 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Category Filter Chip Button Style for Services -->
+        <Style x:Key="ServiceCategoryChipStyle" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}"/>
+            <Setter Property="Padding" Value="8,3"/>
+            <Setter Property="Margin" Value="0,0,5,4"/>
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ChipBorder" 
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="12"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ChipBorder" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </UserControl.Resources>
 
     <Grid Margin="16,12">
@@ -374,64 +413,193 @@
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
 
+                            <!-- Row 0: Header & Action Buttons -->
                             <Grid Grid.Row="0" Margin="0,0,0,8">
-                                <StackPanel Orientation="Vertical">
-                                    <TextBlock Text="Background Services" FontWeight="Bold" FontSize="14"/>
-                                    <TextBlock Text="Inspect and toggle state of system and third-party services." FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                </StackPanel>
-                                <Button HorizontalAlignment="Right" Command="{Binding LoadServicesCommand}" 
-                                        Background="#0284c7" Foreground="White"
-                                        BorderBrush="#38bdf8" BorderThickness="1"
-                                        FontWeight="Bold" Padding="14,6" FontSize="11" Cursor="Hand"
-                                        ToolTip="Enumerate and inspect Windows background services">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="⚡ " FontSize="12"/>
-                                        <TextBlock Text="Load Services"/>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Background Services" FontWeight="Bold" FontSize="14"/>
+                                        <Border Background="#1e293b" CornerRadius="4" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                Visibility="{Binding TotalServicesCount, Converter={StaticResource IntToVis}}">
+                                            <TextBlock Text="{Binding TotalServicesCount, StringFormat='{}{0} total'}" FontSize="10" FontWeight="SemiBold" Foreground="#38bdf8"/>
+                                        </Border>
                                     </StackPanel>
-                                </Button>
+                                    <TextBlock Text="Categorized by software vendor and safety recommendation." FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                </StackPanel>
+                                
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Command="{Binding TurnOffAllSafeServicesCommand}" 
+                                            Background="#064e3b" Foreground="#6ee7b7" BorderBrush="#10b981" BorderThickness="1"
+                                            FontWeight="Bold" Padding="10,5" FontSize="10.5" Cursor="Hand" Margin="0,0,6,0"
+                                            ToolTip="Batch stop all running telemetry, diagnostic tracking, and safe-to-disable services">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="⚡ " FontSize="11"/>
+                                            <TextBlock Text="Stop Safe Services"/>
+                                        </StackPanel>
+                                    </Button>
+
+                                    <Button Command="{Binding LoadServicesCommand}" 
+                                            Background="#0284c7" Foreground="White"
+                                            BorderBrush="#38bdf8" BorderThickness="1"
+                                            FontWeight="Bold" Padding="12,5" FontSize="11" Cursor="Hand"
+                                            ToolTip="Enumerate and inspect Windows background services">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="🔄 " FontSize="11"/>
+                                            <TextBlock Text="Load Services"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
                             </Grid>
 
-                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <!-- Row 1: Search, Vendor Dropdown, Hide Microsoft Checkbox & Category Chips -->
+                            <Border Grid.Row="1" Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
+                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                                    CornerRadius="6" Padding="8,6" Margin="0,0,0,8">
+                                <StackPanel Orientation="Vertical">
+                                    <!-- Search & Company Row -->
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="150"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBox Grid.Column="0" Text="{Binding ServiceSearchQuery, UpdateSourceTrigger=PropertyChanged}" 
+                                                 VerticalContentAlignment="Center" Padding="8,4" FontSize="11" Margin="0,0,6,0"
+                                                 ToolTip="Type to filter services by name, display name, vendor, or description"/>
+
+                                        <ComboBox Grid.Column="1" ItemsSource="{Binding ServiceCompanies}" 
+                                                  SelectedItem="{Binding SelectedServiceCompany}"
+                                                  FontSize="10.5" Padding="6,3" VerticalAlignment="Center" Margin="0,0,6,0"
+                                                  ToolTip="Filter by software vendor or company"/>
+
+                                        <CheckBox Grid.Column="2" IsChecked="{Binding HideMicrosoftServices}" 
+                                                  Content="Hide Microsoft" FontSize="10.5" FontWeight="SemiBold"
+                                                  VerticalAlignment="Center" Margin="2,0,0,0"
+                                                  ToolTip="Hide Microsoft services to display only third-party and OEM vendor services"/>
+                                    </Grid>
+
+                                    <!-- Category Filter Chips -->
+                                    <ItemsControl ItemsSource="{Binding ServiceCategoryChips}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel Orientation="Horizontal"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource ServiceCategoryChipStyle}"
+                                                        Command="{Binding DataContext.SelectServiceCategoryFilterCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding Name}">
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Icon}" Margin="0,0,4,0" FontSize="10.5" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding DisplayName}" FontSize="10" VerticalAlignment="Center"/>
+                                                        <Border Background="#20ffffff" CornerRadius="6" Padding="4,0" Margin="4,0,0,0" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Count}" FontSize="9" FontWeight="SemiBold"/>
+                                                        </Border>
+                                                    </StackPanel>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Row 2: Categorized Services List -->
+                            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding ServicesList}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Border Margin="0,0,0,6" Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
-                                                    CornerRadius="4" Padding="8,6">
+                                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                                                    CornerRadius="6" Padding="10,8">
                                                 <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" FontSize="12" TextTrimming="CharacterEllipsis"/>
-                                                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                                            <TextBlock Text="{Binding Status}" FontSize="10" FontWeight="SemiBold"/>
-                                                            <TextBlock Text=" - Startup: " FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                                            <TextBlock Text="{Binding StartupType}" FontSize="10" FontWeight="SemiBold"/>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+
+                                                    <!-- Line 1: Name and Toggle Action -->
+                                                    <Grid Grid.Row="0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Text="{Binding Name, StringFormat='({0})'}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="6,1,0,0" VerticalAlignment="Center"/>
                                                         </StackPanel>
+
+                                                        <Button Grid.Column="1" Command="{Binding DataContext.ToggleServiceStateCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                CommandParameter="{Binding}" IsEnabled="{Binding CanToggle}"
+                                                                FontWeight="Bold" FontSize="10.5" Padding="10,4" Cursor="Hand" VerticalAlignment="Center"
+                                                                ToolTip="{Binding ProtectionTooltip}">
+                                                            <Button.Style>
+                                                                <Style TargetType="Button">
+                                                                    <Setter Property="Background" Value="#064e3b"/>
+                                                                    <Setter Property="BorderBrush" Value="#10b981"/>
+                                                                    <Setter Property="BorderThickness" Value="1"/>
+                                                                    <Setter Property="Foreground" Value="#6ee7b7"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                                            <Setter Property="Background" Value="#450a0a"/>
+                                                                            <Setter Property="BorderBrush" Value="#ef4444"/>
+                                                                            <Setter Property="Foreground" Value="#fca5a5"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding IsMandatory}" Value="True">
+                                                                            <Setter Property="Background" Value="#27272a"/>
+                                                                            <Setter Property="BorderBrush" Value="#3f3f46"/>
+                                                                            <Setter Property="Foreground" Value="#71717a"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Button.Style>
+                                                            <TextBlock>
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Text" Value="{Binding ToggleButtonText}"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsMandatory}" Value="True">
+                                                                                <Setter Property="Text" Value="🛡️ Protected"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                        </Button>
+                                                    </Grid>
+
+                                                    <!-- Line 2: Company Badge, Recommendation Tier Badge, and Status -->
+                                                    <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,5,0,0">
+                                                        <!-- Vendor / Company Pill -->
+                                                        <Border Background="{Binding CompanyBadgeBackground}" CornerRadius="3" Padding="5,1" Margin="0,0,6,0" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Company}" Foreground="{Binding CompanyBadgeForeground}" FontSize="9.5" FontWeight="SemiBold"/>
+                                                        </Border>
+
+                                                        <!-- Category Recommendation Pill -->
+                                                        <Border Background="{Binding BadgeBackground}" BorderBrush="{Binding BadgeBorder}" BorderThickness="1" 
+                                                                CornerRadius="3" Padding="5,1" Margin="0,0,8,0" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding CategoryDisplayName}" Foreground="{Binding BadgeForeground}" FontSize="9.5" FontWeight="SemiBold"/>
+                                                        </Border>
+
+                                                        <!-- Status & Startup Info -->
+                                                        <TextBlock Text="{Binding Status}" FontSize="10" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding StartupType, StringFormat=' - Startup: {0}'}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
                                                     </StackPanel>
-                                                    <Button Grid.Column="1" Command="{Binding DataContext.ToggleServiceStateCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                            CommandParameter="{Binding}" FontWeight="Bold" FontSize="11" Padding="12,5" Cursor="Hand" VerticalAlignment="Center">
-                                                        <Button.Style>
-                                                            <Style TargetType="Button">
-                                                                <Setter Property="Background" Value="#064e3b"/>
-                                                                <Setter Property="BorderBrush" Value="#10b981"/>
-                                                                <Setter Property="BorderThickness" Value="1"/>
-                                                                <Setter Property="Foreground" Value="#6ee7b7"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsRunning}" Value="True">
-                                                                        <Setter Property="Background" Value="#450a0a"/>
-                                                                        <Setter Property="BorderBrush" Value="#ef4444"/>
-                                                                        <Setter Property="Foreground" Value="#fca5a5"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Button.Style>
-                                                        <TextBlock Text="{Binding ToggleButtonText}"/>
-                                                    </Button>
+
+                                                    <!-- Line 3: Description -->
+                                                    <TextBlock Grid.Row="2" Text="{Binding Description}" FontSize="9.5" 
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                               TextTrimming="CharacterEllipsis" Margin="0,4,0,0"
+                                                               ToolTip="{Binding Description}"/>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>

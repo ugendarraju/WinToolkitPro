@@ -57,6 +57,43 @@ public partial class SystemToolsViewModel : ObservableObject
     [ObservableProperty]
     private bool _isDiskScanning;
 
+    // Service Filtering & Grouping Properties
+    private readonly List<ServiceItem> _allServices = new();
+
+    [ObservableProperty]
+    private string _serviceSearchQuery = string.Empty;
+
+    [ObservableProperty]
+    private string _selectedServiceCategory = "All";
+
+    [ObservableProperty]
+    private string _selectedServiceCompany = "All Companies";
+
+    [ObservableProperty]
+    private bool _hideMicrosoftServices;
+
+    [ObservableProperty]
+    private int _totalServicesCount;
+
+    [ObservableProperty]
+    private int _thirdPartyServicesCount;
+
+    [ObservableProperty]
+    private int _safeToDisableServicesCount;
+
+    [ObservableProperty]
+    private int _mandatoryServicesCount;
+
+    [ObservableProperty]
+    private int _runningServicesCount;
+
+    public ObservableCollection<string> ServiceCompanies { get; } = new();
+    public ObservableCollection<CategoryFilterItem> ServiceCategoryChips { get; } = new();
+
+    partial void OnServiceSearchQueryChanged(string value) => ApplyServiceFilter();
+    partial void OnSelectedServiceCompanyChanged(string value) => ApplyServiceFilter();
+    partial void OnHideMicrosoftServicesChanged(bool value) => ApplyServiceFilter();
+
     // Collections
     public ObservableCollection<UwpAppItem> AllApps { get; } = new();
     public ObservableCollection<UwpAppItem> FilteredApps { get; } = new();
@@ -343,16 +380,32 @@ public partial class SystemToolsViewModel : ObservableObject
     public async Task LoadServices()
     {
         ServicesList.Clear();
-        AddLog("Scanning Windows background services...");
+        _allServices.Clear();
+        AddLog("Scanning and categorizing Windows background services...");
 
         try
         {
             var services = await _systemToolsService.GetServicesAsync();
-            foreach (var s in services.OrderBy(x => x.DisplayName))
+            _allServices.AddRange(services);
+
+            // Populate Vendor/Company filter list
+            ServiceCompanies.Clear();
+            ServiceCompanies.Add("All Companies");
+            var topVendors = _allServices
+                .GroupBy(s => s.Company)
+                .OrderByDescending(g => g.Count())
+                .Select(g => g.Key);
+            foreach (var vendor in topVendors)
             {
-                ServicesList.Add(s);
+                if (!string.IsNullOrWhiteSpace(vendor))
+                    ServiceCompanies.Add(vendor);
             }
-            AddLog($"Loaded {ServicesList.Count} background services.");
+            SelectedServiceCompany = "All Companies";
+
+            UpdateServiceChips();
+            ApplyServiceFilter();
+
+            AddLog($"Categorized {_allServices.Count} services ({ThirdPartyServicesCount} Third-Party/OEM, {SafeToDisableServicesCount} Safe to Turn Off, {MandatoryServicesCount} Mandatory Core).");
         }
         catch (Exception ex)
         {
@@ -361,16 +414,151 @@ public partial class SystemToolsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public void SelectServiceCategoryFilter(string category)
+    {
+        SelectedServiceCategory = category;
+        foreach (var chip in ServiceCategoryChips)
+        {
+            chip.IsSelected = chip.Name.Equals(category, StringComparison.OrdinalIgnoreCase);
+        }
+        ApplyServiceFilter();
+    }
+
+    public void ApplyServiceFilter()
+    {
+        var query = _allServices.AsEnumerable();
+
+        if (HideMicrosoftServices)
+        {
+            query = query.Where(s => s.IsThirdParty);
+        }
+        else if (SelectedServiceCategory != "All")
+        {
+            query = SelectedServiceCategory switch
+            {
+                "ThirdParty" => query.Where(s => s.IsThirdParty),
+                "SafeToDisable" => query.Where(s => s.IsSafeToDisable),
+                "Recommended" => query.Where(s => s.Category == "Recommended"),
+                "MandatoryCore" => query.Where(s => s.IsMandatory),
+                _ => query
+            };
+        }
+
+        if (!string.IsNullOrWhiteSpace(SelectedServiceCompany) && SelectedServiceCompany != "All Companies")
+        {
+            query = query.Where(s => s.Company.Equals(SelectedServiceCompany, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(ServiceSearchQuery))
+        {
+            var q = ServiceSearchQuery.Trim();
+            query = query.Where(s =>
+                s.DisplayName.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                s.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                s.Company.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                s.Description.Contains(q, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var filtered = query.OrderBy(s => s.DisplayName).ToList();
+        ServicesList.Clear();
+        foreach (var s in filtered)
+        {
+            ServicesList.Add(s);
+        }
+    }
+
+    private void UpdateServiceChips()
+    {
+        TotalServicesCount = _allServices.Count;
+        ThirdPartyServicesCount = _allServices.Count(s => s.IsThirdParty);
+        SafeToDisableServicesCount = _allServices.Count(s => s.IsSafeToDisable);
+        MandatoryServicesCount = _allServices.Count(s => s.IsMandatory);
+        RunningServicesCount = _allServices.Count(s => s.IsRunning);
+        var recommendedCount = _allServices.Count(s => s.Category == "Recommended");
+
+        ServiceCategoryChips.Clear();
+        ServiceCategoryChips.Add(new CategoryFilterItem
+        {
+            Name = "All",
+            DisplayName = "All Services",
+            Icon = "🌟",
+            Count = TotalServicesCount,
+            IsSelected = SelectedServiceCategory == "All"
+        });
+        ServiceCategoryChips.Add(new CategoryFilterItem
+        {
+            Name = "ThirdParty",
+            DisplayName = "Third-Party & OEM",
+            Icon = "🏢",
+            Count = ThirdPartyServicesCount,
+            IsSelected = SelectedServiceCategory == "ThirdParty"
+        });
+        ServiceCategoryChips.Add(new CategoryFilterItem
+        {
+            Name = "SafeToDisable",
+            DisplayName = "Safe to Turn Off",
+            Icon = "⚡",
+            Count = SafeToDisableServicesCount,
+            IsSelected = SelectedServiceCategory == "SafeToDisable"
+        });
+        ServiceCategoryChips.Add(new CategoryFilterItem
+        {
+            Name = "Recommended",
+            DisplayName = "Recommended",
+            Icon = "⚙️",
+            Count = recommendedCount,
+            IsSelected = SelectedServiceCategory == "Recommended"
+        });
+        ServiceCategoryChips.Add(new CategoryFilterItem
+        {
+            Name = "MandatoryCore",
+            DisplayName = "Mandatory Core",
+            Icon = "🛡️",
+            Count = MandatoryServicesCount,
+            IsSelected = SelectedServiceCategory == "MandatoryCore"
+        });
+    }
+
+    [RelayCommand]
+    private async Task TurnOffAllSafeServices()
+    {
+        var targets = _allServices.Where(s => s.IsSafeToDisable && s.IsRunning).ToList();
+        if (targets.Count == 0)
+        {
+            AddLog("⚡ All safe-to-disable services are already stopped.");
+            return;
+        }
+
+        AddLog($"Stopping {targets.Count} safe-to-disable services (telemetry, feedback, tracking)...");
+        int stoppedCount = 0;
+        foreach (var svc in targets)
+        {
+            var ok = await _systemToolsService.StartOrStopServiceAsync(svc, false);
+            if (ok) stoppedCount++;
+        }
+        UpdateServiceChips();
+        ApplyServiceFilter();
+        AddLog($"✅ Successfully turned off {stoppedCount} of {targets.Count} safe-to-disable background services.");
+    }
+
+    [RelayCommand]
     private async Task ToggleServiceState(ServiceItem item)
     {
+        if (item.IsMandatory)
+        {
+            AddLog($"🛡️ Action Blocked: '{item.DisplayName}' is a mandatory Windows system core service. Stopping it is blocked to prevent system instability.");
+            return;
+        }
+
         var targetStart = !item.IsRunning;
         var action = targetStart ? "Starting" : "Stopping";
-        AddLog($"{action} service '{item.DisplayName}'...");
+        AddLog($"{action} service '{item.DisplayName}' ({item.Company})...");
 
         var ok = await _systemToolsService.StartOrStopServiceAsync(item, targetStart);
         if (ok)
         {
             AddLog($"✅ Service '{item.DisplayName}' is now {item.Status}.");
+            UpdateServiceChips();
         }
         else
         {
@@ -383,6 +571,12 @@ public partial class SystemToolsViewModel : ObservableObject
     {
         if (args?.Length == 2 && args[0] is ServiceItem item && args[1] is string startupType)
         {
+            if (item.IsMandatory && startupType.Equals("Disabled", StringComparison.OrdinalIgnoreCase))
+            {
+                AddLog($"🛡️ Action Blocked: Cannot disable mandatory Windows system service '{item.DisplayName}'.");
+                return;
+            }
+
             AddLog($"Setting '{item.DisplayName}' startup type to {startupType}...");
             var ok = await _systemToolsService.SetServiceStartupTypeAsync(item, startupType);
             if (ok)
