@@ -189,7 +189,7 @@
                 BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,8">
             <Grid>
                 <!-- Initial State (Before Any Scan) Prompt -->
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Panel.ZIndex="10">
                     <StackPanel.Style>
                         <Style TargetType="StackPanel">
                             <Setter Property="Visibility" Value="Collapsed"/>
@@ -216,12 +216,12 @@
                     <Button Content="🔍 Start Updates Scan" Command="{Binding ScanUpdatesCommand}" 
                             HorizontalAlignment="Center" Padding="18,8" FontSize="13" FontWeight="SemiBold"
                             Background="{DynamicResource AccentFillColorDefaultBrush}"
-                            Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                            Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" Cursor="Hand"/>
                 </StackPanel>
 
                 <!-- Clean State Prompt (Scan finished with 0 updates needed) -->
                 <Border Background="#064e3b" BorderBrush="#059669" BorderThickness="1" CornerRadius="10" Padding="28,24"
-                        HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="560">
+                        HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="560" Panel.ZIndex="10">
                     <Border.Style>
                         <Style TargetType="Border">
                             <Setter Property="Visibility" Value="Collapsed"/>
@@ -250,8 +250,35 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Scanning State Prompt -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Panel.ZIndex="10"
+                            Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}">
+                    <ProgressBar IsIndeterminate="True" Width="220" Height="6" Margin="0,0,0,14"
+                                 Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
+                    <TextBlock Text="Checking Microsoft Update Catalog..." FontSize="16" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                    <TextBlock Text="Querying Windows Update servers for pending security &amp; cumulative patches..." 
+                               FontSize="12" HorizontalAlignment="Center" Margin="0,4,0,0"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+
                 <!-- Update Items ScrollViewer -->
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer.Style>
+                        <Style TargetType="ScrollViewer">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding HasScanned}" Value="True"/>
+                                        <Condition Binding="{Binding IsCleanState}" Value="False"/>
+                                        <Condition Binding="{Binding IsScanning}" Value="False"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ScrollViewer.Style>
                     <ItemsControl ItemsSource="{Binding FilteredUpdates}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>

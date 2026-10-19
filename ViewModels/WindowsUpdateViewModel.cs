@@ -60,6 +60,7 @@ public partial class WindowsUpdateViewModel : ObservableObject
     [RelayCommand]
     private async Task ScanUpdates()
     {
+        if (IsScanning) return;
         IsScanning = true;
         StatusText = "Connecting to Microsoft Update Catalog & scanning...";
         HasSummary = false;
@@ -70,28 +71,38 @@ public partial class WindowsUpdateViewModel : ObservableObject
         FilteredUpdates.Clear();
         AddLog("Scanning for Windows OS and Microsoft software updates...");
 
-        var updates = await _updateService.ScanUpdatesAsync(AddLog, _updateCts.Token);
-        foreach (var item in updates)
+        try
         {
-            item.PropertyChanged += (s, e) =>
+            var updates = await _updateService.ScanUpdatesAsync(AddLog, _updateCts.Token);
+            foreach (var item in updates)
             {
-                if (e.PropertyName == nameof(WindowsUpdateItem.IsSelected))
+                item.PropertyChanged += (s, e) =>
                 {
-                    UpdateSelectionSummary();
-                }
-            };
-            AvailableUpdates.Add(item);
+                    if (e.PropertyName == nameof(WindowsUpdateItem.IsSelected))
+                    {
+                        UpdateSelectionSummary();
+                    }
+                };
+                AvailableUpdates.Add(item);
+            }
+
+            ApplyFilter();
+            UpdateSelectionSummary();
+            IsCleanState = AvailableUpdates.Count == 0;
+            StatusText = AvailableUpdates.Count > 0
+                ? $"Found {AvailableUpdates.Count} pending update(s)."
+                : "Your system is up to date! No pending Microsoft updates found.";
         }
-
-        ApplyFilter();
-        UpdateSelectionSummary();
-
-        HasScanned = true;
-        IsScanning = false;
-        IsCleanState = AvailableUpdates.Count == 0;
-        StatusText = AvailableUpdates.Count > 0
-            ? $"Found {AvailableUpdates.Count} pending update(s)."
-            : "Your system is up to date! No pending Microsoft updates found.";
+        catch (Exception ex)
+        {
+            AddLog($"Scan encountered an error: {ex.Message}");
+            StatusText = "Scan failed. Please check logs or try again.";
+        }
+        finally
+        {
+            HasScanned = true;
+            IsScanning = false;
+        }
     }
 
     [RelayCommand]
