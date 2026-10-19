@@ -6,164 +6,318 @@
              xmlns:vm="clr-namespace:WinToolkit.ViewModels"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:CleanerViewModel}"
-             d:DesignHeight="700" d:DesignWidth="1100">
+             d:DesignHeight="720" d:DesignWidth="1100">
+    <UserControl.Resources>
+        <!-- Segmented Tab Navigation Style -->
+        <Style x:Key="CleanerPillTabItem" TargetType="TabItem">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="PillBorder" Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
+                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1"
+                                CornerRadius="8" Padding="14,8" Margin="0,0,8,0" Cursor="Hand">
+                            <ContentPresenter x:Name="ContentSite" ContentSource="Header" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="PillBorder" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="PillBorder" Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+                                <Setter TargetName="PillBorder" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
     <Grid Margin="16,12">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/> <!-- Header Title -->
+            <RowDefinition Height="*"/>    <!-- SubTabs Content -->
         </Grid.RowDefinitions>
 
-        <!-- Top Header & Action Controls -->
-        <Grid Grid.Row="0" Margin="0,0,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
+        <!-- Top Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,12">
             <StackPanel Orientation="Vertical">
-                <TextBlock Text="System &amp; Cache Cleaner" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                <TextBlock Text="Deep clean Windows junk, temporary files, browser caches, crash dumps, and application caches to reclaim storage space." 
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="🧹" FontSize="20" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="System Cleaner &amp; Registry Optimizer" FontSize="22" FontWeight="SemiBold" 
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                </StackPanel>
+                <TextBlock Text="Deep clean Windows junk, temporary files, browser caches, crash dumps, and optimize registry integrity." 
                            FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
-            </StackPanel>
-
-            <!-- Action Controls -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button Content="🔍 Analyze Junk" Command="{Binding AnalyzeCommand}" 
-                        Background="#0284c7" Foreground="White" BorderBrush="#38bdf8" BorderThickness="1"
-                        FontWeight="Bold" Margin="0,0,6,0" Padding="14,6" FontSize="12" Cursor="Hand"/>
-
-                <Button Content="Select All" Command="{Binding SelectAllCommand}" 
-                        Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
-                        FontWeight="SemiBold" Margin="0,0,6,0" Padding="11,5" FontSize="12" Cursor="Hand"/>
-
-                <Button Content="Clear All" Command="{Binding DeselectAllCommand}" 
-                        Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
-                        FontWeight="SemiBold" Margin="0,0,8,0" Padding="11,5" FontSize="12" Cursor="Hand"/>
-
-                <Button Content="🧹 Clean Selected Files" 
-                        Command="{Binding CleanCommand}"
-                        Background="#059669"
-                        Foreground="White"
-                        BorderBrush="#34d399"
-                        BorderThickness="1"
-                        FontWeight="Bold"
-                        Padding="16,6"
-                        FontSize="13"
-                        Cursor="Hand"/>
             </StackPanel>
         </Grid>
 
-        <!-- Status & Metrics Toolbar -->
-        <Border Grid.Row="1" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
-                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,8">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+        <!-- SubTabs Navigation (Filesystem vs Registry) -->
+        <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedSubTabIndex}" Background="Transparent" BorderThickness="0">
+            <!-- ================= SubTab 0: Filesystem Junk & Cache ================= -->
+            <TabItem Header="🗑️ Filesystem Junk &amp; Caches" Style="{StaticResource CleanerPillTabItem}">
+                <Grid Margin="0,10,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- Action Controls Toolbar -->
+                        <RowDefinition Height="Auto"/> <!-- Status & Metrics Toolbar -->
+                        <RowDefinition Height="Auto"/> <!-- Summary Banner -->
+                        <RowDefinition Height="*"/>    <!-- Target Cards List -->
+                    </Grid.RowDefinitions>
 
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding StatusText}" FontWeight="Medium" FontSize="12"
-                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+                    <!-- Action Controls Toolbar -->
+                    <Border Grid.Row="0" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" 
+                            CornerRadius="8" Padding="12,8" Margin="0,0,0,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                    <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="4" Padding="8,2" Margin="14,0,0,0">
-                        <TextBlock FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
-                            <Run Text="Targets Selected: "/>
-                            <Run Text="{Binding SelectedCount, Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                            <Run Text=" | Est. Junk: "/>
-                            <Run Text="{Binding TotalJunkFormatted, Mode=OneWay}" FontWeight="Bold" Foreground="#38bdf8"/>
-                        </TextBlock>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="🔍 Analyze Junk" Command="{Binding AnalyzeCommand}" 
+                                        Background="#0284c7" Foreground="White" BorderBrush="#38bdf8" BorderThickness="1"
+                                        FontWeight="Bold" Margin="0,0,6,0" Padding="14,6" FontSize="11.5" Cursor="Hand"/>
+
+                                <Button Content="Select All" Command="{Binding SelectAllCommand}" 
+                                        Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
+                                        FontWeight="SemiBold" Margin="0,0,6,0" Padding="11,5" FontSize="11" Cursor="Hand"/>
+
+                                <Button Content="Clear All" Command="{Binding DeselectAllCommand}" 
+                                        Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
+                                        FontWeight="SemiBold" Margin="0,0,8,0" Padding="11,5" FontSize="11" Cursor="Hand"/>
+                            </StackPanel>
+
+                            <Button Grid.Column="1" Content="🧹 Clean Selected Files" 
+                                    Command="{Binding CleanCommand}"
+                                    Background="#059669" Foreground="White" BorderBrush="#34d399" BorderThickness="1"
+                                    FontWeight="Bold" Padding="16,6" FontSize="12" Cursor="Hand"/>
+                        </Grid>
                     </Border>
-                </StackPanel>
 
-                <ProgressBar Grid.Column="1" IsIndeterminate="{Binding IsAnalyzing}" Width="150" Height="5"
-                             Visibility="{Binding IsAnalyzing, Converter={StaticResource BoolToVis}}"
-                             Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
-            </Grid>
-        </Border>
+                    <!-- Status & Metrics Toolbar -->
+                    <Border Grid.Row="1" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                            BorderThickness="1" CornerRadius="6" Padding="10,7" Margin="0,0,0,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-        <!-- Summary Banner -->
-        <Border Grid.Row="2" Margin="0,0,0,8" 
-                Background="#064e3b" BorderBrush="#059669" BorderThickness="1" 
-                CornerRadius="6" Padding="12,8"
-                Visibility="{Binding HasSummary, Converter={StaticResource BoolToVis}}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="{Binding SummaryMessage}" FontWeight="SemiBold" FontSize="13" Foreground="#ecfdf5" VerticalAlignment="Center"/>
-                <Button Grid.Column="1" Content="🔍 Re-analyze" Command="{Binding AnalyzeCommand}" 
-                        Background="#0284c7" Foreground="White" BorderBrush="#38bdf8" BorderThickness="1"
-                        FontWeight="Bold" Padding="12,5" FontSize="11" Cursor="Hand"/>
-            </Grid>
-        </Border>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding StatusText}" FontWeight="Medium" FontSize="11.5"
+                                           Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
 
-        <!-- Target Cards List -->
-        <Border Grid.Row="3" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
-                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                BorderThickness="1" CornerRadius="6" Padding="8" Margin="0,0,0,8">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <ItemsControl ItemsSource="{Binding Targets}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Margin="0,0,0,6" 
-                                    Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
-                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                                    BorderThickness="1" 
-                                    CornerRadius="6" 
-                                    Padding="12,8">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
+                                <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="4" Padding="8,2" Margin="14,0,0,0">
+                                    <TextBlock FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                        <Run Text="Targets Selected: "/>
+                                        <Run Text="{Binding SelectedCount, Mode=OneWay}" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                        <Run Text=" | Est. Junk: "/>
+                                        <Run Text="{Binding TotalJunkFormatted, Mode=OneWay}" FontWeight="Bold" Foreground="#38bdf8"/>
+                                    </TextBlock>
+                                </Border>
+                            </StackPanel>
 
-                                    <!-- Checkbox -->
-                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                            <ProgressBar Grid.Column="1" IsIndeterminate="{Binding IsAnalyzing}" Width="150" Height="5"
+                                         Visibility="{Binding IsAnalyzing, Converter={StaticResource BoolToVis}}"
+                                         Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
+                        </Grid>
+                    </Border>
 
-                                    <!-- Details -->
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="13" 
-                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                                        <TextBlock Text="{Binding Description}" FontSize="11" 
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
-                                    </StackPanel>
+                    <!-- Summary Banner -->
+                    <Border Grid.Row="2" Margin="0,0,0,8" 
+                            Background="#064e3b" BorderBrush="#059669" BorderThickness="1" 
+                            CornerRadius="6" Padding="12,8"
+                            Visibility="{Binding HasSummary, Converter={StaticResource BoolToVis}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding SummaryMessage}" FontWeight="SemiBold" FontSize="12.5" Foreground="#ecfdf5" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="🔍 Re-analyze" Command="{Binding AnalyzeCommand}" 
+                                    Background="#0284c7" Foreground="White" BorderBrush="#38bdf8" BorderThickness="1"
+                                    FontWeight="Bold" Padding="12,4" FontSize="11" Cursor="Hand"/>
+                        </Grid>
+                    </Border>
 
-                                    <!-- Category Pill -->
-                                    <Border Grid.Column="2" Background="{DynamicResource SubtleFillColorTertiaryBrush}" 
-                                            CornerRadius="4" Padding="8,3" Margin="12,0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Category}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                    </Border>
+                    <!-- Target Cards List -->
+                    <Border Grid.Row="3" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                            BorderThickness="1" CornerRadius="6" Padding="8">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Targets}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,0,0,6" 
+                                                Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
+                                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                                                BorderThickness="1" CornerRadius="6" Padding="12,7">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
 
-                                    <!-- Size / Status Badge -->
-                                    <Border Grid.Column="3" CornerRadius="4" Padding="12,4" VerticalAlignment="Center">
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <Setter Property="Background" Value="#1f2937"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding BytesFound, Converter={StaticResource ZeroToVis}}" Value="Collapsed">
-                                                        <Setter Property="Background" Value="#1e3a5f"/>
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding IsBusy}" Value="True">
-                                                        <Setter Property="Background" Value="#d97706"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                        <TextBlock Text="{Binding Status}" FontSize="11" Foreground="#f3f4f6" FontWeight="SemiBold"/>
-                                    </Border>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
-        </Border>
+                                                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12.5" 
+                                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                    <TextBlock Text="{Binding Description}" FontSize="10.5" 
+                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
+                                                </StackPanel>
+
+                                                <Border Grid.Column="2" Background="{DynamicResource SubtleFillColorTertiaryBrush}" 
+                                                        CornerRadius="4" Padding="8,3" Margin="12,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Category}" FontSize="10.5" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                </Border>
+
+                                                <Border Grid.Column="3" CornerRadius="4" Padding="12,4" VerticalAlignment="Center" Background="#1f2937">
+                                                    <TextBlock Text="{Binding Status}" FontSize="10.5" Foreground="#f3f4f6" FontWeight="SemiBold"/>
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ================= SubTab 1: Registry Integrity & Cleaner ================= -->
+            <TabItem Header="⚙️ Registry Cleaner &amp; Optimizer" Style="{StaticResource CleanerPillTabItem}">
+                <Grid Margin="0,10,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- Action Toolbar -->
+                        <RowDefinition Height="Auto"/> <!-- Metrics & Status Toolbar -->
+                        <RowDefinition Height="Auto"/> <!-- Summary Banner -->
+                        <RowDefinition Height="*"/>    <!-- Issues DataGrid -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Registry Action Toolbar -->
+                    <Border Grid.Row="0" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" 
+                            CornerRadius="8" Padding="12,8" Margin="0,0,0,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Content="🔍 Scan Registry for Issues" Command="{Binding ScanRegistryCommand}" 
+                                        Background="#0284c7" Foreground="White" BorderBrush="#38bdf8" BorderThickness="1"
+                                        FontWeight="Bold" Margin="0,0,6,0" Padding="14,6" FontSize="11.5" Cursor="Hand"/>
+
+                                <Button Content="Select All" Command="{Binding SelectAllRegistryCommand}" 
+                                        Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
+                                        FontWeight="SemiBold" Margin="0,0,6,0" Padding="11,5" FontSize="11" Cursor="Hand"/>
+
+                                <Button Content="Clear All" Command="{Binding ClearAllRegistryCommand}" 
+                                        Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
+                                        FontWeight="SemiBold" Margin="0,0,12,0" Padding="11,5" FontSize="11" Cursor="Hand"/>
+
+                                <CheckBox Content="Create Registry Backup Before Fixing" IsChecked="{Binding BackupRegistryBeforeFix}" 
+                                          FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <Button Grid.Column="1" Content="⚡ Fix Selected Issues" 
+                                    Command="{Binding FixSelectedRegistryIssuesCommand}"
+                                    Background="#059669" Foreground="White" BorderBrush="#34d399" BorderThickness="1"
+                                    FontWeight="Bold" Padding="16,6" FontSize="12" Cursor="Hand"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Metrics & Status Toolbar -->
+                    <Border Grid.Row="1" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                            BorderThickness="1" CornerRadius="6" Padding="10,7" Margin="0,0,0,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding RegistryStatusText}" FontWeight="Medium" FontSize="11.5"
+                                           Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+
+                                <Border Background="{DynamicResource SubtleFillColorSecondaryBrush}" CornerRadius="4" Padding="8,2" Margin="14,0,0,0">
+                                    <TextBlock FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                        <Run Text="Issues Selected: "/>
+                                        <Run Text="{Binding SelectedRegistryIssueCount, Mode=OneWay}" FontWeight="Bold" Foreground="#38bdf8"/>
+                                        <Run Text=" / "/>
+                                        <Run Text="{Binding RegistryIssues.Count, Mode=OneWay}" FontWeight="SemiBold"/>
+                                    </TextBlock>
+                                </Border>
+                            </StackPanel>
+
+                            <ProgressBar Grid.Column="1" IsIndeterminate="{Binding IsScanningRegistry}" Width="150" Height="5"
+                                         Visibility="{Binding IsScanningRegistry, Converter={StaticResource BoolToVis}}"
+                                         Foreground="{DynamicResource AccentFillColorDefaultBrush}"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Summary Banner -->
+                    <Border Grid.Row="2" Margin="0,0,0,8" 
+                            Background="#064e3b" BorderBrush="#059669" BorderThickness="1" 
+                            CornerRadius="6" Padding="12,8"
+                            Visibility="{Binding HasRegistrySummary, Converter={StaticResource BoolToVis}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding RegistrySummaryMessage}" FontWeight="SemiBold" FontSize="12.5" Foreground="#ecfdf5" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="🔍 Re-scan" Command="{Binding ScanRegistryCommand}" 
+                                    Background="#0284c7" Foreground="White" BorderBrush="#38bdf8" BorderThickness="1"
+                                    FontWeight="Bold" Padding="12,4" FontSize="11" Cursor="Hand"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Registry Issues Table -->
+                    <Border Grid.Row="3" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                            BorderThickness="1" CornerRadius="6" Padding="4">
+                        <DataGrid ItemsSource="{Binding RegistryIssues}" AutoGenerateColumns="False" 
+                                  CanUserAddRows="False" CanUserDeleteRows="False" IsReadOnly="False"
+                                  Background="Transparent" BorderThickness="0" RowHeaderWidth="0"
+                                  GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#33ffffff"
+                                  SelectionMode="Single" HeadersVisibility="Column">
+                            <DataGrid.Columns>
+                                <DataGridCheckBoxColumn Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="40"/>
+
+                                <DataGridTextColumn Header="Issue Category" Binding="{Binding Category}" Width="160" FontWeight="SemiBold" IsReadOnly="True"/>
+
+                                <DataGridTextColumn Header="Registry Value / Key" Binding="{Binding ValueName}" Width="250" IsReadOnly="True"/>
+
+                                <DataGridTemplateColumn Header="Target Details" Width="3*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Vertical" Margin="4,2">
+                                                <TextBlock Text="{Binding Details}" FontSize="11" Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding KeyPath}" FontSize="9.5" Foreground="{DynamicResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="120" FontWeight="SemiBold" IsReadOnly="True"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
     </Grid>
 </UserControl>

@@ -22,6 +22,7 @@ public partial class MainWindow : FluentWindow
         var driverService = new DriverService(powerShellService);
         var updateService = new WindowsUpdateService(powerShellService);
         var cleanerService = new SystemCleanerService(powerShellService);
+        var registryCleanerService = new RegistryCleanerService(powerShellService);
         var systemToolsService = new SystemToolsService(powerShellService);
         var uninstallerService = new AdvancedUninstallerService(powerShellService);
         var gitHubUpdateService = new GitHubUpdateService();
@@ -32,7 +33,7 @@ public partial class MainWindow : FluentWindow
         var optimizerVM = new OptimizerViewModel(tweakService, catalogService);
         var driversVM = new DriversViewModel(driverService, hardwareService);
         var updateVM = new WindowsUpdateViewModel(updateService, powerShellService);
-        var cleanerVM = new CleanerViewModel(cleanerService);
+        var cleanerVM = new CleanerViewModel(cleanerService, registryCleanerService);
         var systemToolsVM = new SystemToolsViewModel(systemToolsService);
         var uninstallerVM = new AdvancedUninstallerViewModel(uninstallerService, systemToolsService);
         var activationVM = new ActivationViewModel();
