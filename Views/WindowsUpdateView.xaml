@@ -37,21 +37,27 @@
             <!-- Action Controls -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                 <Button Content="🔍 Scan Updates" Command="{Binding ScanUpdatesCommand}" 
-                        Margin="0,0,6,0" Padding="12,5" FontSize="12"/>
+                        Background="#0284c7" Foreground="White" BorderBrush="#38bdf8" BorderThickness="1"
+                        FontWeight="Bold" Margin="0,0,6,0" Padding="12,5" FontSize="12" Cursor="Hand"/>
 
                 <Button Content="Select All" Command="{Binding SelectAllCommand}" 
-                        Margin="0,0,6,0" Padding="10,5" FontSize="12"/>
+                        Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
+                        FontWeight="SemiBold" Margin="0,0,6,0" Padding="11,5" FontSize="12" Cursor="Hand"/>
 
                 <Button Content="Clear All" Command="{Binding DeselectAllCommand}" 
-                        Margin="0,0,8,0" Padding="10,5" FontSize="12"/>
+                        Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
+                        FontWeight="SemiBold" Margin="0,0,8,0" Padding="11,5" FontSize="12" Cursor="Hand"/>
 
                 <Button Content="⚡ Install Selected Updates" 
                         Command="{Binding InstallSelectedUpdatesCommand}"
-                        Background="{DynamicResource AccentFillColorDefaultBrush}"
-                        Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
-                        FontWeight="SemiBold"
+                        Background="#059669"
+                        Foreground="White"
+                        BorderBrush="#34d399"
+                        BorderThickness="1"
+                        FontWeight="Bold"
                         Padding="16,6"
-                        FontSize="13"/>
+                        FontSize="13"
+                        Cursor="Hand"/>
             </StackPanel>
         </Grid>
 

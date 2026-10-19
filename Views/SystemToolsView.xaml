@@ -322,7 +322,16 @@
                                     <TextBlock Text="Startup Applications" FontWeight="Bold" FontSize="14"/>
                                     <TextBlock Text="Programs configured to launch automatically when Windows boots." FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 </StackPanel>
-                                <Button HorizontalAlignment="Right" Content="🔄 Refresh" Command="{Binding LoadStartupAppsCommand}" Padding="8,3" FontSize="11"/>
+                                <Button HorizontalAlignment="Right" Command="{Binding LoadStartupAppsCommand}" 
+                                        Background="{DynamicResource AccentFillColorDefaultBrush}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                                        BorderBrush="#38bdf8" BorderThickness="1"
+                                        FontWeight="Bold" Padding="14,6" FontSize="11" Cursor="Hand"
+                                        ToolTip="Scan for startup programs">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="🔄 " FontSize="12"/>
+                                        <TextBlock Text="Scan Startup Apps"/>
+                                    </StackPanel>
+                                </Button>
                             </Grid>
 
                             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -341,8 +350,15 @@
                                                         <TextBlock Text="{Binding Command}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
                                                         <TextBlock Text="{Binding Location, StringFormat='Location: {0}'}" FontSize="9" Foreground="#38bdf8"/>
                                                     </StackPanel>
-                                                    <Button Grid.Column="1" Content="🗑️ Remove" Command="{Binding DataContext.RemoveStartupAppCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
-                                                            CommandParameter="{Binding}" Background="#7f1d1d" Foreground="White" FontSize="10" Padding="8,4" VerticalAlignment="Center"/>
+                                                    <Button Grid.Column="1" Command="{Binding DataContext.RemoveStartupAppCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                                                            CommandParameter="{Binding}" 
+                                                            Background="#dc2626" Foreground="White" BorderBrush="#f87171" BorderThickness="1"
+                                                            FontWeight="Bold" FontSize="11" Padding="12,5" Cursor="Hand" VerticalAlignment="Center">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="🗑️ " FontSize="11"/>
+                                                            <TextBlock Text="Remove"/>
+                                                        </StackPanel>
+                                                    </Button>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>
@@ -366,7 +382,16 @@
                                     <TextBlock Text="Background Services" FontWeight="Bold" FontSize="14"/>
                                     <TextBlock Text="Inspect and toggle state of system and third-party services." FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 </StackPanel>
-                                <Button HorizontalAlignment="Right" Content="🔄 Load Services" Command="{Binding LoadServicesCommand}" Padding="8,3" FontSize="11"/>
+                                <Button HorizontalAlignment="Right" Command="{Binding LoadServicesCommand}" 
+                                        Background="#0284c7" Foreground="White"
+                                        BorderBrush="#38bdf8" BorderThickness="1"
+                                        FontWeight="Bold" Padding="14,6" FontSize="11" Cursor="Hand"
+                                        ToolTip="Enumerate and inspect Windows background services">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="⚡ " FontSize="12"/>
+                                        <TextBlock Text="Load Services"/>
+                                    </StackPanel>
+                                </Button>
                             </Grid>
 
                             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -389,7 +414,22 @@
                                                         </StackPanel>
                                                     </StackPanel>
                                                     <Button Grid.Column="1" Command="{Binding DataContext.ToggleServiceStateCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                            CommandParameter="{Binding}" FontSize="10" Padding="8,4" VerticalAlignment="Center">
+                                                            CommandParameter="{Binding}" FontWeight="Bold" FontSize="11" Padding="12,5" Cursor="Hand" VerticalAlignment="Center">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button">
+                                                                <Setter Property="Background" Value="#064e3b"/>
+                                                                <Setter Property="BorderBrush" Value="#10b981"/>
+                                                                <Setter Property="BorderThickness" Value="1"/>
+                                                                <Setter Property="Foreground" Value="#6ee7b7"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                                                                        <Setter Property="Background" Value="#450a0a"/>
+                                                                        <Setter Property="BorderBrush" Value="#ef4444"/>
+                                                                        <Setter Property="Foreground" Value="#fca5a5"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
                                                         <TextBlock Text="{Binding ToggleButtonText}"/>
                                                     </Button>
                                                 </Grid>

@@ -45,19 +45,26 @@
                     </StackPanel>
                 </Button>
 
-                <Button Command="{Binding ScanUpgradesCommand}" Margin="0,0,5,4" Padding="10,5" FontSize="11">
+                <Button Command="{Binding ScanUpgradesCommand}" 
+                        Background="#0284c7" Foreground="White" BorderBrush="#38bdf8" BorderThickness="1"
+                        FontWeight="Bold" Margin="0,0,5,4" Padding="12,5" FontSize="11" Cursor="Hand">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="🔍 " FontSize="11"/>
                         <TextBlock Text="Check for Updates" FontSize="11"/>
                     </StackPanel>
                 </Button>
 
-                <Button Content="Select All" Command="{Binding SelectAllCommand}" Margin="0,0,5,4" Padding="10,5" FontSize="11"/>
-                <Button Content="Clear" Command="{Binding DeselectAllCommand}" Margin="0,0,5,4" Padding="10,5" FontSize="11"/>
+                <Button Content="Select All" Command="{Binding SelectAllCommand}" 
+                        Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
+                        FontWeight="SemiBold" Margin="0,0,5,4" Padding="11,5" FontSize="11" Cursor="Hand"/>
+                <Button Content="Clear" Command="{Binding DeselectAllCommand}" 
+                        Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
+                        FontWeight="SemiBold" Margin="0,0,5,4" Padding="11,5" FontSize="11" Cursor="Hand"/>
 
                 <Button Content="Cancel" Command="{Binding CancelUpgradeCommand}" 
                         Visibility="{Binding IsUpgrading, Converter={StaticResource BoolToVis}}"
-                        Padding="10,5" FontSize="11" Margin="0,0,0,4"/>
+                        Background="#dc2626" Foreground="White" BorderBrush="#f87171" BorderThickness="1"
+                        FontWeight="Bold" Padding="12,5" FontSize="11" Margin="0,0,0,4" Cursor="Hand"/>
             </WrapPanel>
         </Grid>
 

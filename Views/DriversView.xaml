@@ -76,10 +76,13 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Detected Hardware Configuration" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                    <Button Content="🔄 Refresh Specs" Command="{Binding LoadSystemSpecsCommand}" Padding="12,5" FontSize="11" Margin="0,0,8,0"/>
+                                    <Button Content="🔄 Refresh Specs" Command="{Binding LoadSystemSpecsCommand}" 
+                                            Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
+                                            FontWeight="SemiBold" Padding="12,5" FontSize="11" Margin="0,0,8,0" Cursor="Hand"/>
                                     <Button Command="{Binding GenerateBatteryReportCommand}" 
                                             Visibility="{Binding Hardware.HasBattery, Converter={StaticResource BoolToVis}}"
-                                            Background="#0284c7" Foreground="White" FontWeight="SemiBold" Padding="12,5" FontSize="11">
+                                            Background="#0284c7" Foreground="White" BorderBrush="#38bdf8" BorderThickness="1"
+                                            FontWeight="SemiBold" Padding="12,5" FontSize="11" Cursor="Hand">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="📄 "/>
                                             <TextBlock Text="Open Full Battery Report (HTML)"/>
@@ -306,17 +309,25 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Content="Select All" Command="{Binding SelectAllDriversCommand}" Margin="0,0,6,0" Padding="10,5" FontSize="11"/>
-                                    <Button Content="Clear All" Command="{Binding DeselectAllDriversCommand}" Margin="0,0,8,0" Padding="10,5" FontSize="11"/>
-                                </StackPanel>
+                                    <Button Content="Select All" Command="{Binding SelectAllDriversCommand}" 
+                                            Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
+                                            FontWeight="SemiBold" Margin="0,0,6,0" Padding="11,5" FontSize="11" Cursor="Hand"/>
+                                    <Button Content="Clear All" Command="{Binding DeselectAllDriversCommand}" 
+                                            Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
+                                            FontWeight="SemiBold" Margin="0,0,8,0" Padding="11,5" FontSize="11" Cursor="Hand"/>
+                                 </StackPanel>
 
-                                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                    <Button Content="🔍 Scan Hardware" Command="{Binding ScanHardwareCommand}" Margin="0,0,6,0" Padding="12,5" FontSize="11"/>
-                                    <Button Content="🌐 Check Updates" Command="{Binding CheckOnlineUpdatesCommand}" Margin="0,0,6,0" Padding="12,5" FontSize="11"/>
+                                 <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                    <Button Content="🔍 Scan Hardware" Command="{Binding ScanHardwareCommand}" 
+                                            Background="#0284c7" Foreground="White" BorderBrush="#38bdf8" BorderThickness="1"
+                                            FontWeight="Bold" Margin="0,0,6,0" Padding="12,5" FontSize="11" Cursor="Hand"/>
+                                    <Button Content="🌐 Check Updates" Command="{Binding CheckOnlineUpdatesCommand}" 
+                                            Background="#2563eb" Foreground="White" BorderBrush="#60a5fa" BorderThickness="1"
+                                            FontWeight="Bold" Margin="0,0,6,0" Padding="12,5" FontSize="11" Cursor="Hand"/>
                                     <Button Content="{Binding InstallButtonText}" 
                                             Command="{Binding InstallDriverUpdatesCommand}"
-                                            Background="{DynamicResource AccentFillColorDefaultBrush}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
-                                            FontWeight="SemiBold" Padding="14,6" FontSize="12" MinWidth="180"/>
+                                            Background="#059669" Foreground="White" BorderBrush="#34d399" BorderThickness="1"
+                                            FontWeight="Bold" Padding="14,6" FontSize="12" MinWidth="180" Cursor="Hand"/>
                                 </StackPanel>
                             </Grid>
                         </Grid>

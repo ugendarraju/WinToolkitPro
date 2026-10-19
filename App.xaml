@@ -19,6 +19,16 @@
             <Style TargetType="TextBlock">
                 <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
             </Style>
+
+            <!-- Global High-Contrast Modern Button Default Style -->
+            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="Background" Value="#1e293b"/>
+                <Setter Property="BorderBrush" Value="#475569"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Foreground" Value="#f8fafc"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Cursor" Value="Hand"/>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

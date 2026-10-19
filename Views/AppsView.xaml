@@ -80,28 +80,57 @@
                 <Button Command="{Binding InstallSelectedCommand}"
                         Background="{DynamicResource AccentFillColorDefaultBrush}"
                         Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                        BorderBrush="#38bdf8" BorderThickness="1"
                         FontWeight="Bold"
                         Padding="14,6"
                         FontSize="12"
-                        Margin="0,0,6,4">
+                        Margin="0,0,6,4"
+                       
+                        Cursor="Hand">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="⚡ Install Selected " FontWeight="Bold" FontSize="12"/>
                         <TextBlock Text="{Binding SelectedCount, StringFormat='({0})'}" FontWeight="Bold" FontSize="12"/>
                     </StackPanel>
                 </Button>
 
-                <Button Content="Select All" Command="{Binding SelectAllCommand}" Margin="0,0,5,4" Padding="10,5" FontSize="11"/>
-                <Button Content="Clear All" Command="{Binding DeselectAllCommand}" Margin="0,0,5,4" Padding="10,5" FontSize="11"/>
-                <Button Content="Expand All" Command="{Binding ExpandAllCommand}" Margin="0,0,5,4" Padding="9,5" FontSize="11"/>
-                <Button Content="Collapse All" Command="{Binding CollapseAllCommand}" Margin="0,0,6,4" Padding="9,5" FontSize="11"/>
-                <Button Content="📊 Activity" Command="{Binding ToggleActivityPanelCommand}" 
-                        Background="#0369a1" Foreground="White" FontWeight="SemiBold" Margin="0,0,5,4" Padding="10,5" FontSize="11"
-                        ToolTip="Toggle the installation activity drawer"/>
-                <Button Content="🧹 Clean Temp" Command="{Binding CleanTempCacheCommand}" Margin="0,0,5,4" Padding="9,5" FontSize="11"/>
+                <Button Content="Select All" Command="{Binding SelectAllCommand}" 
+                        Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
+                        FontWeight="SemiBold" Margin="0,0,5,4" Padding="11,5" FontSize="11" Cursor="Hand"/>
+                <Button Content="Clear All" Command="{Binding DeselectAllCommand}" 
+                        Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
+                        FontWeight="SemiBold" Margin="0,0,5,4" Padding="11,5" FontSize="11" Cursor="Hand"/>
+                <Button Content="Expand All" Command="{Binding ExpandAllCommand}" 
+                        Background="#1e293b" Foreground="#cbd5e1" BorderBrush="#334155" BorderThickness="1"
+                        Margin="0,0,5,4" Padding="10,5" FontSize="11" Cursor="Hand"/>
+                <Button Content="Collapse All" Command="{Binding CollapseAllCommand}" 
+                        Background="#1e293b" Foreground="#cbd5e1" BorderBrush="#334155" BorderThickness="1"
+                        Margin="0,0,6,4" Padding="10,5" FontSize="11" Cursor="Hand"/>
+
+                <Button Command="{Binding ToggleActivityPanelCommand}" 
+                        Background="#0284c7" Foreground="White" BorderBrush="#38bdf8" BorderThickness="1"
+                        FontWeight="SemiBold" Margin="0,0,5,4" Padding="11,5" FontSize="11" Cursor="Hand"
+                        ToolTip="Toggle the installation activity drawer">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="📊 " FontSize="11"/>
+                        <TextBlock Text="Activity"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Clean Temp button highlighted with high-contrast warm amber badge styling -->
+                <Button Command="{Binding CleanTempCacheCommand}" 
+                        Background="#b45309" Foreground="White" BorderBrush="#f59e0b" BorderThickness="1"
+                        FontWeight="Bold" Margin="0,0,5,4" Padding="12,5" FontSize="11" Cursor="Hand"
+                        ToolTip="Purge cached installers and temporary download files">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🧹 " FontSize="11"/>
+                        <TextBlock Text="Clean Temp"/>
+                    </StackPanel>
+                </Button>
                 
                 <Button Content="Cancel" Command="{Binding CancelInstallationCommand}" 
                         Visibility="{Binding IsInstalling, Converter={StaticResource BoolToVis}}"
-                        Padding="10,5" FontSize="11" Margin="0,0,0,4"/>
+                        Background="#dc2626" Foreground="White" BorderBrush="#f87171" BorderThickness="1"
+                        FontWeight="Bold" Padding="12,5" FontSize="11" Margin="0,0,0,4" Cursor="Hand"/>
             </WrapPanel>
         </Grid>
 
