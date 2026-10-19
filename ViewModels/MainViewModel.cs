@@ -15,6 +15,7 @@ public partial class MainViewModel : ObservableObject
     public WindowsUpdateViewModel WindowsUpdateVM { get; }
     public CleanerViewModel CleanerVM { get; }
     public SystemToolsViewModel SystemToolsVM { get; }
+    public AdvancedUninstallerViewModel UninstallerVM { get; }
     public ActivationViewModel ActivationVM { get; }
     public GitHubUpdateService GitHubUpdater { get; }
     public ActivityService Activity => ActivityService.Instance;
@@ -67,6 +68,7 @@ public partial class MainViewModel : ObservableObject
         WindowsUpdateViewModel windowsUpdateVM,
         CleanerViewModel cleanerVM,
         SystemToolsViewModel systemToolsVM,
+        AdvancedUninstallerViewModel uninstallerVM,
         ActivationViewModel activationVM,
         GitHubUpdateService gitHubUpdater)
     {
@@ -77,6 +79,7 @@ public partial class MainViewModel : ObservableObject
         WindowsUpdateVM = windowsUpdateVM;
         CleanerVM = cleanerVM;
         SystemToolsVM = systemToolsVM;
+        UninstallerVM = uninstallerVM;
         ActivationVM = activationVM;
         GitHubUpdater = gitHubUpdater;
 
@@ -94,10 +97,11 @@ public partial class MainViewModel : ObservableObject
         var appsInit = AppsVM.InitializeAsync();
         var optInit = OptimizerVM.InitializeAsync();
 
-        // 3. Initialize background hardware specs concurrently without blocking UI
+        // 3. Initialize background hardware specs & uninstaller catalog concurrently without blocking UI
         _ = Task.Run(async () =>
         {
             try { await DriversVM.InitializeAsync(); } catch { }
+            try { await UninstallerVM.RefreshAllAsync(); } catch { }
         });
 
         await Task.WhenAll(appsInit, optInit);

@@ -23,6 +23,7 @@ public partial class MainWindow : FluentWindow
         var updateService = new WindowsUpdateService(powerShellService);
         var cleanerService = new SystemCleanerService(powerShellService);
         var systemToolsService = new SystemToolsService(powerShellService);
+        var uninstallerService = new AdvancedUninstallerService(powerShellService);
         var gitHubUpdateService = new GitHubUpdateService();
 
         // Initialize ViewModels
@@ -33,9 +34,10 @@ public partial class MainWindow : FluentWindow
         var updateVM = new WindowsUpdateViewModel(updateService, powerShellService);
         var cleanerVM = new CleanerViewModel(cleanerService);
         var systemToolsVM = new SystemToolsViewModel(systemToolsService);
+        var uninstallerVM = new AdvancedUninstallerViewModel(uninstallerService, systemToolsService);
         var activationVM = new ActivationViewModel();
 
-        _viewModel = new MainViewModel(appsVM, appUpdaterVM, optimizerVM, driversVM, updateVM, cleanerVM, systemToolsVM, activationVM, gitHubUpdateService);
+        _viewModel = new MainViewModel(appsVM, appUpdaterVM, optimizerVM, driversVM, updateVM, cleanerVM, systemToolsVM, uninstallerVM, activationVM, gitHubUpdateService);
         DataContext = _viewModel;
 
         // Instantly start checking for updates in parallel as window is created
