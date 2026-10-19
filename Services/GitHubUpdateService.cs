@@ -198,14 +198,15 @@ if (Get-Process -Id $procId -ErrorAction SilentlyContinue) {{
 
 # Copy new payload files over existing install
 Write-Output 'Copying updated version files...'
-Copy-Item -Path ""$sourceDir\*"" -Destination ""$targetDir"" -Recurse -Force -ErrorAction SilentlyContinue
+$sourceItems = Join-Path $sourceDir '*'
+Copy-Item -Path $sourceItems -Destination $targetDir -Recurse -Force -ErrorAction SilentlyContinue
 
 # Unblock files to eliminate Windows SmartScreen Mark-of-the-Web
-Get-ChildItem -Path ""$targetDir"" -Recurse -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue
+Get-ChildItem -Path $targetDir -Recurse -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue
 
 # Launch new updated instance elevated
 Write-Output 'Relaunching WinToolkit Pro...'
-Start-Sleep -Milliseconds 500
+Start-Sleep -Milliseconds 800
 Start-Process -FilePath $exePath -Verb RunAs
 
 # Clean up updater temp folder
