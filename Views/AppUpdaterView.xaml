@@ -30,14 +30,26 @@
 
             <!-- Prominent Action Buttons Bar -->
             <WrapPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
-                <!-- Primary START UPDATE button -->
+                <!-- 1. Check for Updates -->
+                <Button Command="{Binding ScanUpgradesCommand}" 
+                        Background="#0284c7" Foreground="White" BorderBrush="#38bdf8" BorderThickness="1.5"
+                        FontWeight="Bold" Margin="0,0,8,4" Padding="14,6" FontSize="12" Cursor="Hand">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🔍 " FontSize="12"/>
+                        <TextBlock Text="Check for Updates" FontSize="12" FontWeight="Bold"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- 2. Primary START UPDATE button -->
                 <Button Command="{Binding UpgradeSelectedCommand}"
-                        Background="{DynamicResource AccentFillColorDefaultBrush}"
-                        Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                        Background="#059669"
+                        Foreground="White"
+                        BorderBrush="#34d399"
+                        BorderThickness="1.5"
                         FontWeight="Bold"
                         Padding="14,6"
                         FontSize="12"
-                        Margin="0,0,6,4"
+                        Margin="0,0,8,4"
                         Cursor="Hand">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="⚡ Start Update " FontWeight="Bold" FontSize="12"/>
@@ -45,25 +57,18 @@
                     </StackPanel>
                 </Button>
 
-                <Button Command="{Binding ScanUpgradesCommand}" 
-                        Background="#0284c7" Foreground="White" BorderBrush="#38bdf8" BorderThickness="1"
-                        FontWeight="Bold" Margin="0,0,5,4" Padding="12,5" FontSize="11" Cursor="Hand">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="🔍 " FontSize="11"/>
-                        <TextBlock Text="Check for Updates" FontSize="11"/>
-                    </StackPanel>
-                </Button>
-
+                <!-- 3. Selection Controls -->
                 <Button Content="Select All" Command="{Binding SelectAllCommand}" 
                         Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
-                        FontWeight="SemiBold" Margin="0,0,5,4" Padding="11,5" FontSize="11" Cursor="Hand"/>
+                        FontWeight="SemiBold" Margin="0,0,6,4" Padding="11,5" FontSize="11" Cursor="Hand"/>
                 <Button Content="Clear" Command="{Binding DeselectAllCommand}" 
                         Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
-                        FontWeight="SemiBold" Margin="0,0,5,4" Padding="11,5" FontSize="11" Cursor="Hand"/>
+                        FontWeight="SemiBold" Margin="0,0,6,4" Padding="11,5" FontSize="11" Cursor="Hand"/>
 
-                <Button Content="Cancel" Command="{Binding CancelUpgradeCommand}" 
+                <!-- 4. Cancel Upgrade -->
+                <Button Content="⏹️ Cancel" Command="{Binding CancelUpgradeCommand}" 
                         Visibility="{Binding IsUpgrading, Converter={StaticResource BoolToVis}}"
-                        Background="#dc2626" Foreground="White" BorderBrush="#f87171" BorderThickness="1"
+                        Background="#dc2626" Foreground="White" BorderBrush="#f87171" BorderThickness="1.5"
                         FontWeight="Bold" Padding="12,5" FontSize="11" Margin="0,0,0,4" Cursor="Hand"/>
             </WrapPanel>
         </Grid>
