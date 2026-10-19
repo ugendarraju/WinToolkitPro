@@ -84,21 +84,27 @@ public partial class AdvancedUninstallerViewModel : ObservableObject
         {
             // 1. Scan Desktop software
             var softList = await _uninstallerService.ScanInstalledSoftwareAsync(AddLog);
-            AllPrograms.Clear();
-            foreach (var item in softList) AllPrograms.Add(item);
-
+            
             // 2. Scan UWP Apps
             var uwpList = await _systemToolsService.ScanUwpAppsAsync(AddLog);
-            AllWindowsApps.Clear();
-            foreach (var item in uwpList) AllWindowsApps.Add(item);
-
+            
             // 3. Scan Browser Extensions
             var extList = await _uninstallerService.ScanBrowserExtensionsAsync(AddLog);
-            BrowserExtensions.Clear();
-            foreach (var item in extList) BrowserExtensions.Add(item);
 
-            ApplyFilter();
-            StatusText = $"Loaded {AllPrograms.Count} desktop apps, {AllWindowsApps.Count} Windows apps, and {BrowserExtensions.Count} browser extensions.";
+            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+            {
+                AllPrograms.Clear();
+                foreach (var item in softList) AllPrograms.Add(item);
+
+                AllWindowsApps.Clear();
+                foreach (var item in uwpList) AllWindowsApps.Add(item);
+
+                BrowserExtensions.Clear();
+                foreach (var item in extList) BrowserExtensions.Add(item);
+
+                ApplyFilter();
+                StatusText = $"Loaded {AllPrograms.Count} desktop apps, {AllWindowsApps.Count} Windows apps, and {BrowserExtensions.Count} browser extensions.";
+            });
         }
         catch (Exception ex)
         {
@@ -363,7 +369,25 @@ public partial class AdvancedUninstallerViewModel : ObservableObject
             successCount++;
         }
 
-        StatusText = $"Batch uninstallation finished. Successfully processed {successCount} application(s).";
+        StatusText = $"Batch uninstallation complete. Successfully removed {successCount} application(s).";
+        AddLog($"[Batch Uninstall] Completed processing {successCount} application(s).");
+
+        // Immediately remove uninstalled items from UI list
+        System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+        {
+            foreach (var prog in selected)
+            {
+                AllPrograms.Remove(prog);
+                FilteredPrograms.Remove(prog);
+            }
+        });
+
+        MessageBox.Show(
+            $"Batch uninstallation completed successfully!\n\nProcessed: {successCount} application(s).\nResidual leftovers and registry branches were automatically cleaned.",
+            "Batch Uninstall Complete",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+
         await RefreshAllAsync();
     }
 
