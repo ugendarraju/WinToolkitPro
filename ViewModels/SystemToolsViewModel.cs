@@ -587,7 +587,7 @@ public partial class SystemToolsViewModel : ObservableObject
     }
 
     // ========================================================
-    // Disk Space Analyzer / SpaceSniffer Treemap Commands
+    // Disk Space Analyzer Commands
     // ========================================================
     [RelayCommand]
     public async Task AnalyzeDiskSpace()
@@ -625,56 +625,6 @@ public partial class SystemToolsViewModel : ObservableObject
     private void ToggleView()
     {
         IsTreemapView = !IsTreemapView;
-    }
-
-    [RelayCommand]
-    public async Task LaunchSpaceSniffer()
-    {
-        AddLog("Checking for SpaceSniffer utility on system...");
-        StatusMessage = "Launching SpaceSniffer...";
-
-        // Check if SpaceSniffer is available in PATH or common paths
-        var commonPaths = new[]
-        {
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "SpaceSniffer", "SpaceSniffer.exe"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "SpaceSniffer", "SpaceSniffer.exe"),
-            @"C:\ProgramData\chocolatey\bin\SpaceSniffer.exe"
-        };
-
-        string? foundPath = commonPaths.FirstOrDefault(File.Exists);
-
-        if (foundPath != null)
-        {
-            AddLog($"Found SpaceSniffer at: {foundPath}. Launching...");
-            Process.Start(new ProcessStartInfo { FileName = foundPath, Arguments = SelectedDrive, UseShellExecute = true });
-            StatusMessage = "SpaceSniffer launched.";
-            return;
-        }
-
-        // Prompt user and offer to install via winget
-        AddLog("SpaceSniffer is not installed. Downloading & installing portable SpaceSniffer via winget...");
-        StatusMessage = "Installing SpaceSniffer via winget...";
-
-        try
-        {
-            var res = await _systemToolsService.ExecutePowerShellAsync("winget install --id UderzoSoftware.SpaceSniffer -e --silent --accept-source-agreements --accept-package-agreements", AddLog);
-            if (res.Success)
-            {
-                AddLog("SpaceSniffer installation finished. Attempting launch...");
-                StatusMessage = "SpaceSniffer installed successfully. Launching...";
-                Process.Start(new ProcessStartInfo { FileName = "SpaceSniffer.exe", Arguments = SelectedDrive, UseShellExecute = true });
-            }
-            else
-            {
-                StatusMessage = "Could not automatically download SpaceSniffer. Opening official website...";
-                Process.Start(new ProcessStartInfo { FileName = "https://www.uderzo.it/main_products/space_sniffer/", UseShellExecute = true });
-            }
-        }
-        catch (Exception ex)
-        {
-            AddLog($"SpaceSniffer launch error: {ex.Message}");
-            Process.Start(new ProcessStartInfo { FileName = "https://www.uderzo.it/main_products/space_sniffer/", UseShellExecute = true });
-        }
     }
 
     private async Task ScanPathAsync(string targetPath)

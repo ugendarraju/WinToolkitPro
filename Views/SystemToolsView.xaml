@@ -611,8 +611,8 @@
                 </Grid>
             </TabItem>
 
-            <!-- Sub Tab 4: SpaceSniffer Disk Treemap Visualizer -->
-            <TabItem Header="🗺️ SpaceSniffer Treemap Analyzer">
+            <!-- Sub Tab 4: Visual Disk Space Analyzer -->
+            <TabItem Header="🗺️ Disk Space Analyzer">
                 <Grid Margin="0,8,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -640,23 +640,17 @@
 
                             <!-- Actions -->
                             <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button Content="🔍 Scan Visual Treemap" Command="{Binding AnalyzeDiskSpaceCommand}"
+                                <Button Content="🔍 Scan Disk Space" Command="{Binding AnalyzeDiskSpaceCommand}"
                                         Background="{DynamicResource AccentFillColorDefaultBrush}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
-                                        FontWeight="SemiBold" Padding="12,6" FontSize="12" Margin="0,0,8,0"/>
+                                        BorderBrush="#38bdf8" BorderThickness="1"
+                                        FontWeight="Bold" Padding="14,6" FontSize="12" Margin="0,0,8,0" Cursor="Hand"/>
 
                                 <Button Command="{Binding ToggleViewCommand}"
-                                        Padding="10,6" FontSize="11" Margin="0,0,8,0">
+                                        Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
+                                        FontWeight="SemiBold" Padding="11,5" FontSize="11" Cursor="Hand">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="🔄 "/>
                                         <TextBlock Text="Switch View"/>
-                                    </StackPanel>
-                                </Button>
-
-                                <Button Command="{Binding LaunchSpaceSnifferCommand}"
-                                        Background="#0284c7" Foreground="White" FontWeight="Bold" Padding="12,6" FontSize="12" Cursor="Hand">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="🚀 "/>
-                                        <TextBlock Text="Launch SpaceSniffer App"/>
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
