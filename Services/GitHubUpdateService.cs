@@ -16,12 +16,20 @@ public class GitHubUpdateService
 {
     private const string RepoOwner = "ugendarraju";
     private const string RepoName = "WinToolkitPro";
-    private static readonly HttpClient HttpClient = new();
+    private static readonly HttpClient ApiClient = new()
+    {
+        Timeout = TimeSpan.FromSeconds(10)
+    };
+
+    private static readonly HttpClient DownloadClient = new()
+    {
+        Timeout = TimeSpan.FromMinutes(10)
+    };
 
     static GitHubUpdateService()
     {
-        HttpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("WinToolkitPro-Updater", "1.5.0"));
-        HttpClient.Timeout = TimeSpan.FromSeconds(8);
+        ApiClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("WinToolkitPro-Updater", "1.8.0"));
+        DownloadClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("WinToolkitPro-Updater", "1.8.0"));
     }
 
     public record ReleaseUpdateInfo(
@@ -47,7 +55,7 @@ public class GitHubUpdateService
         try
         {
             var url = $"https://api.github.com/repos/{RepoOwner}/{RepoName}/releases/latest";
-            using var response = await HttpClient.GetAsync(url, ct).ConfigureAwait(false);
+            using var response = await ApiClient.GetAsync(url, ct).ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -119,8 +127,8 @@ public class GitHubUpdateService
 
         statusCallback?.Invoke($"Downloading v{updateInfo.LatestVersion} update payload...");
 
-        // Stream download with progress
-        using (var response = await HttpClient.GetAsync(updateInfo.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, ct))
+        // Stream download with progress using long-lived DownloadClient
+        using (var response = await DownloadClient.GetAsync(updateInfo.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, ct))
         {
             response.EnsureSuccessStatusCode();
             var totalBytes = response.Content.Headers.ContentLength ?? updateInfo.AssetSize;
