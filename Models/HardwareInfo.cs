@@ -33,13 +33,26 @@ public partial class HardwareInfo : ObservableObject
     public List<DiskDriveInfo> Disks { get; set; } = new();
 
     // Battery
-    public bool HasBattery { get; set; }
-    public string BatteryStatus { get; set; } = "Unknown";
-    public int BatteryPercentage { get; set; }
-    public string BatteryDesignCapacity { get; set; } = string.Empty;
-    public string BatteryFullChargeCapacity { get; set; } = string.Empty;
-    public double BatteryHealthPercent { get; set; }
-    public string BatteryHealthGrade { get; set; } = "Good";
+    [ObservableProperty]
+    private bool _hasBattery;
+
+    [ObservableProperty]
+    private string _batteryStatus = "Unknown";
+
+    [ObservableProperty]
+    private int _batteryPercentage;
+
+    [ObservableProperty]
+    private string _batteryDesignCapacity = string.Empty;
+
+    [ObservableProperty]
+    private string _batteryFullChargeCapacity = string.Empty;
+
+    [ObservableProperty]
+    private double _batteryHealthPercent;
+
+    [ObservableProperty]
+    private string _batteryHealthGrade = "Good";
 }
 
 public class DiskDriveInfo

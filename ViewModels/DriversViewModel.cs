@@ -97,15 +97,26 @@ public partial class DriversViewModel : ObservableObject
     [RelayCommand]
     public async Task GenerateBatteryReport()
     {
-        AddLog("Generating detailed Windows Battery Life Report...");
-        var path = await _hardwareService.GenerateAndOpenBatteryReportAsync();
-        if (!string.IsNullOrEmpty(path))
+        try
         {
-            AddLog($"✅ Battery report generated and opened: {path}");
+            StatusText = "Generating Windows battery health report...";
+            AddLog("Generating detailed Windows Battery Life Report via powercfg...");
+            var path = await _hardwareService.GenerateAndOpenBatteryReportAsync();
+            if (!string.IsNullOrEmpty(path))
+            {
+                StatusText = "Battery report generated and opened in browser.";
+                AddLog($"✅ Battery report generated and opened: {path}");
+            }
+            else
+            {
+                StatusText = "Could not generate battery report.";
+                AddLog("⚠️ Could not generate battery report (no battery detected or access restricted).");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            AddLog("⚠️ Could not generate battery report (device may not have a battery).");
+            StatusText = $"Battery report error: {ex.Message}";
+            AddLog($"⚠️ Error generating battery report: {ex.Message}");
         }
     }
 

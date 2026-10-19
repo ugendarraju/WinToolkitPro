@@ -31,7 +31,8 @@ public class HardwareService
                 $bb = Get-CimInstance Win32_BaseBoard | Select-Object Manufacturer, Product
                 $bios = Get-CimInstance Win32_BIOS | Select-Object SMBIOSBIOSVersion, ReleaseDate
                 $disks = Get-CimInstance Win32_DiskDrive | Select-Object Model, InterfaceType, Size
-                $battery = Get-CimInstance Win32_Battery | Select-Object EstimatedChargeRemaining, BatteryStatus
+                $battery = Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue | Select-Object -First 1 EstimatedChargeRemaining, BatteryStatus
+                $hasBat = ($battery -ne $null -and $battery.EstimatedChargeRemaining -ne $null)
 
                 [PSCustomObject]@{
                     CpuName = $cpu.Name
@@ -52,8 +53,8 @@ public class HardwareService
                     BiosVersion = $bios.SMBIOSBIOSVersion
                     BiosDate = $bios.ReleaseDate
                     DiskList = $disks
-                    BatteryPercent = $battery.EstimatedChargeRemaining
-                    HasBattery = ($battery -ne $null)
+                    BatteryPercent = if ($hasBat) { $battery.EstimatedChargeRemaining } else { 0 }
+                    HasBattery = $hasBat
                 } | ConvertTo-Json -Depth 3 -Compress
             ";
 
@@ -203,12 +204,16 @@ public class HardwareService
                 if (root.TryGetProperty("HasBattery", out var hb) && hb.GetBoolean())
                 {
                     info.HasBattery = true;
-                    if (root.TryGetProperty("BatteryPercent", out var bp))
+                    if (root.TryGetProperty("BatteryPercent", out var bp) && bp.ValueKind == System.Text.Json.JsonValueKind.Number)
                     {
                         info.BatteryPercentage = bp.GetInt32();
                     }
 
                     await PopulateBatteryWearDetailsAsync(info);
+                }
+                else
+                {
+                    info.HasBattery = false;
                 }
             }
         }
@@ -231,12 +236,30 @@ public class HardwareService
     {
         try
         {
-            var tempPath = Path.Combine(Path.GetTempPath(), "WinToolkit_battery.html");
-            await _powerShellService.ExecuteCommandAsync($"powercfg /batteryreport /output \"{tempPath}\"");
+            var tempDir = Path.Combine(Path.GetTempPath(), "WinToolkit");
+            Directory.CreateDirectory(tempDir);
+            var tempPath = Path.Combine(tempDir, "temp_battery.html");
+
+            try { if (File.Exists(tempPath)) File.Delete(tempPath); } catch { }
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "powercfg.exe",
+                Arguments = $"/batteryreport /output \"{tempPath}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(psi);
+            if (process != null)
+            {
+                await process.WaitForExitAsync();
+            }
 
             if (File.Exists(tempPath))
             {
                 var html = await File.ReadAllTextAsync(tempPath);
+                try { File.Delete(tempPath); } catch { }
 
                 var designMatch = Regex.Match(html, @"DESIGN CAPACITY[\s\S]*?<td>([\d,]+)\s*mWh", RegexOptions.IgnoreCase);
                 var fullMatch = Regex.Match(html, @"FULL CHARGE CAPACITY[\s\S]*?<td>([\d,]+)\s*mWh", RegexOptions.IgnoreCase);
@@ -269,17 +292,59 @@ public class HardwareService
 
     public async Task<string> GenerateAndOpenBatteryReportAsync()
     {
-        var outPath = Path.Combine(Path.GetTempPath(), "WindowsBatteryReport.html");
-        await _powerShellService.ExecuteCommandAsync($"powercfg /batteryreport /output \"{outPath}\"");
-
-        if (File.Exists(outPath))
+        try
         {
-            Process.Start(new ProcessStartInfo
+            var tempDir = Path.Combine(Path.GetTempPath(), "WinToolkit");
+            Directory.CreateDirectory(tempDir);
+            var outPath = Path.Combine(tempDir, "WindowsBatteryReport.html");
+
+            try
             {
-                FileName = outPath,
-                UseShellExecute = true
-            });
-            return outPath;
+                if (File.Exists(outPath)) File.Delete(outPath);
+            }
+            catch { }
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "powercfg.exe",
+                Arguments = $"/batteryreport /output \"{outPath}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(psi);
+            if (process != null)
+            {
+                await process.WaitForExitAsync();
+            }
+
+            if (File.Exists(outPath))
+            {
+                // Launch report in user's default browser with explorer fallback
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = outPath,
+                        UseShellExecute = true
+                    });
+                }
+                catch
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "explorer.exe",
+                        Arguments = $"\"{outPath}\"",
+                        UseShellExecute = false
+                    });
+                }
+
+                return outPath;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Battery report error: {ex.Message}");
         }
 
         return string.Empty;
