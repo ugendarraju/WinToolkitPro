@@ -304,12 +304,33 @@ public class HardwareService
             }
             catch { }
 
+            // Locate 64-bit powercfg on 64-bit Windows to avoid SysWOW64 redirection failure (energy.dll cannot be loaded under 32-bit SysWOW64)
+            string powercfgExe = "powercfg.exe";
+            if (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess)
+            {
+                var sysnativePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "sysnative", "powercfg.exe");
+                if (File.Exists(sysnativePath))
+                {
+                    powercfgExe = sysnativePath;
+                }
+            }
+            else
+            {
+                var system32Path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "powercfg.exe");
+                if (File.Exists(system32Path))
+                {
+                    powercfgExe = system32Path;
+                }
+            }
+
             var psi = new ProcessStartInfo
             {
-                FileName = "powercfg.exe",
+                FileName = powercfgExe,
                 Arguments = $"/batteryreport /output \"{outPath}\"",
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
             };
 
             using var process = Process.Start(psi);
@@ -318,59 +339,87 @@ public class HardwareService
                 await process.WaitForExitAsync();
             }
 
-            if (File.Exists(outPath))
+            if (File.Exists(outPath) && new FileInfo(outPath).Length > 0)
             {
-                // 1. Direct browser executables search (bypasses Windows elevated shell restrictions)
-                var candidateBrowsers = new[]
-                {
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Google\Chrome\Application\chrome.exe"),
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Google\Chrome\Application\chrome.exe"),
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Microsoft\Edge\Application\msedge.exe"),
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Microsoft\Edge\Application\msedge.exe"),
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Mozilla Firefox\firefox.exe"),
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"BraveSoftware\Brave-Browser\Application\brave.exe"),
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\Opera\launcher.exe")
-                };
-
                 bool launched = false;
-                foreach (var browserExe in candidateBrowsers)
-                {
-                    if (File.Exists(browserExe))
-                    {
-                        try
-                        {
-                            var bProc = Process.Start(new ProcessStartInfo
-                            {
-                                FileName = browserExe,
-                                Arguments = $"\"{outPath}\"",
-                                UseShellExecute = false
-                            });
-                            if (bProc != null)
-                            {
-                                launched = true;
-                                break;
-                            }
-                        }
-                        catch { }
-                    }
-                }
 
-                // 2. Fallback to cmd.exe start
+                // 1. Try default system browser via shell execute
+                try
+                {
+                    var p = Process.Start(new ProcessStartInfo
+                    {
+                        FileName = outPath,
+                        UseShellExecute = true
+                    });
+                    if (p != null) launched = true;
+                }
+                catch { }
+
+                // 2. Direct browser executables search across both 64-bit and 32-bit program directories
                 if (!launched)
                 {
-                    try
+                    var baseDirs = new List<string>();
+                    var p64 = Environment.GetEnvironmentVariable("ProgramW6432");
+                    if (!string.IsNullOrEmpty(p64) && !baseDirs.Contains(p64, StringComparer.OrdinalIgnoreCase))
                     {
-                        using var p = Process.Start(new ProcessStartInfo
-                        {
-                            FileName = "cmd.exe",
-                            Arguments = $"/c start \"\" \"{outPath}\"",
-                            CreateNoWindow = true,
-                            UseShellExecute = false
-                        });
-                        p?.WaitForExit(2000);
-                        launched = true;
+                        baseDirs.Add(p64);
                     }
-                    catch { }
+
+                    var pf = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+                    if (!string.IsNullOrEmpty(pf) && !baseDirs.Contains(pf, StringComparer.OrdinalIgnoreCase))
+                    {
+                        baseDirs.Add(pf);
+                    }
+
+                    var pfx86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+                    if (!string.IsNullOrEmpty(pfx86) && !baseDirs.Contains(pfx86, StringComparer.OrdinalIgnoreCase))
+                    {
+                        baseDirs.Add(pfx86);
+                    }
+
+                    var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                    if (!string.IsNullOrEmpty(localAppData) && !baseDirs.Contains(localAppData, StringComparer.OrdinalIgnoreCase))
+                    {
+                        baseDirs.Add(localAppData);
+                    }
+
+                    var relativeBrowserPaths = new[]
+                    {
+                        @"Google\Chrome\Application\chrome.exe",
+                        @"Microsoft\Edge\Application\msedge.exe",
+                        @"Mozilla Firefox\firefox.exe",
+                        @"BraveSoftware\Brave-Browser\Application\brave.exe",
+                        @"Programs\Opera\launcher.exe",
+                        @"Programs\Opera GX\launcher.exe",
+                        @"Vivaldi\Application\vivaldi.exe"
+                    };
+
+                    foreach (var dir in baseDirs)
+                    {
+                        foreach (var rel in relativeBrowserPaths)
+                        {
+                            var fullPath = Path.Combine(dir, rel);
+                            if (File.Exists(fullPath))
+                            {
+                                try
+                                {
+                                    var bProc = Process.Start(new ProcessStartInfo
+                                    {
+                                        FileName = fullPath,
+                                        Arguments = $"\"{outPath}\"",
+                                        UseShellExecute = false
+                                    });
+                                    if (bProc != null)
+                                    {
+                                        launched = true;
+                                        break;
+                                    }
+                                }
+                                catch { }
+                            }
+                        }
+                        if (launched) break;
+                    }
                 }
 
                 // 3. Fallback to explorer.exe
@@ -384,6 +433,25 @@ public class HardwareService
                             Arguments = $"\"{outPath}\"",
                             UseShellExecute = false
                         });
+                        launched = true;
+                    }
+                    catch { }
+                }
+
+                // 4. Fallback to cmd.exe start
+                if (!launched)
+                {
+                    try
+                    {
+                        using var p = Process.Start(new ProcessStartInfo
+                        {
+                            FileName = "cmd.exe",
+                            Arguments = $"/c start \"\" \"{outPath}\"",
+                            CreateNoWindow = true,
+                            UseShellExecute = false
+                        });
+                        p?.WaitForExit(2000);
+                        launched = true;
                     }
                     catch { }
                 }

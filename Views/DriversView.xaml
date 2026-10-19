@@ -74,7 +74,10 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Detected Hardware Configuration" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Detected Hardware Configuration" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding StatusText}" Foreground="#38bdf8" FontSize="11" FontWeight="SemiBold" Margin="14,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                                     <Button Content="🔄 Refresh Specs" Command="{Binding LoadSystemSpecsCommand}" 
                                             Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
