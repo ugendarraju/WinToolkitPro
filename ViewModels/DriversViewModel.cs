@@ -216,6 +216,24 @@ public partial class DriversViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void SelectUpdatesOnly()
+    {
+        foreach (var item in Devices)
+        {
+            item.IsSelected = item.HasUpdate;
+        }
+        UpdateSelectedDriverCount();
+        if (SelectedDriverCount > 0)
+        {
+            StatusText = $"Selected {SelectedDriverCount} driver(s) with available updates.";
+        }
+        else
+        {
+            StatusText = "No driver updates to select. All devices are up to date.";
+        }
+    }
+
+    [RelayCommand]
     private void SelectAllDrivers()
     {
         foreach (var item in Devices)

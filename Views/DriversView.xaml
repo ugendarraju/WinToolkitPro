@@ -310,13 +310,17 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Content="⚡ Select Updates Only" Command="{Binding SelectUpdatesOnlyCommand}" 
+                                            Background="#0284c7" Foreground="White" BorderBrush="#38bdf8" BorderThickness="1.5"
+                                            FontWeight="Bold" Margin="0,0,6,0" Padding="12,5" FontSize="11" Cursor="Hand"
+                                            ToolTip="Automatically select only hardware devices that have newer driver updates available"/>
                                     <Button Content="Select All" Command="{Binding SelectAllDriversCommand}" 
                                             Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
                                             FontWeight="SemiBold" Margin="0,0,6,0" Padding="11,5" FontSize="11" Cursor="Hand"/>
                                     <Button Content="Clear All" Command="{Binding DeselectAllDriversCommand}" 
                                             Background="#1e293b" Foreground="#f8fafc" BorderBrush="#475569" BorderThickness="1"
                                             FontWeight="SemiBold" Margin="0,0,8,0" Padding="11,5" FontSize="11" Cursor="Hand"/>
-                                 </StackPanel>
+                                </StackPanel>
 
                                  <StackPanel Grid.Column="1" Orientation="Horizontal">
                                     <Button Content="🔍 Scan Hardware" Command="{Binding ScanHardwareCommand}" 
