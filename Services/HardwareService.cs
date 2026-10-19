@@ -320,38 +320,60 @@ public class HardwareService
 
             if (File.Exists(outPath))
             {
-                // In elevated (Administrator) processes, Process.Start with UseShellExecute on .html
-                // can fail silently because Windows restricts protocol association from high-integrity processes.
-                // We use 'cmd.exe /c start "" "<file>"' followed by explorer.exe to guarantee launch.
-                bool launched = false;
-                try
+                // 1. Direct browser executables search (bypasses Windows elevated shell restrictions)
+                var candidateBrowsers = new[]
                 {
-                    using var p = Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "cmd.exe",
-                        Arguments = $"/c start \"\" \"{outPath}\"",
-                        CreateNoWindow = true,
-                        UseShellExecute = false
-                    });
-                    p?.WaitForExit(2000);
-                    launched = true;
-                }
-                catch { }
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Google\Chrome\Application\chrome.exe"),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Google\Chrome\Application\chrome.exe"),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"Microsoft\Edge\Application\msedge.exe"),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Microsoft\Edge\Application\msedge.exe"),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"Mozilla Firefox\firefox.exe"),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"BraveSoftware\Brave-Browser\Application\brave.exe"),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\Opera\launcher.exe")
+                };
 
+                bool launched = false;
+                foreach (var browserExe in candidateBrowsers)
+                {
+                    if (File.Exists(browserExe))
+                    {
+                        try
+                        {
+                            var bProc = Process.Start(new ProcessStartInfo
+                            {
+                                FileName = browserExe,
+                                Arguments = $"\"{outPath}\"",
+                                UseShellExecute = false
+                            });
+                            if (bProc != null)
+                            {
+                                launched = true;
+                                break;
+                            }
+                        }
+                        catch { }
+                    }
+                }
+
+                // 2. Fallback to cmd.exe start
                 if (!launched)
                 {
                     try
                     {
-                        Process.Start(new ProcessStartInfo
+                        using var p = Process.Start(new ProcessStartInfo
                         {
-                            FileName = outPath,
-                            UseShellExecute = true
+                            FileName = "cmd.exe",
+                            Arguments = $"/c start \"\" \"{outPath}\"",
+                            CreateNoWindow = true,
+                            UseShellExecute = false
                         });
+                        p?.WaitForExit(2000);
                         launched = true;
                     }
                     catch { }
                 }
 
+                // 3. Fallback to explorer.exe
                 if (!launched)
                 {
                     try
