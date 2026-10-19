@@ -74,6 +74,11 @@ public class DriverService
             {
                 d.Status = "Vendor Verified (Broadcom OEM)";
             }
+
+            if (!d.HasUpdate)
+            {
+                d.AvailableDriverVersion = "Up to date";
+            }
         }
 
         onLog?.Invoke($"[Vendor Feeds] Checked {devices.Count} devices against OEM direct repositories.");
@@ -147,7 +152,7 @@ public class DriverService
                     Manufacturer = if ($d.Manufacturer) { $d.Manufacturer } else { 'OEM / Microsoft' }
                     HardwareId = if ($d.HardWareID) { $d.HardWareID } else { '' }
                     DriverVersion = if ($d.DriverVersion) { $d.DriverVersion } else { '10.0.0.0' }
-                    AvailableVersion = ''
+                    AvailableVersion = 'Up to date'
                     DriverDate = $dateStr
                     Status = 'Healthy'
                     HasUpdate = $false
@@ -204,15 +209,29 @@ public class DriverService
                 $searcher.ServerSelection = 2 # Windows Update Catalog
                 $searchResult = $searcher.Search(""IsInstalled=0 and Type='Driver'"")
                 
+                $signedList = @(Get-CimInstance Win32_PnPSignedDriver | Where-Object { $_.DeviceName -and $_.DriverVersion })
                 $updates = @()
                 foreach ($update in $searchResult.Updates) {
                     $ver = if ($update.Title -match '(\d+\.[\d\.]+)') { $matches[1] } else { 'Latest WHQL' }
+                    
+                    $currentVer = 'Installed'
+                    try {
+                        $matched = $signedList | Where-Object { 
+                            ($update.Title -like ""*$($_.DeviceName)*"") -or 
+                            ($update.DriverModel -and $_.DeviceName -like ""*$($update.DriverModel)*"") 
+                        } | Select-Object -First 1
+
+                        if ($matched -and $matched.DriverVersion) {
+                            $currentVer = $matched.DriverVersion
+                        }
+                    } catch { }
+
                     $updates += [PSCustomObject]@{
                         DeviceName = $update.Title
                         DeviceClass = 'Driver Update'
                         Manufacturer = if ($update.DriverModel) { $update.DriverModel } else { 'Microsoft Catalog' }
                         HardwareId = $update.Identity.UpdateID
-                        DriverVersion = 'Installed'
+                        DriverVersion = $currentVer
                         AvailableVersion = $ver
                         DriverDate = ''
                         Status = 'Update Available'

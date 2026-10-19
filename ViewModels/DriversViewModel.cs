@@ -31,6 +31,9 @@ public partial class DriversViewModel : ObservableObject
     private int _selectedDriverCount;
 
     [ObservableProperty]
+    private string _installButtonText = "⚡ Install Selected Drivers";
+
+    [ObservableProperty]
     private int _updateCount;
 
     [ObservableProperty]
@@ -118,6 +121,7 @@ public partial class DriversViewModel : ObservableObject
         var scanned = await _driverService.ScanDevicesAsync(AddLog, _driverCts.Token);
         foreach (var item in scanned)
         {
+            item.IsSelected = item.HasUpdate;
             item.PropertyChanged += (s, e) =>
             {
                 if (e.PropertyName == nameof(DriverItem.IsSelected)) UpdateSelectedDriverCount();
@@ -147,8 +151,10 @@ public partial class DriversViewModel : ObservableObject
         _driverCts = new CancellationTokenSource();
 
         PendingUpdates.Clear();
-        var updates = await _driverService.CheckDriverUpdatesBySourceAsync(SelectedDriverSource, AddLog, _driverCts.Token);
-        foreach (var item in updates)
+        var results = await _driverService.CheckDriverUpdatesBySourceAsync(SelectedDriverSource, AddLog, _driverCts.Token);
+        var actualUpdates = results.Where(r => r.HasUpdate).ToList();
+
+        foreach (var item in actualUpdates)
         {
             item.PropertyChanged += (s, e) =>
             {
@@ -167,17 +173,33 @@ public partial class DriversViewModel : ObservableObject
             foreach (var item in PendingUpdates)
             {
                 item.IsSelected = true;
+                item.PropertyChanged += (s, e) =>
+                {
+                    if (e.PropertyName == nameof(DriverItem.IsSelected)) UpdateSelectedDriverCount();
+                };
                 Devices.Add(item);
             }
             UpdateSelectedDriverCount();
-            StatusText = $"Found {UpdateCount} driver(s) via {SelectedDriverSource}.";
-            SummaryMessage = $"{UpdateCount} driver update(s) ready. Select drivers and click Install.";
+            StatusText = $"Found {UpdateCount} driver update(s) via {SelectedDriverSource}.";
+            SummaryMessage = $"{UpdateCount} driver update(s) ready to install. Select drivers and click Install.";
             HasSummary = true;
         }
         else
         {
-            StatusText = "All drivers are up to date.";
-            SummaryMessage = "No driver updates required. Your system hardware is fully up to date.";
+            // All drivers are healthy and up to date! Show all devices with checkboxes cleared.
+            Devices.Clear();
+            foreach (var item in results)
+            {
+                item.IsSelected = false;
+                item.PropertyChanged += (s, e) =>
+                {
+                    if (e.PropertyName == nameof(DriverItem.IsSelected)) UpdateSelectedDriverCount();
+                };
+                Devices.Add(item);
+            }
+            UpdateSelectedDriverCount();
+            StatusText = "All hardware drivers are up to date.";
+            SummaryMessage = $"No updates required. All {results.Count} hardware devices have the latest certified drivers installed.";
             HasSummary = true;
         }
     }
@@ -205,6 +227,9 @@ public partial class DriversViewModel : ObservableObject
     private void UpdateSelectedDriverCount()
     {
         SelectedDriverCount = Devices.Count(d => d.IsSelected);
+        InstallButtonText = SelectedDriverCount > 0 
+            ? $"⚡ Install Selected Drivers ({SelectedDriverCount})" 
+            : "⚡ Install Selected Drivers";
     }
 
     [RelayCommand]
