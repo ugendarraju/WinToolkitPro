@@ -388,7 +388,7 @@ public class SystemCleanerService
         Action<string>? onLog = null,
         CancellationToken cancellationToken = default)
     {
-        onLog?.Invoke("Starting CCleaner Pro cleanup routine...");
+        onLog?.Invoke("Starting system cleanup routine...");
         long cleanedBytes = 0;
 
         await Task.Run(async () =>

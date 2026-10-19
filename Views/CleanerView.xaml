@@ -23,7 +23,7 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Orientation="Vertical">
-                <TextBlock Text="System &amp; Cache Cleaner (CCleaner Pro Style)" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                <TextBlock Text="System &amp; Cache Cleaner" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                 <TextBlock Text="Deep clean Windows junk, temporary files, browser caches, crash dumps, and application caches to reclaim storage space." 
                            FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
             </StackPanel>
