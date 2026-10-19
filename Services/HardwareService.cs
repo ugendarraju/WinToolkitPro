@@ -320,23 +320,50 @@ public class HardwareService
 
             if (File.Exists(outPath))
             {
-                // Launch report in user's default browser with explorer fallback
+                // In elevated (Administrator) processes, Process.Start with UseShellExecute on .html
+                // can fail silently because Windows restricts protocol association from high-integrity processes.
+                // We use 'cmd.exe /c start "" "<file>"' followed by explorer.exe to guarantee launch.
+                bool launched = false;
                 try
                 {
-                    Process.Start(new ProcessStartInfo
+                    using var p = Process.Start(new ProcessStartInfo
                     {
-                        FileName = outPath,
-                        UseShellExecute = true
-                    });
-                }
-                catch
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "explorer.exe",
-                        Arguments = $"\"{outPath}\"",
+                        FileName = "cmd.exe",
+                        Arguments = $"/c start \"\" \"{outPath}\"",
+                        CreateNoWindow = true,
                         UseShellExecute = false
                     });
+                    p?.WaitForExit(2000);
+                    launched = true;
+                }
+                catch { }
+
+                if (!launched)
+                {
+                    try
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = outPath,
+                            UseShellExecute = true
+                        });
+                        launched = true;
+                    }
+                    catch { }
+                }
+
+                if (!launched)
+                {
+                    try
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = "explorer.exe",
+                            Arguments = $"\"{outPath}\"",
+                            UseShellExecute = false
+                        });
+                    }
+                    catch { }
                 }
 
                 return outPath;
