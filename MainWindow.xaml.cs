@@ -13,6 +13,13 @@ public partial class MainWindow : FluentWindow
     {
         InitializeComponent();
 
+        try
+        {
+            var iconUri = new Uri("pack://application:,,,/Assets/app.ico", UriKind.RelativeOrAbsolute);
+            Icon = System.Windows.Media.Imaging.BitmapFrame.Create(iconUri);
+        }
+        catch { }
+
         // Initialize Services
         var powerShellService = new PowerShellService();
         var wingetService = new WingetService();

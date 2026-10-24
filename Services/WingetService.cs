@@ -569,12 +569,12 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
                 var mbRead = totalBytesRead / (1024.0 * 1024.0);
                 var mbTotal = totalBytes / (1024.0 * 1024.0);
                 app.Progress = Math.Clamp(percent, 0, 99);
-                app.StatusMessage = $"Downloading: {percent:0}% ({mbRead:0.1}/{mbTotal:0.1} MB)";
+                app.StatusMessage = $"Downloading: {percent:0}% ({mbRead:F1}/{mbTotal:F1} MB)";
             }
             else
             {
                 var mbRead = totalBytesRead / (1024.0 * 1024.0);
-                app.StatusMessage = $"Downloading: {mbRead:0.1} MB";
+                app.StatusMessage = $"Downloading: {mbRead:F1} MB";
             }
         }
     }
@@ -636,7 +636,7 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
                         var mbRead = totalBytesRead / (1024.0 * 1024.0);
                         var mbTotal = totalBytes / (1024.0 * 1024.0);
                         app.Progress = Math.Clamp(percent, 0, 99);
-                        app.StatusMessage = $"Downloading Chrome: {percent:0}% ({mbRead:0.1}/{mbTotal:0.1} MB)";
+                        app.StatusMessage = $"Downloading Chrome: {percent:0}% ({mbRead:F1}/{mbTotal:F1} MB)";
                     }
                 }
             }
@@ -1019,12 +1019,12 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
                         var mbRead = totalBytesRead / (1024.0 * 1024.0);
                         var mbTotal = totalBytes / (1024.0 * 1024.0);
                         app.Progress = Math.Clamp(percent, 0, 99);
-                        app.StatusMessage = $"Downloading: {percent:0}% ({mbRead:0.1}/{mbTotal:0.1} MB)";
+                        app.StatusMessage = $"Downloading: {percent:0}% ({mbRead:F1}/{mbTotal:F1} MB)";
                     }
                     else
                     {
                         var mbRead = totalBytesRead / (1024.0 * 1024.0);
-                        app.StatusMessage = $"Downloading: {mbRead:0.1} MB";
+                        app.StatusMessage = $"Downloading: {mbRead:F1} MB";
                     }
                 }
             }

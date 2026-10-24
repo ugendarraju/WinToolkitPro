@@ -17,7 +17,7 @@
         Background="{DynamicResource ApplicationBackgroundBrush}"
         ExtendsContentIntoTitleBar="True"
         WindowBackdropType="None"
-        Icon="Assets/app.ico">
+        Icon="pack://application:,,,/Assets/app.ico">
 
     <Window.Resources>
         <!-- Sidebar Navigation Item Style -->
