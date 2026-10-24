@@ -107,9 +107,9 @@
         "Category":  "Media",
         "Description":  "Versatile open-source media player supporting nearly all formats.",
         "Icon":  "PlayCircle24",
-        "InstallerType":  "exe_download",
-        "DownloadUrl":  "https://get.videolan.org/vlc/last/win64/vlc-3.0.21-win64.exe",
-        "BatArguments":  "/S"
+        "InstallerType":  null,
+        "DownloadUrl":  null,
+        "BatArguments":  null
     },
     {
         "Id":  "aimp",
@@ -522,7 +522,7 @@
     {
         "Id":  "launchy",
         "Name":  "Launchy",
-        "WingetId":  "Launchy.Launchy",
+        "WingetId":  "CodeJelly.Launchy",
         "Category":  "System Tools",
         "Description":  "Keystroke launcher for quickly finding programs and documents.",
         "Icon":  "Search24"
@@ -554,7 +554,7 @@
     {
         "Id":  "infrarecorder",
         "Name":  "InfraRecorder",
-        "WingetId":  "InfraRecorder.InfraRecorder",
+        "WingetId":  "ChristianKindahl.InfraRecorder",
         "Category":  "File \u0026 Disk Tools",
         "Description":  "Free CD/DVD burning solution with ISO image support.",
         "Icon":  "Cd24"
@@ -704,7 +704,7 @@
     {
         "Id":  "sugarsync",
         "Name":  "SugarSync",
-        "WingetId":  "SugarSync.SugarSync",
+        "WingetId":  "IPVanish.SugarSync",
         "Category":  "Online Storage",
         "Description":  "Cloud file sharing, online backup, and syncing service.",
         "Icon":  "Cloud24"
@@ -742,7 +742,10 @@
         "WingetId":  "TimKosse.FileZilla.Client",
         "Category":  "Developer Tools",
         "Description":  "Fast and reliable cross-platform FTP, FTPS and SFTP client.",
-        "Icon":  "Folder24"
+        "Icon":  "Folder24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://download.filezilla-project.org/client/FileZilla_latest_win64-setup.exe",
+        "BatArguments":  "/S"
     },
     {
         "Id":  "notepadplusplus",
@@ -940,15 +943,15 @@
     },
     {
         "Source":  "winget",
-        "DownloadUrl":  "https://github.com/rustdesk/rustdesk/releases/download/1.5.0/rustdesk-1.5.0-x86_64.exe",
         "Id":  "rustdesk",
         "WingetId":  "RustDesk.RustDesk",
-        "BatArguments":  "--silent-install",
         "Category":  "Remote Desktop",
         "Description":  "Open-source remote desktop client alternative to TeamViewer and AnyDesk.",
         "Icon":  "WindowRemote24",
         "Name":  "RustDesk",
-        "InstallerType":  "exe_download"
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://github.com/rustdesk/rustdesk/releases/latest/download/rustdesk-x86_64.exe",
+        "BatArguments":  "--silent-install"
     },
     {
         "Id":  "quicklook",
