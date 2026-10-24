@@ -47,40 +47,64 @@ public partial class WingetService
     {
         if (await IsWingetAvailableAsync()) return true;
 
-        onLog?.Invoke("⚠️ Windows Package Manager (WinGet) is missing on this system. Bootstrapping WinGet automatically...");
+        onLog?.Invoke("⚠️ Windows Package Manager (WinGet) is missing. Installing WinGet automatically...");
         try
         {
-            var script = @"
-                $ErrorActionPreference = 'Stop'
-                $temp = $env:TEMP
-                $vclibs = ""$temp\vclibs.appx""
-                $xaml = ""$temp\xaml.appx""
-                $winget = ""$temp\winget.msixbundle""
+            var tempDir = Path.Combine(Path.GetTempPath(), "WinToolkit", "WinGetBootstrap");
+            Directory.CreateDirectory(tempDir);
 
-                Invoke-WebRequest -Uri 'https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx' -OutFile $vclibs -UseBasicParsing
-                Invoke-WebRequest -Uri 'https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.x64.appx' -OutFile $xaml -UseBasicParsing
-                Invoke-WebRequest -Uri 'https://aka.ms/getwinget' -OutFile $winget -UseBasicParsing
+            var vclibsPath = Path.Combine(tempDir, "vclibs.appx");
+            var xamlPath = Path.Combine(tempDir, "xaml.appx");
+            var wingetPath = Path.Combine(tempDir, "winget.msixbundle");
 
-                Add-AppxPackage -Path $vclibs
-                Add-AppxPackage -Path $xaml
-                Add-AppxPackage -Path $winget
-            ";
+            // 1. Download VCLibs (~5MB)
+            if (!File.Exists(vclibsPath) || new FileInfo(vclibsPath).Length < 100_000)
+            {
+                onLog?.Invoke("[WinGet] Downloading VCLibs runtime dependency...");
+                using var resp = await HttpClient.GetAsync("https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx");
+                resp.EnsureSuccessStatusCode();
+                await using var fs = File.Create(vclibsPath);
+                await resp.Content.CopyToAsync(fs);
+            }
 
+            // 2. Download UI.Xaml (~3MB)
+            if (!File.Exists(xamlPath) || new FileInfo(xamlPath).Length < 100_000)
+            {
+                onLog?.Invoke("[WinGet] Downloading UI.Xaml dependency...");
+                using var resp = await HttpClient.GetAsync("https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.x64.appx");
+                resp.EnsureSuccessStatusCode();
+                await using var fs = File.Create(xamlPath);
+                await resp.Content.CopyToAsync(fs);
+            }
+
+            // 3. Download WinGet AppInstaller bundle
+            if (!File.Exists(wingetPath) || new FileInfo(wingetPath).Length < 10_000_000)
+            {
+                onLog?.Invoke("[WinGet] Downloading Microsoft Desktop App Installer...");
+                using var resp = await HttpClient.GetAsync("https://aka.ms/getwinget");
+                resp.EnsureSuccessStatusCode();
+                await using var fs = File.Create(wingetPath);
+                await resp.Content.CopyToAsync(fs);
+            }
+
+            // 4. Register packages via PowerShell Add-AppxPackage
+            onLog?.Invoke("[WinGet] Registering WinGet and dependencies...");
             var psi = new ProcessStartInfo
             {
                 FileName = "powershell.exe",
-                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{script.Replace("\r\n", " ").Replace("\n", " ")}\"",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"Add-AppxPackage -Path '{vclibsPath}'; Add-AppxPackage -Path '{xamlPath}'; Add-AppxPackage -Path '{wingetPath}'\"",
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
 
-            using var proc = Process.Start(psi);
-            if (proc != null)
+            using (var proc = Process.Start(psi))
             {
-                await proc.WaitForExitAsync();
+                if (proc != null) await proc.WaitForExitAsync();
             }
+
+            await Task.Delay(1500);
 
             var available = await IsWingetAvailableAsync();
             if (available)
@@ -90,7 +114,7 @@ public partial class WingetService
             }
             else
             {
-                onLog?.Invoke("⚠️ Failed to automatically initialize WinGet. Please run Install-Winget.ps1 as Administrator.");
+                onLog?.Invoke("⚠️ WinGet installation could not be verified in PATH.");
                 return false;
             }
         }
@@ -231,6 +255,17 @@ public partial class WingetService
             }
 
             // For standard winget apps, trigger background download cache with streaming progress
+            if (!await IsWingetAvailableAsync())
+            {
+                var bootstrapped = await EnsureWingetInstalledAsync(onLog);
+                if (!bootstrapped)
+                {
+                    app.Status = InstallStatus.Failed;
+                    app.StatusMessage = "WinGet missing & setup failed";
+                    return false;
+                }
+            }
+
             var tempCacheDir = Path.Combine(Path.GetTempPath(), "WinToolkit", "Downloads", app.Id);
             Directory.CreateDirectory(tempCacheDir);
 
@@ -596,6 +631,19 @@ public partial class WingetService
         app.Status = InstallStatus.Downloading;
         app.StatusMessage = "Starting download...";
         app.Progress = 5;
+
+        // Ensure WinGet is present on client system before running winget command
+        if (!await IsWingetAvailableAsync())
+        {
+            var bootstrapped = await EnsureWingetInstalledAsync(onLog);
+            if (!bootstrapped)
+            {
+                app.Status = InstallStatus.Failed;
+                app.StatusMessage = "WinGet missing & setup failed";
+                onLog?.Invoke($"[{app.Name}] ERROR: WinGet is not available on this system.");
+                return false;
+            }
+        }
 
         var is64 = OsEnvironmentService.Instance.Is64BitOperatingSystem;
         var pkgId = (!is64 && !string.IsNullOrWhiteSpace(app.X86WingetId)) ? app.X86WingetId : app.WingetId;
