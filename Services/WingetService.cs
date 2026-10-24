@@ -1232,6 +1232,16 @@ public partial class WingetService
     /// </summary>
     public async Task<List<AppUpgradeItem>> ScanUpgradesAsync(Action<string>? onLog = null, CancellationToken cancellationToken = default)
     {
+        if (!await IsWingetAvailableAsync())
+        {
+            var bootstrapped = await EnsureWingetInstalledAsync(onLog);
+            if (!bootstrapped)
+            {
+                onLog?.Invoke("⚠️ Windows Package Manager (WinGet) is required to scan installed software for updates.");
+                return new List<AppUpgradeItem>();
+            }
+        }
+
         onLog?.Invoke("Querying installed applications for updates...");
 
         var startInfo = new ProcessStartInfo
