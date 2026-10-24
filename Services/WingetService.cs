@@ -920,6 +920,40 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
 
         try
         {
+            if (app.Id.Equals("discord", StringComparison.OrdinalIgnoreCase))
+            {
+                // Discord (Squirrel installer) automatically spawns Discord.exe and stays running indefinitely.
+                // We monitor for the installed application files and terminate the background Discord process so the installer can finish.
+                _ = Task.Run(async () =>
+                {
+                    for (int i = 0; i < 60; i++)
+                    {
+                        await Task.Delay(1000);
+                        if (cancellationToken.IsCancellationRequested || process.HasExited) break;
+
+                        var localApp = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Discord", "Update.exe");
+                        if (File.Exists(localApp))
+                        {
+                            await Task.Delay(4000);
+                            try
+                            {
+                                var killPsi = new ProcessStartInfo
+                                {
+                                    FileName = "taskkill.exe",
+                                    Arguments = "/F /IM Discord.exe /T",
+                                    CreateNoWindow = true,
+                                    UseShellExecute = false
+                                };
+                                using var kp = Process.Start(killPsi);
+                                kp?.WaitForExit(3000);
+                            }
+                            catch { }
+                            break;
+                        }
+                    }
+                });
+            }
+
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
@@ -1043,6 +1077,39 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
             };
 
             using var process = new Process { StartInfo = psi };
+
+            if (app.Id.Equals("discord", StringComparison.OrdinalIgnoreCase))
+            {
+                _ = Task.Run(async () =>
+                {
+                    for (int i = 0; i < 45; i++)
+                    {
+                        await Task.Delay(1000);
+                        if (cancellationToken.IsCancellationRequested || process.HasExited) break;
+
+                        var localApp = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Discord", "Update.exe");
+                        if (File.Exists(localApp))
+                        {
+                            await Task.Delay(3000);
+                            try
+                            {
+                                var killPsi = new ProcessStartInfo
+                                {
+                                    FileName = "taskkill.exe",
+                                    Arguments = "/F /IM Discord.exe /T",
+                                    CreateNoWindow = true,
+                                    UseShellExecute = false
+                                };
+                                using var kp = Process.Start(killPsi);
+                                kp?.WaitForExit(3000);
+                            }
+                            catch { }
+                            break;
+                        }
+                    }
+                });
+            }
+
             process.Start();
             await process.WaitForExitAsync(cancellationToken);
 
@@ -1793,6 +1860,40 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
 
         try
         {
+            if (item.PackageId.Contains("Discord", StringComparison.OrdinalIgnoreCase))
+            {
+                // Discord (Squirrel installer) automatically spawns Discord.exe and stays running indefinitely.
+                // We monitor for the installed application files and terminate the background Discord process so the installer can finish.
+                _ = Task.Run(async () =>
+                {
+                    for (int i = 0; i < 60; i++)
+                    {
+                        await Task.Delay(1000);
+                        if (cancellationToken.IsCancellationRequested || process.HasExited) break;
+
+                        var localApp = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Discord", "Update.exe");
+                        if (File.Exists(localApp))
+                        {
+                            await Task.Delay(4000);
+                            try
+                            {
+                                var killPsi = new ProcessStartInfo
+                                {
+                                    FileName = "taskkill.exe",
+                                    Arguments = "/F /IM Discord.exe /T",
+                                    CreateNoWindow = true,
+                                    UseShellExecute = false
+                                };
+                                using var kp = Process.Start(killPsi);
+                                kp?.WaitForExit(3000);
+                            }
+                            catch { }
+                            break;
+                        }
+                    }
+                });
+            }
+
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();

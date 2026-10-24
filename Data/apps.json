@@ -68,7 +68,10 @@
         "WingetId":  "Discord.Discord",
         "Category":  "Messaging",
         "Description":  "Voice, video, and text communication platform for communities.",
-        "Icon":  "Chat24"
+        "Icon":  "Chat24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://discord.com/api/download?platform=win",
+        "BatArguments":  "-s"
     },
     {
         "Id":  "teams",
