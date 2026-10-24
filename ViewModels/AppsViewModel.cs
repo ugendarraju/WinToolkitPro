@@ -202,9 +202,9 @@ public partial class AppsViewModel : ObservableObject
 
         foreach (var cat in Categories)
         {
-            if (cat.Equals("All", StringComparison.OrdinalIgnoreCase)) continue;
+            if (string.Equals(cat, "All", StringComparison.OrdinalIgnoreCase)) continue;
             var meta = GetCategoryMeta(cat);
-            var catCount = AllApps.Count(a => a.Category.Equals(cat, StringComparison.OrdinalIgnoreCase));
+            var catCount = AllApps.Count(a => string.Equals(a.Category, cat, StringComparison.OrdinalIgnoreCase));
             if (catCount > 0)
             {
                 FilterChips.Add(new CategoryFilterItem
@@ -213,7 +213,7 @@ public partial class AppsViewModel : ObservableObject
                     DisplayName = cat,
                     Icon = meta.Icon,
                     Count = catCount,
-                    IsSelected = SelectedCategory.Equals(cat, StringComparison.OrdinalIgnoreCase)
+                    IsSelected = string.Equals(SelectedCategory, cat, StringComparison.OrdinalIgnoreCase)
                 });
             }
         }
@@ -239,11 +239,11 @@ public partial class AppsViewModel : ObservableObject
         var query = SearchQuery?.Trim() ?? string.Empty;
 
         var filtered = AllApps.Where(a =>
-            (SelectedCategory == "All" || a.Category.Equals(SelectedCategory, StringComparison.OrdinalIgnoreCase)) &&
+            (SelectedCategory == "All" || string.Equals(a.Category, SelectedCategory, StringComparison.OrdinalIgnoreCase)) &&
             (string.IsNullOrWhiteSpace(query) ||
-             a.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-             a.Description.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-             a.WingetId.Contains(query, StringComparison.OrdinalIgnoreCase))).ToList();
+             (!string.IsNullOrEmpty(a.Name) && a.Name.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+             (!string.IsNullOrEmpty(a.Description) && a.Description.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+             (!string.IsNullOrEmpty(a.WingetId) && a.WingetId.Contains(query, StringComparison.OrdinalIgnoreCase)))).ToList();
 
         foreach (var item in filtered)
         {
@@ -275,7 +275,7 @@ public partial class AppsViewModel : ObservableObject
         // Update chips selection highlights
         foreach (var chip in FilterChips)
         {
-            chip.IsSelected = chip.Name.Equals(SelectedCategory, StringComparison.OrdinalIgnoreCase);
+            chip.IsSelected = string.Equals(chip.Name, SelectedCategory, StringComparison.OrdinalIgnoreCase);
         }
     }
 
@@ -365,13 +365,13 @@ public partial class AppsViewModel : ObservableObject
 
         // Verify if any selected apps require WinGet and bootstrap it if missing (e.g. fresh Windows or Windows Sandbox)
         bool hasWingetApps = selectedApps.Any(a =>
-            !a.Id.Equals("chrome", StringComparison.OrdinalIgnoreCase) &&
-            !a.WingetId.Equals("Google.Chrome", StringComparison.OrdinalIgnoreCase) &&
-            !a.Id.Equals("vcredist_aio", StringComparison.OrdinalIgnoreCase) &&
-            !a.InstallerType.Equals("vcredist_aio", StringComparison.OrdinalIgnoreCase) &&
-            !a.InstallerType.Equals("office_c2r", StringComparison.OrdinalIgnoreCase) &&
-            !a.InstallerType.Equals("zip_bat", StringComparison.OrdinalIgnoreCase) &&
-            !a.InstallerType.Equals("exe_download", StringComparison.OrdinalIgnoreCase));
+            !string.Equals(a.Id, "chrome", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(a.WingetId, "Google.Chrome", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(a.Id, "vcredist_aio", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(a.InstallerType, "vcredist_aio", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(a.InstallerType, "office_c2r", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(a.InstallerType, "zip_bat", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(a.InstallerType, "exe_download", StringComparison.OrdinalIgnoreCase));
 
         if (hasWingetApps && !IsWingetAvailable)
         {

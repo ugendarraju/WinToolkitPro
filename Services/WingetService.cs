@@ -344,25 +344,27 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
         Action<string>? onLog = null,
         CancellationToken cancellationToken = default)
     {
-        if (app.Id.Equals("chrome", StringComparison.OrdinalIgnoreCase) || 
-            app.WingetId.Equals("Google.Chrome", StringComparison.OrdinalIgnoreCase))
+        if (app == null) return false;
+
+        if (string.Equals(app.Id, "chrome", StringComparison.OrdinalIgnoreCase) || 
+            string.Equals(app.WingetId, "Google.Chrome", StringComparison.OrdinalIgnoreCase))
         {
             return await InstallGoogleChromeMsiAsync(app, onLog, cancellationToken);
         }
-        if (app.Id.Equals("vcredist_aio", StringComparison.OrdinalIgnoreCase) ||
-            app.InstallerType.Equals("vcredist_aio", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(app.Id, "vcredist_aio", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(app.InstallerType, "vcredist_aio", StringComparison.OrdinalIgnoreCase))
         {
             return await InstallVcRedistAioAsync(app, onLog, cancellationToken);
         }
-        if (app.InstallerType.Equals("office_c2r", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(app.InstallerType, "office_c2r", StringComparison.OrdinalIgnoreCase))
         {
             return await InstallOfficeAppAsync(app, onLog, cancellationToken);
         }
-        if (app.InstallerType.Equals("zip_bat", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(app.InstallerType, "zip_bat", StringComparison.OrdinalIgnoreCase))
         {
             return await InstallZipBatAppAsync(app, onLog, cancellationToken);
         }
-        if (app.InstallerType.Equals("exe_download", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(app.InstallerType, "exe_download", StringComparison.OrdinalIgnoreCase))
         {
             return await InstallExeDownloadAppAsync(app, onLog, cancellationToken);
         }
@@ -379,14 +381,16 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
         Action<string>? onLog = null,
         CancellationToken cancellationToken = default)
     {
+        if (app == null) return false;
+
         try
         {
             app.Status = InstallStatus.Downloading;
             app.StatusMessage = "Downloading...";
             app.Progress = 5;
 
-            if (app.Id.Equals("chrome", StringComparison.OrdinalIgnoreCase) || 
-                app.WingetId.Equals("Google.Chrome", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(app.Id, "chrome", StringComparison.OrdinalIgnoreCase) || 
+                string.Equals(app.WingetId, "Google.Chrome", StringComparison.OrdinalIgnoreCase))
             {
                 var is64 = OsEnvironmentService.Instance.Is64BitOperatingSystem;
                 var chromeDir = Path.Combine(Path.GetTempPath(), "WinToolkit", "GoogleChrome");
@@ -406,7 +410,7 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
                 return true;
             }
 
-            if (app.InstallerType.Equals("office_c2r", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(app.InstallerType, "office_c2r", StringComparison.OrdinalIgnoreCase))
             {
                 var odtDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WinToolkit", "ODT");
                 Directory.CreateDirectory(odtDir);
@@ -440,19 +444,19 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
                 return true;
             }
 
-            if (app.InstallerType.Equals("exe_download", StringComparison.OrdinalIgnoreCase) ||
-                app.InstallerType.Equals("zip_bat", StringComparison.OrdinalIgnoreCase) ||
-                app.InstallerType.Equals("vcredist_aio", StringComparison.OrdinalIgnoreCase) ||
-                app.Id.Equals("vcredist_aio", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(app.InstallerType, "exe_download", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(app.InstallerType, "zip_bat", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(app.InstallerType, "vcredist_aio", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(app.Id, "vcredist_aio", StringComparison.OrdinalIgnoreCase))
             {
                 var downloadUrl = app.DownloadUrl;
                 if (!string.IsNullOrWhiteSpace(downloadUrl))
                 {
                     var tempDir = Path.Combine(Path.GetTempPath(), "WinToolkit", app.Id);
                     Directory.CreateDirectory(tempDir);
-                    var targetFile = app.InstallerType.Equals("zip_bat", StringComparison.OrdinalIgnoreCase)
+                    var targetFile = string.Equals(app.InstallerType, "zip_bat", StringComparison.OrdinalIgnoreCase)
                         ? Path.Combine(tempDir, "package.zip")
-                        : (app.Id.Equals("vcredist_aio", StringComparison.OrdinalIgnoreCase) || app.InstallerType.Equals("vcredist_aio", StringComparison.OrdinalIgnoreCase))
+                        : (string.Equals(app.Id, "vcredist_aio", StringComparison.OrdinalIgnoreCase) || string.Equals(app.InstallerType, "vcredist_aio", StringComparison.OrdinalIgnoreCase))
                             ? Path.Combine(tempDir, "VisualCppRedist_AIO_x86_x64.exe")
                             : Path.Combine(tempDir, "setup.exe");
 
@@ -582,14 +586,16 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
     /// <summary>
     /// Checks whether an application is likely an MSI-based installer requiring exclusive execution lock.
     /// </summary>
-    public static bool IsMsiPackage(AppItem app)
+    public static bool IsMsiPackage(AppItem? app)
     {
-        if (app.Id.Equals("chrome", StringComparison.OrdinalIgnoreCase) || app.WingetId.Equals("Google.Chrome", StringComparison.OrdinalIgnoreCase)) return true;
-        if (app.InstallerType.Equals("msi", StringComparison.OrdinalIgnoreCase)) return true;
-        if (app.WingetId.EndsWith(".msi", StringComparison.OrdinalIgnoreCase)) return true;
-        if (app.Id.Contains("python", StringComparison.OrdinalIgnoreCase)) return true;
-        if (app.Id.Contains("nodejs", StringComparison.OrdinalIgnoreCase)) return true;
-        if (app.Id.Contains("vcredist", StringComparison.OrdinalIgnoreCase)) return true;
+        if (app == null) return false;
+        if (string.Equals(app.Id, "chrome", StringComparison.OrdinalIgnoreCase) || 
+            string.Equals(app.WingetId, "Google.Chrome", StringComparison.OrdinalIgnoreCase)) return true;
+        if (string.Equals(app.InstallerType, "msi", StringComparison.OrdinalIgnoreCase)) return true;
+        if (!string.IsNullOrEmpty(app.WingetId) && app.WingetId.EndsWith(".msi", StringComparison.OrdinalIgnoreCase)) return true;
+        if (!string.IsNullOrEmpty(app.Id) && app.Id.Contains("python", StringComparison.OrdinalIgnoreCase)) return true;
+        if (!string.IsNullOrEmpty(app.Id) && app.Id.Contains("nodejs", StringComparison.OrdinalIgnoreCase)) return true;
+        if (!string.IsNullOrEmpty(app.Id) && app.Id.Contains("vcredist", StringComparison.OrdinalIgnoreCase)) return true;
         return false;
     }
 
@@ -863,14 +869,14 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
         var pkgId = (!is64 && !string.IsNullOrWhiteSpace(app.X86WingetId)) ? app.X86WingetId : app.WingetId;
         var archArg = !is64 ? "--architecture x86" : "";
 
-        var sourceArg = !string.IsNullOrWhiteSpace(app.Source) && !app.Source.Equals("winget", StringComparison.OrdinalIgnoreCase)
+        var sourceArg = !string.IsNullOrWhiteSpace(app.Source) && !string.Equals(app.Source, "winget", StringComparison.OrdinalIgnoreCase)
             ? $"--source \"{app.Source}\""
             : "";
 
         var startInfo = new ProcessStartInfo
         {
             FileName = GetWingetExecutablePath(),
-            Arguments = $"install --id \"{pkgId}\" --exact {archArg} {sourceArg} --silent --accept-package-agreements --accept-source-agreements --ignore-security-hash --force --skip-dependencies --disable-interactivity",
+            Arguments = $"install --id \"{pkgId}\" --exact {archArg} {sourceArg} --silent --accept-package-agreements --accept-source-agreements --ignore-security-hash --force --disable-interactivity",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -920,27 +926,32 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
 
         try
         {
-            if (app.Id.Equals("discord", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(app.Id, "discord", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(app.Id, "slack", StringComparison.OrdinalIgnoreCase))
             {
-                // Discord (Squirrel installer) automatically spawns Discord.exe and stays running indefinitely.
-                // We monitor for the installed application files and terminate the background Discord process so the installer can finish.
+                // Discord & Slack (Squirrel installers) automatically spawn their app process and stay running indefinitely.
+                // We monitor for the installed application files and terminate the background process so the installer can finish.
                 _ = Task.Run(async () =>
                 {
-                    for (int i = 0; i < 60; i++)
+                    for (int i = 0; i < 90; i++)
                     {
                         await Task.Delay(1000);
                         if (cancellationToken.IsCancellationRequested || process.HasExited) break;
 
-                        var localApp = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Discord", "Update.exe");
+                        var localApp = string.Equals(app.Id, "discord", StringComparison.OrdinalIgnoreCase)
+                            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Discord", "Update.exe")
+                            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "slack", "slack.exe");
+
                         if (File.Exists(localApp))
                         {
                             await Task.Delay(4000);
                             try
                             {
+                                var procName = string.Equals(app.Id, "discord", StringComparison.OrdinalIgnoreCase) ? "Discord.exe" : "slack.exe";
                                 var killPsi = new ProcessStartInfo
                                 {
                                     FileName = "taskkill.exe",
-                                    Arguments = "/F /IM Discord.exe /T",
+                                    Arguments = $"/F /IM {procName} /T",
                                     CreateNoWindow = true,
                                     UseShellExecute = false
                                 };
@@ -967,7 +978,28 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
                 catch { }
             }))
             {
-                await process.WaitForExitAsync(cancellationToken);
+                var waitExitTask = process.WaitForExitAsync(cancellationToken);
+                var timeoutMs = string.Equals(app.Source, "msstore", StringComparison.OrdinalIgnoreCase) ? 90_000 : 240_000;
+                var timeoutTask = Task.Delay(timeoutMs, cancellationToken);
+                var completedTask = await Task.WhenAny(waitExitTask, timeoutTask);
+
+                if (completedTask == timeoutTask)
+                {
+                    try
+                    {
+                        if (!process.HasExited) process.Kill(true);
+                    }
+                    catch { }
+
+                    app.Status = InstallStatus.Failed;
+                    app.StatusMessage = string.Equals(app.Source, "msstore", StringComparison.OrdinalIgnoreCase)
+                        ? "Timed out (MS Store unavailable)"
+                        : "Installation timed out";
+                    onLog?.Invoke($"[{app.Name}] ERROR: {app.StatusMessage}");
+                    return false;
+                }
+
+                await waitExitTask;
             }
 
             if (IsSuccessExitCode(process.ExitCode))
@@ -980,7 +1012,8 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
             else
             {
                 // Fallback for Google Chrome if winget hash mismatch occurred
-                if (app.WingetId.Equals("Google.Chrome", StringComparison.OrdinalIgnoreCase) || app.Id.Equals("chrome", StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(app.WingetId, "Google.Chrome", StringComparison.OrdinalIgnoreCase) || 
+                    string.Equals(app.Id, "chrome", StringComparison.OrdinalIgnoreCase))
                 {
                     onLog?.Invoke($"[{app.Name}] Winget checksum mismatch detected. Switching to Google's official standalone installer...");
                     app.DownloadUrl = "https://dl.google.com/chrome/install/standalonesetup64.exe";
@@ -1078,7 +1111,7 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
 
             using var process = new Process { StartInfo = psi };
 
-            if (app.Id.Equals("discord", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(app.Id, "discord", StringComparison.OrdinalIgnoreCase))
             {
                 _ = Task.Run(async () =>
                 {
@@ -1111,7 +1144,15 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
             }
 
             process.Start();
-            await process.WaitForExitAsync(cancellationToken);
+            var waitExeTask = process.WaitForExitAsync(cancellationToken);
+            var timeoutExeTask = Task.Delay(180_000, cancellationToken);
+            if (await Task.WhenAny(waitExeTask, timeoutExeTask) == timeoutExeTask)
+            {
+                try { if (!process.HasExited) process.Kill(true); } catch { }
+                onLog?.Invoke($"[{app.Name}] Direct installer timed out after 3 minutes. Falling back to WinGet...");
+                return await InstallWingetAppAsync(app, onLog, cancellationToken);
+            }
+            await waitExeTask;
 
             if (process.ExitCode == 0 || process.ExitCode == 3010)
             {

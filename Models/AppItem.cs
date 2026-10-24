@@ -16,20 +16,29 @@ public partial class AppItem : ObservableObject
 {
     public required string Id { get; set; }
     public required string Name { get; set; }
-    public required string WingetId { get; set; }
+    private string _installerType = "winget";
+    public string InstallerType
+    {
+        get => string.IsNullOrEmpty(_installerType) ? "winget" : _installerType;
+        set => _installerType = string.IsNullOrEmpty(value) ? "winget" : value;
+    }
+
+    private string _source = "winget";
+    public string Source
+    {
+        get => string.IsNullOrEmpty(_source) ? "winget" : _source;
+        set => _source = string.IsNullOrEmpty(value) ? "winget" : value;
+    }
+
+    private string _wingetId = string.Empty;
+    public required string WingetId
+    {
+        get => _wingetId ?? string.Empty;
+        set => _wingetId = value ?? string.Empty;
+    }
     public required string Category { get; set; }
     public string Description { get; set; } = string.Empty;
     public string Icon { get; set; } = "AppGeneric24";
-
-    /// <summary>
-    /// Type of installer: "winget" (default), "exe_download", or "zip_bat" (download zip, extract, and execute .bat)
-    /// </summary>
-    public string InstallerType { get; set; } = "winget";
-
-    /// <summary>
-    /// Package source repository: "winget" (default), or "msstore"
-    /// </summary>
-    public string Source { get; set; } = "winget";
 
     /// <summary>
     /// Direct download URL if not using standard winget or for custom zip
