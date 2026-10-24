@@ -229,7 +229,7 @@
         "WingetId":  "BlenderFoundation.Blender",
         "Category":  "Imaging",
         "Description":  "Free and open-source 3D creation suite.",
-        "SupportedArchitectures": "x64",
+        "SupportedArchitectures":  "x64",
         "Icon":  "Design24"
     },
     {
@@ -316,7 +316,7 @@
         "Id":  "msoffice_2024",
         "Name":  "Microsoft Office 2024 Professional Plus",
         "WingetId":  "Microsoft.Office.2024",
-        "InstallerType": "office_c2r",
+        "InstallerType":  "office_c2r",
         "Category":  "Documents",
         "Description":  "Latest Microsoft Office 2024 suite with Word, Excel, PowerPoint, Outlook, and OneNote.",
         "Icon":  "DocumentText24"
@@ -325,7 +325,7 @@
         "Id":  "msoffice_2021",
         "Name":  "Microsoft Office 2021 Professional Plus",
         "WingetId":  "Microsoft.Office.2021",
-        "InstallerType": "office_c2r",
+        "InstallerType":  "office_c2r",
         "Category":  "Documents",
         "Description":  "Perpetual Microsoft Office 2021 suite with Word, Excel, PowerPoint, and Outlook.",
         "Icon":  "DocumentText24"
@@ -334,7 +334,7 @@
         "Id":  "msoffice_2019",
         "Name":  "Microsoft Office 2019 Professional Plus",
         "WingetId":  "Microsoft.Office.2019",
-        "InstallerType": "office_c2r",
+        "InstallerType":  "office_c2r",
         "Category":  "Documents",
         "Description":  "Microsoft Office 2019 suite with Word, Excel, PowerPoint, and Outlook.",
         "Icon":  "DocumentText24"
@@ -343,7 +343,7 @@
         "Id":  "msoffice_2016",
         "Name":  "Microsoft Office 2016 Professional Plus",
         "WingetId":  "Microsoft.Office.2016",
-        "InstallerType": "office_c2r",
+        "InstallerType":  "office_c2r",
         "Category":  "Documents",
         "Description":  "Microsoft Office 2016 classic desktop productivity suite.",
         "Icon":  "DocumentText24"
@@ -413,30 +413,6 @@
         "Icon":  "Shield24"
     },
     {
-        "Id":  "avast",
-        "Name":  "Avast Free Antivirus",
-        "WingetId":  "Avast.AvastFreeAntivirus",
-        "Category":  "Security",
-        "Description":  "Essential protection against viruses, malware, and ransomware.",
-        "Icon":  "Shield24"
-    },
-    {
-        "Id":  "avg",
-        "Name":  "AVG AntiVirus Free",
-        "WingetId":  "AVG.AVGProtectionFree",
-        "Category":  "Security",
-        "Description":  "Real-time virus scanner and malware security suite.",
-        "Icon":  "Shield24"
-    },
-    {
-        "Id":  "avira",
-        "Name":  "Avira Free Security",
-        "WingetId":  "Avira.AviraFreeSecurity",
-        "Category":  "Security",
-        "Description":  "Antivirus, VPN, and system cleanup security package.",
-        "Icon":  "Shield24"
-    },
-    {
         "Id":  "ultraviewer",
         "Name":  "UltraViewer",
         "WingetId":  "DucFabulous.UltraViewer",
@@ -448,7 +424,7 @@
         "Id":  "wireshark",
         "Name":  "Wireshark",
         "WingetId":  "WiresharkFoundation.Wireshark",
-        "Category":  "Hardware & Diagnostics",
+        "Category":  "Hardware \u0026 Diagnostics",
         "Description":  "World\u0027s foremost network protocol analyzer.",
         "Icon":  "NetworkCheck24"
     },
@@ -480,7 +456,7 @@
         "Id":  "imgburn",
         "Name":  "ImgBurn",
         "WingetId":  "LIGHTNINGUK.ImgBurn",
-        "Category":  "File & Disk Tools",
+        "Category":  "File \u0026 Disk Tools",
         "Description":  "Lightweight CD / DVD / HD DVD / Blu-ray burning application.",
         "Icon":  "Cd24"
     },
@@ -496,7 +472,7 @@
         "Id":  "teracopy",
         "Name":  "TeraCopy",
         "WingetId":  "CodeSector.TeraCopy",
-        "Category":  "File & Disk Tools",
+        "Category":  "File \u0026 Disk Tools",
         "Description":  "Accelerate file copying, verify integrity with checksums, and resume transfers.",
         "Icon":  "Copy24"
     },
@@ -504,7 +480,7 @@
         "Id":  "cdburnerxp",
         "Name":  "CDBurnerXP",
         "WingetId":  "Canneverbe.CDBurnerXP",
-        "Category":  "File & Disk Tools",
+        "Category":  "File \u0026 Disk Tools",
         "Description":  "Burn CDs and DVDs, including Blu-Ray and HD-DVDs.",
         "Icon":  "Cd24"
     },
@@ -528,7 +504,7 @@
         "Id":  "windirstat",
         "Name":  "WinDirStat",
         "WingetId":  "WinDirStat.WinDirStat",
-        "Category":  "File & Disk Tools",
+        "Category":  "File \u0026 Disk Tools",
         "Description":  "Disk usage statistics viewer and cleanup tool for Windows.",
         "Icon":  "Storage24"
     },
@@ -536,7 +512,7 @@
         "Id":  "wiztree",
         "Name":  "WizTree",
         "WingetId":  "AntibodySoftware.WizTree",
-        "Category":  "File & Disk Tools",
+        "Category":  "File \u0026 Disk Tools",
         "Description":  "Ultra-fast disk space analyzer that scans directly via MFT in seconds.",
         "Icon":  "Storage24"
     },
@@ -552,7 +528,7 @@
         "Id":  "infrarecorder",
         "Name":  "InfraRecorder",
         "WingetId":  "InfraRecorder.InfraRecorder",
-        "Category":  "File & Disk Tools",
+        "Category":  "File \u0026 Disk Tools",
         "Description":  "Free CD/DVD burning solution with ISO image support.",
         "Icon":  "Cd24"
     },
@@ -832,7 +808,7 @@
         "Source":  "winget",
         "WingetId":  "OBSProject.OBSStudio",
         "Description":  "Free and open-source software for video recording and live streaming.",
-        "SupportedArchitectures": "x64",
+        "SupportedArchitectures":  "x64",
         "Icon":  "Video24",
         "Category":  "Media"
     },
@@ -879,7 +855,7 @@
         "WingetId":  "Rufus.Rufus",
         "Description":  "Create bootable USB drives for Windows and Linux installations.",
         "Icon":  "UsbStick24",
-        "Category":  "File & Disk Tools"
+        "Category":  "File \u0026 Disk Tools"
     },
     {
         "Id":  "crystaldiskinfo",
@@ -888,7 +864,7 @@
         "WingetId":  "CrystalDewWorld.CrystalDiskInfo",
         "Description":  "HDD/SSD health monitoring tool with S.M.A.R.T. data and temperature readouts.",
         "Icon":  "HardDrive24",
-        "Category":  "Hardware & Diagnostics"
+        "Category":  "Hardware \u0026 Diagnostics"
     },
     {
         "Id":  "crystaldiskmark",
@@ -897,7 +873,7 @@
         "WingetId":  "CrystalDewWorld.CrystalDiskMark",
         "Description":  "Disk speed benchmark utility for measuring sequential and random read/write.",
         "Icon":  "SpeedHigh24",
-        "Category":  "Hardware & Diagnostics"
+        "Category":  "Hardware \u0026 Diagnostics"
     },
     {
         "Id":  "cpuz",
@@ -906,7 +882,7 @@
         "WingetId":  "CPUID.CPU-Z",
         "Description":  "Hardware detection for CPU processor, motherboard, and memory timings.",
         "Icon":  "DeveloperBoard24",
-        "Category":  "Hardware & Diagnostics"
+        "Category":  "Hardware \u0026 Diagnostics"
     },
     {
         "Id":  "gpuz",
@@ -915,7 +891,7 @@
         "WingetId":  "TechPowerUp.GPU-Z",
         "Description":  "Graphics subsystem diagnostic providing detailed GPU and VRAM metrics.",
         "Icon":  "DeveloperBoard24",
-        "Category":  "Hardware & Diagnostics"
+        "Category":  "Hardware \u0026 Diagnostics"
     },
     {
         "Source":  "winget",
@@ -991,6 +967,13 @@
         "Description":  "Comprehensive API development and collaboration testing suite.",
         "Icon":  "ArrowRouting24",
         "Category":  "Developer Tools"
+    },
+    {
+        "Id":  "bitwarden",
+        "Name":  "Bitwarden",
+        "WingetId":  "Bitwarden.Bitwarden",
+        "Category":  "Security",
+        "Description":  "Secure and free open-source password manager for all devices.",
+        "Icon":  "Shield24"
     }
 ]
-
