@@ -97,6 +97,20 @@ public partial class WingetService
     public async Task<bool> EnsureWingetInstalledAsync(Action<string>? onLog = null)
         => await EnsureWingetInstalledAsync((msg, pct) => onLog?.Invoke(msg), onLog);
 
+    public static string GetPowerShellExecutable()
+    {
+        if (Environment.Is64BitOperatingSystem)
+        {
+            var sysnativePs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "sysnative", "WindowsPowerShell", "v1.0", "powershell.exe");
+            if (File.Exists(sysnativePs)) return sysnativePs;
+        }
+
+        var system32Ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "WindowsPowerShell", "v1.0", "powershell.exe");
+        if (File.Exists(system32Ps)) return system32Ps;
+
+        return "powershell.exe";
+    }
+
     public async Task<bool> EnsureWingetInstalledAsync(Action<string, double>? onProgress, Action<string>? onLog = null)
     {
         if (await IsWingetAvailableAsync())
@@ -114,63 +128,84 @@ public partial class WingetService
             var tempDir = Path.Combine(Path.GetTempPath(), "WinToolkit", "WinGetBootstrap");
             Directory.CreateDirectory(tempDir);
 
-            var vclibsPath = Path.Combine(tempDir, "vclibs.appx");
-            var xamlPath = Path.Combine(tempDir, "xaml.appx");
-            var wingetPath = Path.Combine(tempDir, "winget.msixbundle");
+            var depsZipPath = Path.Combine(tempDir, "DesktopAppInstaller_Dependencies.zip");
+            var wingetBundlePath = Path.Combine(tempDir, "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle");
 
-            // 1. Download VCLibs (~5MB)
-            if (!File.Exists(vclibsPath) || new FileInfo(vclibsPath).Length < 100_000)
+            // 1. Download official dependencies bundle (VCLibs, VCLibs.UWPDesktop, WindowsAppRuntime 1.8)
+            if (!File.Exists(depsZipPath) || new FileInfo(depsZipPath).Length < 10_000_000)
             {
                 await DownloadFileWithProgressAsync(
-                    "https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx",
-                    vclibsPath,
-                    5, 20,
-                    "Downloading VCLibs dependency",
+                    "https://github.com/microsoft/winget-cli/releases/download/v1.29.380/DesktopAppInstaller_Dependencies.zip",
+                    depsZipPath,
+                    5, 45,
+                    "Downloading Dependencies (VCLibs + WindowsAppRuntime)",
                     onProgress, onLog);
             }
             else
             {
-                onProgress?.Invoke("[WinGet] VCLibs dependency verified.", 20);
+                onProgress?.Invoke("[WinGet] Runtime dependencies bundle cached.", 45);
             }
 
-            // 2. Download UI.Xaml (~3MB)
-            if (!File.Exists(xamlPath) || new FileInfo(xamlPath).Length < 100_000)
+            // 2. Download WinGet MSIX Bundle
+            if (!File.Exists(wingetBundlePath) || new FileInfo(wingetBundlePath).Length < 10_000_000)
             {
                 await DownloadFileWithProgressAsync(
-                    "https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.x64.appx",
-                    xamlPath,
-                    20, 35,
-                    "Downloading UI.Xaml dependency",
+                    "https://github.com/microsoft/winget-cli/releases/download/v1.29.380/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle",
+                    wingetBundlePath,
+                    45, 80,
+                    "Downloading Microsoft Desktop App Installer",
                     onProgress, onLog);
             }
             else
             {
-                onProgress?.Invoke("[WinGet] UI.Xaml dependency verified.", 35);
+                onProgress?.Invoke("[WinGet] Microsoft Desktop App Installer bundle cached.", 80);
             }
 
-            // 3. Download WinGet AppInstaller bundle (~50MB)
-            if (!File.Exists(wingetPath) || new FileInfo(wingetPath).Length < 10_000_000)
+            // 3. Extract architecture-specific dependencies
+            onProgress?.Invoke("Extracting system runtime dependencies...", 82);
+            var archFolder = OsEnvironmentService.Instance.Is64BitOperatingSystem ? "x64" : "x86";
+            var extractedDir = Path.Combine(tempDir, $"extracted_{archFolder}");
+            Directory.CreateDirectory(extractedDir);
+
+            var depFilePaths = new List<string>();
+            using (var zip = ZipFile.OpenRead(depsZipPath))
             {
-                await DownloadFileWithProgressAsync(
-                    "https://aka.ms/getwinget",
-                    wingetPath,
-                    35, 80,
-                    "Downloading WinGet Package Manager",
-                    onProgress, onLog);
-            }
-            else
-            {
-                onProgress?.Invoke("[WinGet] WinGet bundle verified.", 80);
+                foreach (var entry in zip.Entries)
+                {
+                    if (entry.FullName.StartsWith(archFolder + "/", StringComparison.OrdinalIgnoreCase) &&
+                        entry.Name.EndsWith(".appx", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var destPath = Path.Combine(extractedDir, entry.Name);
+                        if (!File.Exists(destPath) || new FileInfo(destPath).Length != entry.Length)
+                        {
+                            entry.ExtractToFile(destPath, true);
+                        }
+                        depFilePaths.Add(destPath);
+                    }
+                }
             }
 
-            // 4. Register packages via PowerShell Add-AppxPackage
-            onProgress?.Invoke("Registering WinGet packages in Windows AppX system...", 85);
-            onLog?.Invoke("[WinGet] Registering WinGet and dependencies via Add-AppxPackage...");
+            // 4. Register packages via 64-bit PowerShell with dependency mapping
+            onProgress?.Invoke("Registering WinGet & system dependencies...", 85);
+            onLog?.Invoke($"[WinGet] Registering {depFilePaths.Count} dependencies and DesktopAppInstaller bundle via 64-bit PowerShell...");
+
+            var depArgs = string.Join(",", depFilePaths.Select(f => $"'{f}'"));
+            var psScript = $@"
+$ErrorActionPreference = 'Continue'
+$deps = @({depArgs})
+foreach ($d in $deps) {{
+    try {{ Add-AppxPackage -Path $d -ErrorAction SilentlyContinue }} catch {{ }}
+}}
+Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicationShutdown -ErrorAction SilentlyContinue
+";
+
+            var scriptFile = Path.Combine(tempDir, "install_winget.ps1");
+            await File.WriteAllTextAsync(scriptFile, psScript);
 
             var psi = new ProcessStartInfo
             {
-                FileName = "powershell.exe",
-                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"Add-AppxPackage -Path '{vclibsPath}'; Add-AppxPackage -Path '{xamlPath}'; Add-AppxPackage -Path '{wingetPath}'\"",
+                FileName = GetPowerShellExecutable(),
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -File \"{scriptFile}\"",
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
@@ -182,18 +217,15 @@ public partial class WingetService
                 if (proc != null)
                 {
                     await proc.WaitForExitAsync();
-                    if (proc.ExitCode != 0)
+                    var stdErr = await proc.StandardError.ReadToEndAsync();
+                    if (!string.IsNullOrWhiteSpace(stdErr))
                     {
-                        var err = await proc.StandardError.ReadToEndAsync();
-                        if (!string.IsNullOrWhiteSpace(err))
-                        {
-                            onLog?.Invoke($"[WinGet Warning] AppX registration: {err.Trim()}");
-                        }
+                        onLog?.Invoke($"[WinGet AppX Log] {stdErr.Trim()}");
                     }
                 }
             }
 
-            onProgress?.Invoke("Verifying WinGet registration and execution PATH...", 95);
+            onProgress?.Invoke("Verifying WinGet registration and system PATH...", 95);
 
             // Refresh PATH in running process so winget execution alias is immediately visible
             try
@@ -207,12 +239,22 @@ public partial class WingetService
             }
             catch { }
 
-            await Task.Delay(1500);
+            // Polling check with backoff (up to 6 seconds) to give AppXSvc time to build the execution alias
+            bool available = false;
+            string? ver = null;
+            for (int i = 0; i < 6; i++)
+            {
+                await Task.Delay(1000);
+                ver = await GetWingetVersionAsync();
+                if (!string.IsNullOrEmpty(ver))
+                {
+                    available = true;
+                    break;
+                }
+            }
 
-            var available = await IsWingetAvailableAsync();
             if (available)
             {
-                var ver = await GetWingetVersionAsync() ?? "Ready";
                 onProgress?.Invoke($"✅ WinGet successfully installed and verified ({ver})", 100);
                 onLog?.Invoke($"✅ WinGet installed and ready ({ver}).");
                 return true;
