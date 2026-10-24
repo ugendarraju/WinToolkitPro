@@ -70,6 +70,14 @@
                             Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
                         <TextBlock Text="{Binding ArchitectureNotice}" FontSize="10" FontWeight="SemiBold" Foreground="#60a5fa"/>
                     </Border>
+                    <Border Background="{Binding WingetBadgeBackground}" BorderBrush="{Binding WingetBadgeBorderBrush}" BorderThickness="1" CornerRadius="4" 
+                            Padding="6,2" Margin="6,0,0,0" VerticalAlignment="Center" ToolTip="Windows Package Manager (WinGet) status on this PC">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding WingetStatusBadge}" FontSize="10" FontWeight="SemiBold" Foreground="{Binding WingetBadgeForeground}"/>
+                            <ProgressBar IsIndeterminate="True" Width="26" Height="3" Margin="6,0,0,0" VerticalAlignment="Center"
+                                         Visibility="{Binding IsWingetBootstrapping, Converter={StaticResource BoolToVis}}"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
                 <TextBlock Text="Segregated by software category. Select apps to download and silently install them in batch." 
                            FontSize="11.5" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"/>
@@ -142,6 +150,30 @@
                 BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
                 BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,10">
             <StackPanel Orientation="Vertical">
+                <!-- WinGet Auto-Installation Banner if missing on system -->
+                <Border Background="#451a03" BorderBrush="#f59e0b" BorderThickness="1" CornerRadius="6" 
+                        Padding="10,8" Margin="0,0,0,8"
+                        Visibility="{Binding IsWingetBootstrapping, Converter={StaticResource BoolToVis}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⚡ " FontSize="12"/>
+                                <TextBlock Text="WinGet Not Found — Auto-Installing Windows Package Manager in background" FontWeight="Bold" FontSize="11.5" Foreground="#fef08a"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding StatusText}" FontSize="11" Foreground="#fde68a" Margin="18,2,0,5"/>
+                            <ProgressBar Value="{Binding WingetBootstrapProgress}" Maximum="100" Height="4" Margin="18,0,0,0" 
+                                         Foreground="#f59e0b" Background="#1e293b"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Command="{Binding ToggleActivityPanelCommand}" 
+                                Content="View Live Updates 📊" Background="#78350f" Foreground="White" BorderBrush="#f59e0b" BorderThickness="1"
+                                FontSize="11" FontWeight="SemiBold" Padding="10,6" VerticalAlignment="Center" Margin="12,0,0,0" Cursor="Hand"/>
+                    </Grid>
+                </Border>
+
                 <!-- Search Box Row -->
                 <Grid Margin="0,0,0,8">
                     <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" 

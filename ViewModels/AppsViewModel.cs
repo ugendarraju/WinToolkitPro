@@ -31,6 +31,24 @@ public partial class AppsViewModel : ObservableObject
     private bool _isWingetAvailable = true;
 
     [ObservableProperty]
+    private string _wingetStatusBadge = "WinGet: Checking...";
+
+    [ObservableProperty]
+    private string _wingetBadgeBackground = "#1e293b";
+
+    [ObservableProperty]
+    private string _wingetBadgeBorderBrush = "#475569";
+
+    [ObservableProperty]
+    private string _wingetBadgeForeground = "#94a3b8";
+
+    [ObservableProperty]
+    private bool _isWingetBootstrapping;
+
+    [ObservableProperty]
+    private double _wingetBootstrapProgress;
+
+    [ObservableProperty]
     private double _overallProgress;
 
     [ObservableProperty]
@@ -94,10 +112,36 @@ public partial class AppsViewModel : ObservableObject
 
     public async Task InitializeAsync()
     {
-        IsWingetAvailable = await _wingetService.IsWingetAvailableAsync();
-        if (!IsWingetAvailable)
+        WingetStatusBadge = "WinGet: Checking...";
+        WingetBadgeBackground = "#1e293b";
+        WingetBadgeBorderBrush = "#475569";
+        WingetBadgeForeground = "#94a3b8";
+
+        var wingetVer = await _wingetService.GetWingetVersionAsync();
+        if (!string.IsNullOrEmpty(wingetVer))
         {
-            StatusText = "Notice: winget is not installed or detected in PATH.";
+            IsWingetAvailable = true;
+            IsWingetBootstrapping = false;
+            WingetStatusBadge = $"WinGet Ready ({wingetVer})";
+            WingetBadgeBackground = "#064e3b";
+            WingetBadgeBorderBrush = "#10b981";
+            WingetBadgeForeground = "#34d399";
+            StatusText = $"WinGet {wingetVer} detected and ready.";
+            ActivityService.Instance.AddLog($"WinGet package manager verified: {wingetVer}");
+        }
+        else
+        {
+            IsWingetAvailable = false;
+            IsWingetBootstrapping = true;
+            WingetBootstrapProgress = 0;
+            WingetStatusBadge = "WinGet: Not Present (Auto-Installing...)";
+            WingetBadgeBackground = "#451a03";
+            WingetBadgeBorderBrush = "#f59e0b";
+            WingetBadgeForeground = "#fbbf24";
+            StatusText = "WinGet not found on system. Installing Windows Package Manager automatically...";
+            ActivityService.Instance.AddLog("WinGet not found on system. Starting automatic installation in background...");
+
+            _ = AutoInstallWingetAsync();
         }
 
         var apps = await _catalogService.LoadAppsAsync();
@@ -491,6 +535,78 @@ public partial class AppsViewModel : ObservableObject
         _installCts?.Cancel();
         StatusText = "Cancelling...";
         AddLog("Cancelling ongoing installations...");
+    }
+
+    [RelayCommand]
+    public async Task RetryInstallWingetAsync()
+    {
+        if (IsWingetBootstrapping) return;
+        IsWingetBootstrapping = true;
+        await AutoInstallWingetAsync();
+    }
+
+    private async Task AutoInstallWingetAsync()
+    {
+        var task = new ActivityTaskItem
+        {
+            Id = "winget-bootstrap",
+            Name = "Windows Package Manager (WinGet)",
+            Category = "System Setup",
+            Status = ActivityTaskStatus.Running,
+            StatusMessage = "Starting WinGet bootstrap...",
+            Progress = 0
+        };
+        ActivityService.Instance.StartSession("WinGet Setup", new[] { task });
+        ActivityService.Instance.OpenDrawer();
+
+        var success = await _wingetService.EnsureWingetInstalledAsync(
+            onProgress: (status, progress) =>
+            {
+                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                {
+                    StatusText = status;
+                    WingetBootstrapProgress = progress;
+                    WingetStatusBadge = $"WinGet: Installing ({progress:F0}%)...";
+                    ActivityService.Instance.UpdateTask("winget-bootstrap", ActivityTaskStatus.Running, status, progress);
+                });
+            },
+            onLog: (msg) =>
+            {
+                AddLog(msg);
+                ActivityService.Instance.AddLog(msg);
+            });
+
+        System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+        {
+            IsWingetBootstrapping = false;
+            if (success)
+            {
+                IsWingetAvailable = true;
+                _ = Task.Run(async () =>
+                {
+                    var ver = await _wingetService.GetWingetVersionAsync() ?? "Ready";
+                    System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                    {
+                        WingetStatusBadge = $"WinGet Ready ({ver})";
+                        WingetBadgeBackground = "#064e3b";
+                        WingetBadgeBorderBrush = "#10b981";
+                        WingetBadgeForeground = "#34d399";
+                        StatusText = $"WinGet {ver} installed successfully.";
+                    });
+                });
+                ActivityService.Instance.UpdateTask("winget-bootstrap", ActivityTaskStatus.Completed, "WinGet successfully installed and ready", 100);
+            }
+            else
+            {
+                IsWingetAvailable = false;
+                WingetStatusBadge = "WinGet: Incomplete (Direct Mode Active)";
+                WingetBadgeBackground = "#451a03";
+                WingetBadgeBorderBrush = "#d97706";
+                WingetBadgeForeground = "#fcd34d";
+                StatusText = "WinGet auto-install could not complete. Direct vendor installers remain active.";
+                ActivityService.Instance.UpdateTask("winget-bootstrap", ActivityTaskStatus.Failed, "WinGet setup incomplete - fallback active", 0);
+            }
+        });
     }
 
     private void AddLog(string message)

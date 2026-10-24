@@ -64,11 +64,51 @@ public partial class WingetService
         }
     }
 
-    public async Task<bool> EnsureWingetInstalledAsync(Action<string>? onLog = null)
+    public async Task<string?> GetWingetVersionAsync()
     {
-        if (await IsWingetAvailableAsync()) return true;
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = GetWingetExecutablePath(),
+                Arguments = "--version",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            using var proc = Process.Start(startInfo);
+            if (proc == null) return null;
+            var output = await proc.StandardOutput.ReadToEndAsync();
+            await proc.WaitForExitAsync();
+            if (proc.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
+            {
+                var clean = output.Trim().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
+                return clean;
+            }
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
+    public async Task<bool> EnsureWingetInstalledAsync(Action<string>? onLog = null)
+        => await EnsureWingetInstalledAsync((msg, pct) => onLog?.Invoke(msg), onLog);
+
+    public async Task<bool> EnsureWingetInstalledAsync(Action<string, double>? onProgress, Action<string>? onLog = null)
+    {
+        if (await IsWingetAvailableAsync())
+        {
+            var ver = await GetWingetVersionAsync() ?? "Ready";
+            onProgress?.Invoke($"✅ WinGet is already installed ({ver}).", 100);
+            return true;
+        }
+
+        onProgress?.Invoke("⚠️ WinGet not found. Preparing download...", 5);
         onLog?.Invoke("⚠️ Windows Package Manager (WinGet) is missing. Installing WinGet automatically...");
+
         try
         {
             var tempDir = Path.Combine(Path.GetTempPath(), "WinToolkit", "WinGetBootstrap");
@@ -81,35 +121,52 @@ public partial class WingetService
             // 1. Download VCLibs (~5MB)
             if (!File.Exists(vclibsPath) || new FileInfo(vclibsPath).Length < 100_000)
             {
-                onLog?.Invoke("[WinGet] Downloading VCLibs runtime dependency...");
-                using var resp = await HttpClient.GetAsync("https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx");
-                resp.EnsureSuccessStatusCode();
-                await using var fs = File.Create(vclibsPath);
-                await resp.Content.CopyToAsync(fs);
+                await DownloadFileWithProgressAsync(
+                    "https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx",
+                    vclibsPath,
+                    5, 20,
+                    "Downloading VCLibs dependency",
+                    onProgress, onLog);
+            }
+            else
+            {
+                onProgress?.Invoke("[WinGet] VCLibs dependency verified.", 20);
             }
 
             // 2. Download UI.Xaml (~3MB)
             if (!File.Exists(xamlPath) || new FileInfo(xamlPath).Length < 100_000)
             {
-                onLog?.Invoke("[WinGet] Downloading UI.Xaml dependency...");
-                using var resp = await HttpClient.GetAsync("https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.x64.appx");
-                resp.EnsureSuccessStatusCode();
-                await using var fs = File.Create(xamlPath);
-                await resp.Content.CopyToAsync(fs);
+                await DownloadFileWithProgressAsync(
+                    "https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.x64.appx",
+                    xamlPath,
+                    20, 35,
+                    "Downloading UI.Xaml dependency",
+                    onProgress, onLog);
+            }
+            else
+            {
+                onProgress?.Invoke("[WinGet] UI.Xaml dependency verified.", 35);
             }
 
-            // 3. Download WinGet AppInstaller bundle
+            // 3. Download WinGet AppInstaller bundle (~50MB)
             if (!File.Exists(wingetPath) || new FileInfo(wingetPath).Length < 10_000_000)
             {
-                onLog?.Invoke("[WinGet] Downloading Microsoft Desktop App Installer...");
-                using var resp = await HttpClient.GetAsync("https://aka.ms/getwinget");
-                resp.EnsureSuccessStatusCode();
-                await using var fs = File.Create(wingetPath);
-                await resp.Content.CopyToAsync(fs);
+                await DownloadFileWithProgressAsync(
+                    "https://aka.ms/getwinget",
+                    wingetPath,
+                    35, 80,
+                    "Downloading WinGet Package Manager",
+                    onProgress, onLog);
+            }
+            else
+            {
+                onProgress?.Invoke("[WinGet] WinGet bundle verified.", 80);
             }
 
             // 4. Register packages via PowerShell Add-AppxPackage
-            onLog?.Invoke("[WinGet] Registering WinGet and dependencies...");
+            onProgress?.Invoke("Registering WinGet packages in Windows AppX system...", 85);
+            onLog?.Invoke("[WinGet] Registering WinGet and dependencies via Add-AppxPackage...");
+
             var psi = new ProcessStartInfo
             {
                 FileName = "powershell.exe",
@@ -122,8 +179,21 @@ public partial class WingetService
 
             using (var proc = Process.Start(psi))
             {
-                if (proc != null) await proc.WaitForExitAsync();
+                if (proc != null)
+                {
+                    await proc.WaitForExitAsync();
+                    if (proc.ExitCode != 0)
+                    {
+                        var err = await proc.StandardError.ReadToEndAsync();
+                        if (!string.IsNullOrWhiteSpace(err))
+                        {
+                            onLog?.Invoke($"[WinGet Warning] AppX registration: {err.Trim()}");
+                        }
+                    }
+                }
             }
+
+            onProgress?.Invoke("Verifying WinGet registration and execution PATH...", 95);
 
             // Refresh PATH in running process so winget execution alias is immediately visible
             try
@@ -142,19 +212,88 @@ public partial class WingetService
             var available = await IsWingetAvailableAsync();
             if (available)
             {
-                onLog?.Invoke("✅ WinGet installed and ready.");
+                var ver = await GetWingetVersionAsync() ?? "Ready";
+                onProgress?.Invoke($"✅ WinGet successfully installed and verified ({ver})", 100);
+                onLog?.Invoke($"✅ WinGet installed and ready ({ver}).");
                 return true;
             }
             else
             {
+                onProgress?.Invoke("⚠️ WinGet installation could not be verified in PATH.", 100);
                 onLog?.Invoke("⚠️ WinGet installation could not be verified in PATH.");
                 return false;
             }
         }
         catch (Exception ex)
         {
+            onProgress?.Invoke($"⚠️ Error installing WinGet: {ex.Message}", 100);
             onLog?.Invoke($"⚠️ Error installing WinGet: {ex.Message}");
             return false;
+        }
+    }
+
+    private static async Task DownloadFileWithProgressAsync(
+        string url, 
+        string destinationPath, 
+        double startRange, 
+        double endRange, 
+        string stepName,
+        Action<string, double>? onProgress,
+        Action<string>? onLog,
+        CancellationToken ct = default)
+    {
+        var tempPart = destinationPath + ".part";
+        try
+        {
+            if (File.Exists(tempPart)) File.Delete(tempPart);
+
+            using var response = await HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+            response.EnsureSuccessStatusCode();
+
+            var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+            await using (var contentStream = await response.Content.ReadAsStreamAsync(ct))
+            await using (var fileStream = new FileStream(tempPart, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true))
+            {
+                var buffer = new byte[81920];
+                long totalRead = 0;
+                int bytesRead;
+                var lastReportTime = DateTime.MinValue;
+
+                while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length, ct)) > 0)
+                {
+                    await fileStream.WriteAsync(buffer, 0, bytesRead, ct);
+                    totalRead += bytesRead;
+
+                    if (DateTime.UtcNow - lastReportTime > TimeSpan.FromMilliseconds(250))
+                    {
+                        lastReportTime = DateTime.UtcNow;
+                        double fraction = totalBytes > 0 ? (double)totalRead / totalBytes : 0.5;
+                        double overallPct = startRange + (fraction * (endRange - startRange));
+                        string sizeInfo = totalBytes > 0 
+                            ? $"{totalRead / 1048576.0:F1}/{totalBytes / 1048576.0:F1} MB" 
+                            : $"{totalRead / 1048576.0:F1} MB";
+                        string msg = $"[WinGet] {stepName} ({sizeInfo})";
+                        onProgress?.Invoke(msg, overallPct);
+                        onLog?.Invoke(msg);
+                    }
+                }
+            }
+
+            if (File.Exists(destinationPath)) File.Delete(destinationPath);
+            File.Move(tempPart, destinationPath);
+
+            double finalPct = endRange;
+            string finalMsg = $"[WinGet] {stepName} complete.";
+            onProgress?.Invoke(finalMsg, finalPct);
+            onLog?.Invoke(finalMsg);
+        }
+        catch
+        {
+            if (File.Exists(tempPart))
+            {
+                try { File.Delete(tempPart); } catch { }
+            }
+            throw;
         }
     }
 
