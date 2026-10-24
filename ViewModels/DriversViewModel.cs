@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WinToolkit.Models;
@@ -106,6 +107,16 @@ public partial class DriversViewModel : ObservableObject
             {
                 StatusText = "Battery report generated and opened in browser.";
                 AddLog($"✅ Battery report generated and opened: {path}");
+
+                try
+                {
+                    if (Hardware != null && File.Exists(path))
+                    {
+                        var html = await File.ReadAllTextAsync(path);
+                        HardwareService.ParseBatteryHtml(html, Hardware);
+                    }
+                }
+                catch { }
             }
             else
             {

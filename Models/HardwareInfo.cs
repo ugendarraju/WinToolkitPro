@@ -43,16 +43,19 @@ public partial class HardwareInfo : ObservableObject
     private int _batteryPercentage;
 
     [ObservableProperty]
-    private string _batteryDesignCapacity = string.Empty;
+    private string _batteryDesignCapacity = "--";
 
     [ObservableProperty]
-    private string _batteryFullChargeCapacity = string.Empty;
+    private string _batteryFullChargeCapacity = "--";
 
     [ObservableProperty]
     private double _batteryHealthPercent;
 
     [ObservableProperty]
-    private string _batteryHealthGrade = "Good";
+    private string _batteryHealthGrade = "Detecting...";
+
+    [ObservableProperty]
+    private string _batteryCycleCount = "--";
 }
 
 public class DiskDriveInfo

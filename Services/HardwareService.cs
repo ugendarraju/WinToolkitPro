@@ -232,6 +232,62 @@ public class HardwareService
         }
     }
 
+    public static string GetPowerCfgPath()
+    {
+        if (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess)
+        {
+            var sysnativePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "sysnative", "powercfg.exe");
+            if (File.Exists(sysnativePath))
+            {
+                return sysnativePath;
+            }
+        }
+        else
+        {
+            var system32Path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "powercfg.exe");
+            if (File.Exists(system32Path))
+            {
+                return system32Path;
+            }
+        }
+        return "powercfg.exe";
+    }
+
+    public static void ParseBatteryHtml(string html, HardwareInfo info)
+    {
+        var designMatch = Regex.Match(html, @"DESIGN CAPACITY[\s\S]*?<td[^>]*>([\d,]+)\s*mWh", RegexOptions.IgnoreCase);
+        var fullMatch = Regex.Match(html, @"FULL CHARGE CAPACITY[\s\S]*?<td[^>]*>([\d,]+)\s*mWh", RegexOptions.IgnoreCase);
+        var cycleMatch = Regex.Match(html, @"CYCLE COUNT[\s\S]*?<td[^>]*>\s*([\d,]+|-)\s*<\/td>", RegexOptions.IgnoreCase);
+
+        if (designMatch.Success && fullMatch.Success)
+        {
+            var designStr = designMatch.Groups[1].Value.Replace(",", "");
+            var fullStr = fullMatch.Groups[1].Value.Replace(",", "");
+
+            if (double.TryParse(designStr, out var design) && double.TryParse(fullStr, out var full) && design > 0)
+            {
+                info.BatteryDesignCapacity = $"{design:N0} mWh";
+                info.BatteryFullChargeCapacity = $"{full:N0} mWh";
+                var health = (full / design) * 100.0;
+                info.BatteryHealthPercent = Math.Min(100.0, Math.Round(health, 1));
+
+                info.BatteryHealthGrade = info.BatteryHealthPercent switch
+                {
+                    >= 85 => "Excellent",
+                    >= 70 => "Good",
+                    >= 50 => "Moderate (Wear Detected)",
+                    _ => "Degraded (Replacement Recommended)"
+                };
+            }
+        }
+
+        if (cycleMatch.Success)
+        {
+            var val = cycleMatch.Groups[1].Value.Trim();
+            info.BatteryCycleCount = (val == "-" || string.IsNullOrWhiteSpace(val)) ? "N/A" : val;
+        }
+    }
+
     private async Task PopulateBatteryWearDetailsAsync(HardwareInfo info)
     {
         try
@@ -244,10 +300,12 @@ public class HardwareService
 
             var psi = new ProcessStartInfo
             {
-                FileName = "powercfg.exe",
+                FileName = GetPowerCfgPath(),
                 Arguments = $"/batteryreport /output \"{tempPath}\"",
                 UseShellExecute = false,
-                CreateNoWindow = true
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
             };
 
             using var process = Process.Start(psi);
@@ -261,33 +319,22 @@ public class HardwareService
                 var html = await File.ReadAllTextAsync(tempPath);
                 try { File.Delete(tempPath); } catch { }
 
-                var designMatch = Regex.Match(html, @"DESIGN CAPACITY[\s\S]*?<td>([\d,]+)\s*mWh", RegexOptions.IgnoreCase);
-                var fullMatch = Regex.Match(html, @"FULL CHARGE CAPACITY[\s\S]*?<td>([\d,]+)\s*mWh", RegexOptions.IgnoreCase);
-
-                if (designMatch.Success && fullMatch.Success)
+                ParseBatteryHtml(html, info);
+            }
+            else
+            {
+                var existingReport = Path.Combine(tempDir, "WindowsBatteryReport.html");
+                if (File.Exists(existingReport))
                 {
-                    var designStr = designMatch.Groups[1].Value.Replace(",", "");
-                    var fullStr = fullMatch.Groups[1].Value.Replace(",", "");
-
-                    if (double.TryParse(designStr, out var design) && double.TryParse(fullStr, out var full) && design > 0)
-                    {
-                        info.BatteryDesignCapacity = $"{design:N0} mWh";
-                        info.BatteryFullChargeCapacity = $"{full:N0} mWh";
-                        var health = (full / design) * 100.0;
-                        info.BatteryHealthPercent = Math.Min(100.0, Math.Round(health, 1));
-
-                        info.BatteryHealthGrade = info.BatteryHealthPercent switch
-                        {
-                            >= 85 => "Excellent",
-                            >= 70 => "Good",
-                            >= 50 => "Moderate (Wear Detected)",
-                            _ => "Degraded (Replacement Recommended)"
-                        };
-                    }
+                    var html = await File.ReadAllTextAsync(existingReport);
+                    ParseBatteryHtml(html, info);
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Battery wear details error: {ex.Message}");
+        }
     }
 
     public async Task<string> GenerateAndOpenBatteryReportAsync()
@@ -304,28 +351,9 @@ public class HardwareService
             }
             catch { }
 
-            // Locate 64-bit powercfg on 64-bit Windows to avoid SysWOW64 redirection failure (energy.dll cannot be loaded under 32-bit SysWOW64)
-            string powercfgExe = "powercfg.exe";
-            if (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess)
-            {
-                var sysnativePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "sysnative", "powercfg.exe");
-                if (File.Exists(sysnativePath))
-                {
-                    powercfgExe = sysnativePath;
-                }
-            }
-            else
-            {
-                var system32Path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "powercfg.exe");
-                if (File.Exists(system32Path))
-                {
-                    powercfgExe = system32Path;
-                }
-            }
-
             var psi = new ProcessStartInfo
             {
-                FileName = powercfgExe,
+                FileName = GetPowerCfgPath(),
                 Arguments = $"/batteryreport /output \"{outPath}\"",
                 UseShellExecute = false,
                 CreateNoWindow = true,

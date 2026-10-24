@@ -214,6 +214,10 @@
                                         <TextBlock Text=" / " FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         <TextBlock Text="{Binding Hardware.BatteryDesignCapacity}" FontSize="11" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                                     </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <TextBlock Text="Cycles: " FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding Hardware.BatteryCycleCount}" FontSize="11" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                    </StackPanel>
                                 </StackPanel>
                             </Border>
                         </WrapPanel>
