@@ -1,4 +1,4 @@
-[
+﻿[
     {
         "Id":  "chrome",
         "Name":  "Google Chrome",
@@ -57,7 +57,10 @@
         "WingetId":  "Zoom.Zoom",
         "Category":  "Messaging",
         "Description":  "Video conferencing and team messaging service.",
-        "Icon":  "Chat24"
+        "Icon":  "Chat24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://zoom.us/client/latest/ZoomInstallerFull.msi",
+        "BatArguments":  "/qn /norestart"
     },
     {
         "Id":  "discord",
@@ -81,7 +84,10 @@
         "WingetId":  "Mozilla.Thunderbird",
         "Category":  "Messaging",
         "Description":  "Free email, calendar, and contacts client from Mozilla.",
-        "Icon":  "Mail24"
+        "Icon":  "Mail24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://download.mozilla.org/?product=thunderbird-latest-ssl\u0026os=win64\u0026lang=en-US",
+        "BatArguments":  "-ms"
     },
     {
         "Id":  "itunes",
@@ -824,7 +830,10 @@
         "WingetId":  "Telegram.TelegramDesktop",
         "Description":  "Fast, secure, and cloud-synced desktop messaging application.",
         "Icon":  "Chat24",
-        "Category":  "Messaging"
+        "Category":  "Messaging",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://telegram.org/dl/desktop/win64",
+        "BatArguments":  "/VERYSILENT /NORESTART"
     },
     {
         "Id":  "slack",

@@ -870,7 +870,7 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
         var startInfo = new ProcessStartInfo
         {
             FileName = GetWingetExecutablePath(),
-            Arguments = $"install --id \"{pkgId}\" --exact {archArg} {sourceArg} --silent --accept-package-agreements --accept-source-agreements --ignore-security-hash --ignore-checksum --force --include-unknown --skip-dependencies --disable-interactivity",
+            Arguments = $"install --id \"{pkgId}\" --exact {archArg} {sourceArg} --silent --accept-package-agreements --accept-source-agreements --ignore-security-hash --force --skip-dependencies --disable-interactivity",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
