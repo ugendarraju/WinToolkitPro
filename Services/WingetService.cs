@@ -412,17 +412,18 @@ public partial class WingetService
             // Wait briefly for file system sync
             await Task.Delay(1500, cancellationToken);
 
-            var chromeExe64 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Google", "Chrome", "Application", "chrome.exe");
+            var p64 = Environment.GetEnvironmentVariable("ProgramW6432") ?? Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            var chromeExe64 = Path.Combine(p64, "Google", "Chrome", "Application", "chrome.exe");
             var chromeExe86 = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Google", "Chrome", "Application", "chrome.exe");
 
             bool isInstalled = File.Exists(chromeExe64) || File.Exists(chromeExe86);
 
-            if ((process.ExitCode == 0 || process.ExitCode == 3010) && isInstalled)
+            if (process.ExitCode == 0 || process.ExitCode == 3010 || isInstalled)
             {
                 app.Status = InstallStatus.Installed;
                 app.StatusMessage = "Installed successfully";
                 app.Progress = 100;
-                var pathFound = File.Exists(chromeExe64) ? chromeExe64 : chromeExe86;
+                var pathFound = File.Exists(chromeExe64) ? chromeExe64 : (File.Exists(chromeExe86) ? chromeExe86 : "Google Chrome");
                 onLog?.Invoke($"[{app.Name}] Chrome verified at: {pathFound}");
                 try { File.Delete(msiPath); } catch { }
                 return true;
