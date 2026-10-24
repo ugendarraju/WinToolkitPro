@@ -19,13 +19,34 @@ public partial class WingetService
         HttpClient.DefaultRequestHeaders.UserAgent.ParseAdd("WinToolkit/1.0 (Windows NT 10.0; Win64; x64)");
     }
 
+    public static string GetWingetExecutablePath()
+    {
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        var aliasPath = Path.Combine(localAppData, "Microsoft", "WindowsApps", "winget.exe");
+        if (File.Exists(aliasPath)) return aliasPath;
+
+        var progFiles = Environment.GetEnvironmentVariable("ProgramW6432") ?? Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+        var winAppsDir = Path.Combine(progFiles, "WindowsApps");
+        if (Directory.Exists(winAppsDir))
+        {
+            try
+            {
+                var match = Directory.GetFiles(winAppsDir, "winget.exe", SearchOption.AllDirectories).FirstOrDefault();
+                if (match != null) return match;
+            }
+            catch { }
+        }
+
+        return "winget";
+    }
+
     public async Task<bool> IsWingetAvailableAsync()
     {
         try
         {
             var startInfo = new ProcessStartInfo
             {
-                FileName = "winget",
+                FileName = GetWingetExecutablePath(),
                 Arguments = "--version",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
@@ -103,6 +124,18 @@ public partial class WingetService
             {
                 if (proc != null) await proc.WaitForExitAsync();
             }
+
+            // Refresh PATH in running process so winget execution alias is immediately visible
+            try
+            {
+                var localAppDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "WindowsApps");
+                var currentPath = Environment.GetEnvironmentVariable("PATH") ?? "";
+                if (!currentPath.Contains(localAppDir, StringComparison.OrdinalIgnoreCase))
+                {
+                    Environment.SetEnvironmentVariable("PATH", currentPath + ";" + localAppDir);
+                }
+            }
+            catch { }
 
             await Task.Delay(1500);
 
@@ -271,7 +304,7 @@ public partial class WingetService
 
             var startInfo = new ProcessStartInfo
             {
-                FileName = "winget",
+                FileName = GetWingetExecutablePath(),
                 Arguments = $"download --id \"{app.WingetId}\" --exact -d \"{tempCacheDir}\" --accept-package-agreements --accept-source-agreements --ignore-security-hash --disable-interactivity",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
@@ -655,7 +688,7 @@ public partial class WingetService
 
         var startInfo = new ProcessStartInfo
         {
-            FileName = "winget",
+            FileName = GetWingetExecutablePath(),
             Arguments = $"install --id \"{pkgId}\" --exact {archArg} {sourceArg} --silent --accept-package-agreements --accept-source-agreements --ignore-security-hash --ignore-checksum --force --include-unknown --skip-dependencies --disable-interactivity",
             UseShellExecute = false,
             RedirectStandardOutput = true,
@@ -1246,7 +1279,7 @@ public partial class WingetService
 
         var startInfo = new ProcessStartInfo
         {
-            FileName = "winget",
+            FileName = GetWingetExecutablePath(),
             Arguments = "upgrade --include-unknown",
             UseShellExecute = false,
             RedirectStandardOutput = true,
@@ -1535,7 +1568,7 @@ public partial class WingetService
     {
         var startInfo = new ProcessStartInfo
         {
-            FileName = "winget",
+            FileName = GetWingetExecutablePath(),
             Arguments = arguments,
             UseShellExecute = false,
             RedirectStandardOutput = true,

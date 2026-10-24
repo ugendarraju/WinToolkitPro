@@ -37,8 +37,8 @@
         "Description":  "Privacy-first browser with built-in ad and tracker blocker.",
         "Icon":  "Shield24",
         "InstallerType":  "exe_download",
-        "DownloadUrl":  "https://laptop-updates.brave.com/latest/winx64",
-        "BatArguments":  "--silent"
+        "DownloadUrl":  "https://github.com/brave/brave-browser/releases/latest/download/BraveBrowserStandaloneSetup.exe",
+        "BatArguments":  "/silent /install"
     },
     {
         "Id":  "vivaldi",
@@ -46,7 +46,10 @@
         "WingetId":  "Vivaldi.Vivaldi",
         "Category":  "Web Browsers",
         "Description":  "Powerful, personal, and private desktop browser.",
-        "Icon":  "Globe24"
+        "Icon":  "Globe24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://downloads.vivaldi.com/stable/Vivaldi.x64.exe",
+        "BatArguments":  "--vivaldi-silent --do-not-launch-chrome"
     },
     {
         "Id":  "zoom",
