@@ -34,7 +34,7 @@
     {
         "Id":  "vivaldi",
         "Name":  "Vivaldi",
-        "WingetId":  "VivaldiTechnologies.Vivaldi",
+        "WingetId":  "Vivaldi.Vivaldi",
         "Category":  "Web Browsers",
         "Description":  "Powerful, personal, and private desktop browser.",
         "Icon":  "Globe24"
@@ -130,7 +130,7 @@
     {
         "Id":  "dotnet_481",
         "Name":  ".NET Framework 4.8.1",
-        "WingetId":  "Microsoft.DotNet.Framework.DeveloperPack_4_8_1",
+        "WingetId":  "Microsoft.DotNet.Framework.DeveloperPack_4",
         "Category":  ".NET",
         "Description":  "Microsoft .NET Framework 4.8.1 runtime pack.",
         "Icon":  "PuzzlePiece24"
@@ -235,7 +235,7 @@
     {
         "Id":  "paintnet",
         "Name":  "Paint.NET",
-        "WingetId":  "dotPDNLLC.paintdotnet",
+        "WingetId":  "dotPDN.PaintDotNet",
         "Category":  "Imaging",
         "Description":  "Image and photo editing software for PCs running Windows.",
         "Icon":  "PaintBrush24"
@@ -259,7 +259,7 @@
     {
         "Id":  "xnview",
         "Name":  "XnView MP",
-        "WingetId":  "XnSoft.XnView.MP",
+        "WingetId":  "XnSoft.XnViewMP",
         "Category":  "Imaging",
         "Description":  "Image viewer, browser and converter with batch processing.",
         "Icon":  "Image24"
@@ -463,7 +463,7 @@
     {
         "Id":  "anydesk",
         "Name":  "AnyDesk",
-        "WingetId":  "AnyDeskSoftwareGmbH.AnyDesk",
+        "WingetId":  "AnyDesk.AnyDesk",
         "Category":  "Remote Desktop",
         "Description":  "Fast remote desktop connectivity application.",
         "Icon":  "WindowRemote24"
@@ -487,7 +487,7 @@
     {
         "Id":  "tightvnc",
         "Name":  "TightVNC",
-        "WingetId":  "TightVNC.TightVNC",
+        "WingetId":  "GlavSoft.TightVNC",
         "Category":  "Remote Desktop",
         "Description":  "Free, open-source remote control and administration tool.",
         "Icon":  "WindowRemote24"
@@ -615,7 +615,7 @@
     {
         "Id":  "googleearth",
         "Name":  "Google Earth Pro",
-        "WingetId":  "Google.GoogleEarthPro",
+        "WingetId":  "Google.EarthPro",
         "Category":  "Other",
         "Description":  "Explore satellite imagery, 3D terrain of the entire globe.",
         "Icon":  "Globe24"
@@ -767,7 +767,7 @@
     {
         "Id":  "eclipse",
         "Name":  "Eclipse IDE",
-        "WingetId":  "EclipseFoundation.Eclipse",
+        "WingetId":  "EclipseFoundation.Eclipse.Java",
         "Category":  "Developer Tools",
         "Description":  "Integrated Development Environment for Java, C/C++, and PHP.",
         "Icon":  "Code24"
@@ -993,3 +993,4 @@
         "Category":  "Developer Tools"
     }
 ]
+
