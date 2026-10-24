@@ -832,18 +832,31 @@ public partial class WingetService
             process.Start();
             await process.WaitForExitAsync(cancellationToken);
 
-            app.Status = InstallStatus.Installed;
-            app.StatusMessage = "Installed successfully";
-            app.Progress = 100;
-            onLog?.Invoke($"[{app.Name}] Installed successfully!");
-            return true;
+            if (process.ExitCode == 0 || process.ExitCode == 3010)
+            {
+                app.Status = InstallStatus.Installed;
+                app.StatusMessage = "Installed successfully";
+                app.Progress = 100;
+                onLog?.Invoke($"[{app.Name}] Installed successfully!");
+                return true;
+            }
+            else
+            {
+                onLog?.Invoke($"[{app.Name}] Direct installer exited with code {process.ExitCode}. Falling back to WinGet...");
+                return await InstallWingetAppAsync(app, onLog, cancellationToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            app.Status = InstallStatus.Idle;
+            app.StatusMessage = "Cancelled";
+            app.Progress = 0;
+            return false;
         }
         catch (Exception ex)
         {
-            app.Status = InstallStatus.Failed;
-            app.StatusMessage = $"Error: {ex.Message}";
-            onLog?.Invoke($"[{app.Name}] Error: {ex.Message}");
-            return false;
+            onLog?.Invoke($"[{app.Name}] Direct download/install notice: {ex.Message}. Falling back to WinGet...");
+            return await InstallWingetAppAsync(app, onLog, cancellationToken);
         }
     }
 

@@ -13,7 +13,10 @@
         "WingetId":  "Opera.Opera",
         "Category":  "Web Browsers",
         "Description":  "Fast and secure browser with built-in ad blocker and VPN.",
-        "Icon":  "Globe24"
+        "Icon":  "Globe24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://net.geo.opera.com/opera/stable/windows",
+        "BatArguments":  "/silent"
     },
     {
         "Id":  "firefox",
@@ -21,7 +24,10 @@
         "WingetId":  "Mozilla.Firefox",
         "Category":  "Web Browsers",
         "Description":  "Free and open-source web browser focused on privacy.",
-        "Icon":  "Globe24"
+        "Icon":  "Globe24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://download.mozilla.org/?product=firefox-latest-ssl\u0026os=win64\u0026lang=en-US",
+        "BatArguments":  "-ms"
     },
     {
         "Id":  "brave",
@@ -29,7 +35,10 @@
         "WingetId":  "Brave.Brave",
         "Category":  "Web Browsers",
         "Description":  "Privacy-first browser with built-in ad and tracker blocker.",
-        "Icon":  "Shield24"
+        "Icon":  "Shield24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://laptop-updates.brave.com/latest/winx64",
+        "BatArguments":  "--silent"
     },
     {
         "Id":  "vivaldi",
@@ -85,7 +94,10 @@
         "WingetId":  "VideoLAN.VLC",
         "Category":  "Media",
         "Description":  "Versatile open-source media player supporting nearly all formats.",
-        "Icon":  "PlayCircle24"
+        "Icon":  "PlayCircle24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://get.videolan.org/vlc/last/win64/vlc-3.0.21-win64.exe",
+        "BatArguments":  "/S"
     },
     {
         "Id":  "aimp",
@@ -442,7 +454,10 @@
         "WingetId":  "AnyDesk.AnyDesk",
         "Category":  "Remote Desktop",
         "Description":  "Fast remote desktop connectivity application.",
-        "Icon":  "WindowRemote24"
+        "Icon":  "WindowRemote24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://download.anydesk.com/AnyDesk.exe",
+        "BatArguments":  "--silent"
     },
     {
         "Id":  "teamviewer",
@@ -554,7 +569,10 @@
         "WingetId":  "7zip.7zip",
         "Category":  "Compression",
         "Description":  "High-compression ratio open-source file archiver.",
-        "Icon":  "FolderZip24"
+        "Icon":  "FolderZip24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://www.7-zip.org/a/7z2409-x64.exe",
+        "BatArguments":  "/S"
     },
     {
         "Id":  "peazip",
@@ -626,7 +644,10 @@
         "WingetId":  "voidtools.Everything",
         "Category":  "Other",
         "Description":  "Instant search engine for files and folders by filename on NTFS drives.",
-        "Icon":  "Search24"
+        "Icon":  "Search24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://www.voidtools.com/Everything-1.4.1.1026.x64-Setup.exe",
+        "BatArguments":  "/S"
     },
     {
         "Id":  "nvda",
@@ -698,7 +719,10 @@
         "WingetId":  "Git.Git",
         "Category":  "Developer Tools",
         "Description":  "Distributed version control system with Git Bash and GUI.",
-        "Icon":  "BranchCompare24"
+        "Icon":  "BranchCompare24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://github.com/git-for-windows/git/releases/download/v2.47.0.windows.1/Git-2.47.0-64-bit.exe",
+        "BatArguments":  "/VERYSILENT /NORESTART"
     },
     {
         "Id":  "filezilla",
@@ -714,7 +738,10 @@
         "WingetId":  "Notepad++.Notepad++",
         "Category":  "Developer Tools",
         "Description":  "Tabbed source code and text editor supporting multiple languages.",
-        "Icon":  "DocumentText24"
+        "Icon":  "DocumentText24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.7/npp.8.7.Installer.x64.exe",
+        "BatArguments":  "/S"
     },
     {
         "Id":  "winscp",
@@ -754,7 +781,10 @@
         "WingetId":  "Microsoft.VisualStudioCode",
         "Category":  "Developer Tools",
         "Description":  "Code editor with Git integration, debugging, and extension store.",
-        "Icon":  "Code24"
+        "Icon":  "Code24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://update.code.visualstudio.com/latest/win32-x64-user/stable",
+        "BatArguments":  "/VERYSILENT /NORESTART"
     },
     {
         "Id":  "cursor",
