@@ -1,0 +1,14 @@
+<Configuration>
+  <VGpu>Enable</VGpu>
+  <Networking>Enable</Networking>
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>E:\Projects\utilities\publish</HostFolder>
+      <SandboxFolder>C:\Users\WDAGUtilityAccount\Desktop\WinToolkit</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+  <LogonCommand>
+    <Command>cmd.exe /c "C:\Users\WDAGUtilityAccount\Desktop\WinToolkit\Setup-Sandbox.cmd"</Command>
+  </LogonCommand>
+</Configuration>

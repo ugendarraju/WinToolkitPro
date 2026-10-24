@@ -319,6 +319,23 @@ public partial class AppsViewModel : ObservableObject
 
         AddLog($"Starting background download & installation pipeline for {total} app(s)...");
 
+        // Verify if any selected apps require WinGet and bootstrap it if missing (e.g. fresh Windows or Windows Sandbox)
+        bool hasWingetApps = selectedApps.Any(a =>
+            !a.Id.Equals("chrome", StringComparison.OrdinalIgnoreCase) &&
+            !a.WingetId.Equals("Google.Chrome", StringComparison.OrdinalIgnoreCase) &&
+            !a.Id.Equals("vcredist_aio", StringComparison.OrdinalIgnoreCase) &&
+            !a.InstallerType.Equals("vcredist_aio", StringComparison.OrdinalIgnoreCase) &&
+            !a.InstallerType.Equals("office_c2r", StringComparison.OrdinalIgnoreCase) &&
+            !a.InstallerType.Equals("zip_bat", StringComparison.OrdinalIgnoreCase) &&
+            !a.InstallerType.Equals("exe_download", StringComparison.OrdinalIgnoreCase));
+
+        if (hasWingetApps && !IsWingetAvailable)
+        {
+            AddLog("Windows Package Manager (WinGet) is not detected on this system. Bootstrapping WinGet...");
+            StatusText = "Installing WinGet package manager...";
+            IsWingetAvailable = await _wingetService.EnsureWingetInstalledAsync(AddLog);
+        }
+
         // Semaphores:
         // 1. Up to 3 simultaneous background downloads
         var downloadSemaphore = new SemaphoreSlim(3, 3);

@@ -43,6 +43,64 @@ public partial class WingetService
         }
     }
 
+    public async Task<bool> EnsureWingetInstalledAsync(Action<string>? onLog = null)
+    {
+        if (await IsWingetAvailableAsync()) return true;
+
+        onLog?.Invoke("⚠️ Windows Package Manager (WinGet) is missing on this system. Bootstrapping WinGet automatically...");
+        try
+        {
+            var script = @"
+                $ErrorActionPreference = 'Stop'
+                $temp = $env:TEMP
+                $vclibs = ""$temp\vclibs.appx""
+                $xaml = ""$temp\xaml.appx""
+                $winget = ""$temp\winget.msixbundle""
+
+                Invoke-WebRequest -Uri 'https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx' -OutFile $vclibs -UseBasicParsing
+                Invoke-WebRequest -Uri 'https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.x64.appx' -OutFile $xaml -UseBasicParsing
+                Invoke-WebRequest -Uri 'https://aka.ms/getwinget' -OutFile $winget -UseBasicParsing
+
+                Add-AppxPackage -Path $vclibs
+                Add-AppxPackage -Path $xaml
+                Add-AppxPackage -Path $winget
+            ";
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{script.Replace("\r\n", " ").Replace("\n", " ")}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            using var proc = Process.Start(psi);
+            if (proc != null)
+            {
+                await proc.WaitForExitAsync();
+            }
+
+            var available = await IsWingetAvailableAsync();
+            if (available)
+            {
+                onLog?.Invoke("✅ WinGet installed and ready.");
+                return true;
+            }
+            else
+            {
+                onLog?.Invoke("⚠️ Failed to automatically initialize WinGet. Please run Install-Winget.ps1 as Administrator.");
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            onLog?.Invoke($"⚠️ Error installing WinGet: {ex.Message}");
+            return false;
+        }
+    }
+
     public async Task<bool> InstallAppAsync(
         AppItem app,
         Action<string>? onLog = null,
