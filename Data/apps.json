@@ -120,9 +120,7 @@
         "Icon":  "MusicNote224",
         "InstallerType":  "exe_download",
         "DownloadUrl":  "https://aimp.ru/files/desktop/builds/aimp_5.40.2727_w32.exe",
-        "BatArguments":  [
-
-                         ]
+        "BatArguments":  "/VERYSILENT /NORESTART /SUPPRESSMSGBOXES /SP-"
     },
     {
         "Id":  "audacity",
@@ -133,9 +131,7 @@
         "Icon":  "Speaker24",
         "InstallerType":  "exe_download",
         "DownloadUrl":  "https://github.com/audacity/audacity/releases/download/Audacity-4.0.1/audacity-win-4.0.1-x86_64.msi",
-        "BatArguments":  [
-
-                         ]
+        "BatArguments":  "/qn /norestart"
     },
     {
         "Id":  "klite",
@@ -146,9 +142,7 @@
         "Icon":  "Video24",
         "InstallerType":  "exe_download",
         "DownloadUrl":  "https://files2.codecguide.com/K-Lite_Codec_Pack_2010_Standard.exe",
-        "BatArguments":  [
-
-                         ]
+        "BatArguments":  "/verysilent /norestart /suppressmsgboxes /sp-"
     },
     {
         "Id":  "spotify",
@@ -159,9 +153,7 @@
         "Icon":  "MusicNote224",
         "InstallerType":  "exe_download",
         "DownloadUrl":  "https://download.scdn.co/SpotifyFullSetupX64.exe",
-        "BatArguments":  [
-
-                         ]
+        "BatArguments":  "/silent"
     },
     {
         "Id":  "handbrake",
@@ -172,9 +164,7 @@
         "Icon":  "Video24",
         "InstallerType":  "exe_download",
         "DownloadUrl":  "https://github.com/HandBrake/HandBrake/releases/download/1.11.2/HandBrake-1.11.2-x86_64-Win_GUI.exe",
-        "BatArguments":  [
-
-                         ]
+        "BatArguments":  "/S"
     },
     {
         "Id":  "dotnet_481",
@@ -876,9 +866,7 @@
         "Category":  "Messaging",
         "InstallerType":  "exe_download",
         "DownloadUrl":  "https://downloads.slack-edge.com/desktop-releases/windows/x64/4.52.182/SlackSetup.exe",
-        "BatArguments":  [
-
-                         ]
+        "BatArguments":  "/s"
     },
     {
         "Id":  "obs-studio",
@@ -891,9 +879,7 @@
         "Category":  "Media",
         "InstallerType":  "exe_download",
         "DownloadUrl":  "https://github.com/obsproject/obs-studio/releases/download/33.0.0/OBS-Studio-33.0.0-Windows-x64-Installer.exe",
-        "BatArguments":  [
-
-                         ]
+        "BatArguments":  "/S"
     },
     {
         "Id":  "capcut",
@@ -905,9 +891,7 @@
         "Category":  "Media",
         "InstallerType":  "exe_download",
         "DownloadUrl":  "https://sf16-web-tos-buz.capcutstatic.com/obj/capcut-web-buz-sg/packages/CapCut_9_4_0_4015_capcutpc_0_creatortool.exe",
-        "BatArguments":  [
-
-                         ]
+        "BatArguments":  "/S"
     },
     {
         "Id":  "obsidian",

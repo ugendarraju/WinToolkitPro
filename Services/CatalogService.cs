@@ -21,9 +21,12 @@ public class CatalogService
             {
                 var json = await File.ReadAllTextAsync(filePath);
                 var items = JsonSerializer.Deserialize<List<AppItem>>(json, JsonOptions);
-                if (items != null) return items;
+                if (items != null && items.Count > 0) return items;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                ActivityService.Instance.AddLog($"Notice: Error parsing {filePath}: {ex.Message}");
+            }
         }
 
         // Fallback: Read embedded resource from assembly (for standalone single-file EXE)
@@ -36,10 +39,13 @@ public class CatalogService
                 using var reader = new StreamReader(stream);
                 var json = await reader.ReadToEndAsync();
                 var items = JsonSerializer.Deserialize<List<AppItem>>(json, JsonOptions);
-                if (items != null) return items;
+                if (items != null && items.Count > 0) return items;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            ActivityService.Instance.AddLog($"Notice: Error parsing embedded apps catalog: {ex.Message}");
+        }
 
         return new List<AppItem>();
     }
