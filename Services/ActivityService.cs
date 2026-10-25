@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -51,17 +53,59 @@ public partial class ActivityService : ObservableObject
         Application.Current?.Dispatcher?.Invoke(() => Logs.Clear());
     }
 
+    private static readonly string LogDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WinToolkit");
+    private static readonly string LogFilePath = Path.Combine(LogDirectory, "activity.log");
+    private static readonly object LogFileLock = new();
+
     public void AddLog(string message)
     {
+        var timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        var logLine = $"[{timestamp}] {message}";
+
         Application.Current?.Dispatcher?.Invoke(() =>
         {
-            var timestamp = DateTime.Now.ToString("HH:mm:ss");
-            Logs.Add($"[{timestamp}] {message}");
+            var shortTime = DateTime.Now.ToString("HH:mm:ss");
+            Logs.Add($"[{shortTime}] {message}");
             if (Logs.Count > 500)
             {
                 Logs.RemoveAt(0);
             }
         });
+
+        Task.Run(() =>
+        {
+            try
+            {
+                lock (LogFileLock)
+                {
+                    Directory.CreateDirectory(LogDirectory);
+                    File.AppendAllText(LogFilePath, logLine + Environment.NewLine);
+                }
+            }
+            catch { }
+        });
+    }
+
+    [RelayCommand]
+    public void OpenLogFile()
+    {
+        try
+        {
+            Directory.CreateDirectory(LogDirectory);
+            if (!File.Exists(LogFilePath))
+            {
+                File.WriteAllText(LogFilePath, $"--- WinToolkit Pro Activity Log Started {DateTime.Now} ---" + Environment.NewLine);
+            }
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = LogFilePath,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            AddLog($"Could not open log file: {ex.Message}");
+        }
     }
 
     [RelayCommand]

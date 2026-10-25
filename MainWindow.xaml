@@ -314,6 +314,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="⚡" FontSize="15" Margin="0,0,6,0"/>
@@ -321,14 +322,22 @@
                                        Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
 
+                        <!-- View Log Button -->
+                        <Button Grid.Column="1" Content="View Log" 
+                                Command="{Binding Activity.OpenLogFileCommand}"
+                                ToolTip="Open full persistent activity log file in Notepad"
+                                Padding="8,3" FontSize="10" Margin="0,0,6,0"
+                                Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
+                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" Cursor="Hand"/>
+
                         <!-- Clear Finished Tasks Button -->
-                        <Button Grid.Column="1" Content="Clear Finished" 
+                        <Button Grid.Column="2" Content="Clear Finished" 
                                 Command="{Binding Activity.ClearFinishedCommand}"
                                 Padding="8,3" FontSize="10" Margin="0,0,6,0"
                                 Background="{DynamicResource SubtleFillColorSecondaryBrush}" 
                                 Foreground="{DynamicResource TextFillColorSecondaryBrush}" Cursor="Hand"/>
 
-                        <Button Grid.Column="2" Content="✕" 
+                        <Button Grid.Column="3" Content="✕" 
                                 Command="{Binding Activity.CloseDrawerCommand}"
                                 Padding="6,2" FontSize="12" Background="Transparent" BorderThickness="0"
                                 Foreground="{DynamicResource TextFillColorSecondaryBrush}" Cursor="Hand"/>

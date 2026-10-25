@@ -117,7 +117,12 @@
         "WingetId":  "AIMP.AIMP",
         "Category":  "Media",
         "Description":  "High-quality audio player with support for extensive formats.",
-        "Icon":  "MusicNote224"
+        "Icon":  "MusicNote224",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://aimp.ru/files/desktop/builds/aimp_5.40.2727_w32.exe",
+        "BatArguments":  [
+
+                         ]
     },
     {
         "Id":  "audacity",
@@ -125,7 +130,12 @@
         "WingetId":  "Audacity.Audacity",
         "Category":  "Media",
         "Description":  "Free, open source, cross-platform audio recording and editing software.",
-        "Icon":  "Speaker24"
+        "Icon":  "Speaker24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://github.com/audacity/audacity/releases/download/Audacity-4.0.1/audacity-win-4.0.1-x86_64.msi",
+        "BatArguments":  [
+
+                         ]
     },
     {
         "Id":  "klite",
@@ -133,7 +143,12 @@
         "WingetId":  "CodecGuide.K-LiteCodecPack.Standard",
         "Category":  "Media",
         "Description":  "Collection of DirectShow filters, VFW/ACM codecs, and tools.",
-        "Icon":  "Video24"
+        "Icon":  "Video24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://files2.codecguide.com/K-Lite_Codec_Pack_2010_Standard.exe",
+        "BatArguments":  [
+
+                         ]
     },
     {
         "Id":  "spotify",
@@ -141,7 +156,12 @@
         "WingetId":  "Spotify.Spotify",
         "Category":  "Media",
         "Description":  "Digital music, podcast, and video streaming service.",
-        "Icon":  "MusicNote224"
+        "Icon":  "MusicNote224",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://download.scdn.co/SpotifyFullSetupX64.exe",
+        "BatArguments":  [
+
+                         ]
     },
     {
         "Id":  "handbrake",
@@ -149,7 +169,12 @@
         "WingetId":  "HandBrake.HandBrake",
         "Category":  "Media",
         "Description":  "Open-source tool for converting video from nearly any format.",
-        "Icon":  "Video24"
+        "Icon":  "Video24",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://github.com/HandBrake/HandBrake/releases/download/1.11.2/HandBrake-1.11.2-x86_64-Win_GUI.exe",
+        "BatArguments":  [
+
+                         ]
     },
     {
         "Id":  "dotnet_481",
@@ -848,7 +873,12 @@
         "WingetId":  "SlackTechnologies.Slack",
         "Description":  "Team collaboration, messaging channels, and workspace integrations.",
         "Icon":  "Chat24",
-        "Category":  "Messaging"
+        "Category":  "Messaging",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://downloads.slack-edge.com/desktop-releases/windows/x64/4.52.182/SlackSetup.exe",
+        "BatArguments":  [
+
+                         ]
     },
     {
         "Id":  "obs-studio",
@@ -858,7 +888,12 @@
         "Description":  "Free and open-source software for video recording and live streaming.",
         "SupportedArchitectures":  "x64",
         "Icon":  "Video24",
-        "Category":  "Media"
+        "Category":  "Media",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://github.com/obsproject/obs-studio/releases/download/33.0.0/OBS-Studio-33.0.0-Windows-x64-Installer.exe",
+        "BatArguments":  [
+
+                         ]
     },
     {
         "Id":  "capcut",
@@ -867,7 +902,12 @@
         "WingetId":  "ByteDance.CapCut",
         "Description":  "All-in-one free video editor with AI effects, auto-captions, and filters.",
         "Icon":  "VideoClip24",
-        "Category":  "Media"
+        "Category":  "Media",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://sf16-web-tos-buz.capcutstatic.com/obj/capcut-web-buz-sg/packages/CapCut_9_4_0_4015_capcutpc_0_creatortool.exe",
+        "BatArguments":  [
+
+                         ]
     },
     {
         "Id":  "obsidian",

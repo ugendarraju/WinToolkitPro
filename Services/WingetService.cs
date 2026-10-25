@@ -814,9 +814,9 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
         var pkgId = (!is64 && !string.IsNullOrWhiteSpace(app.X86WingetId)) ? app.X86WingetId : app.WingetId;
         var archArg = !is64 ? "--architecture x86" : "";
 
-        var sourceArg = !string.IsNullOrWhiteSpace(app.Source) && !string.Equals(app.Source, "winget", StringComparison.OrdinalIgnoreCase)
-            ? $"--source \"{app.Source}\""
-            : "";
+        var sourceArg = string.Equals(app.Source, "msstore", StringComparison.OrdinalIgnoreCase)
+            ? "--source msstore"
+            : "--source winget";
 
         var startInfo = new ProcessStartInfo
         {
@@ -1747,6 +1747,8 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
             -1978334967 => "Hash verification mismatch (Manifest checksum differs from CDN)",
             -1978335212 => "Package not found in configured sources",
             -1978335120 => "Package not found in configured source",
+            -1978335173 => "MS Store / REST API unavailable in Sandbox",
+            -1978335230 => "Invalid installer command arguments",
             _ => $"Exit code {exitCode}"
         };
     }
