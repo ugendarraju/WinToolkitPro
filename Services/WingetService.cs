@@ -450,6 +450,10 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
                 string.Equals(app.Id, "vcredist_aio", StringComparison.OrdinalIgnoreCase))
             {
                 var downloadUrl = app.DownloadUrl;
+                if (string.Equals(app.Id, "screentogif", StringComparison.OrdinalIgnoreCase) && !OsEnvironmentService.Instance.Is64BitOperatingSystem)
+                {
+                    downloadUrl = "https://github.com/NickeManarin/ScreenToGif/releases/download/2.43.2/ScreenToGif.2.43.2.Setup.x86.msi";
+                }
                 if (!string.IsNullOrWhiteSpace(downloadUrl))
                 {
                     var tempDir = Path.Combine(Path.GetTempPath(), "WinToolkit", app.Id);
@@ -974,6 +978,19 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
                     return await InstallExeDownloadAppAsync(app, onLog, cancellationToken);
                 }
 
+                // Fallback for ScreenToGif if winget timed out or failed
+                if (string.Equals(app.WingetId, "NickeManarin.ScreenToGif", StringComparison.OrdinalIgnoreCase) || 
+                    string.Equals(app.Id, "screentogif", StringComparison.OrdinalIgnoreCase))
+                {
+                    onLog?.Invoke($"[{app.Name}] Winget download error ({process.ExitCode}). Switching to official MSI installer...");
+                    var isScreenToGif64 = OsEnvironmentService.Instance.Is64BitOperatingSystem;
+                    app.DownloadUrl = isScreenToGif64
+                        ? "https://github.com/NickeManarin/ScreenToGif/releases/download/2.43.2/ScreenToGif.2.43.2.Setup.x64.msi"
+                        : "https://github.com/NickeManarin/ScreenToGif/releases/download/2.43.2/ScreenToGif.2.43.2.Setup.x86.msi";
+                    app.BatArguments = "/qn /norestart";
+                    return await InstallExeDownloadAppAsync(app, onLog, cancellationToken);
+                }
+
                 if (process.ExitCode == -1978335173 && (string.Equals(app.Source, "msstore", StringComparison.OrdinalIgnoreCase) || OsEnvironmentService.Instance.IsWindowsSandbox))
                 {
                     onLog?.Invoke($"[{app.Name}] Notice: Microsoft Store apps require MS Store infrastructure & licensing, which is disabled inside Windows Sandbox. This package will install normally on your standard host Windows OS.");
@@ -1011,6 +1028,10 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
             app.Progress = 10;
 
             var downloadUrl = app.DownloadUrl;
+            if (string.Equals(app.Id, "screentogif", StringComparison.OrdinalIgnoreCase) && !OsEnvironmentService.Instance.Is64BitOperatingSystem)
+            {
+                downloadUrl = "https://github.com/NickeManarin/ScreenToGif/releases/download/2.43.2/ScreenToGif.2.43.2.Setup.x86.msi";
+            }
             if (string.IsNullOrWhiteSpace(downloadUrl))
             {
                 return await InstallWingetAppAsync(app, onLog, cancellationToken);
@@ -1322,6 +1343,10 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
             app.Progress = 5;
 
             var downloadUrl = app.DownloadUrl;
+            if (string.Equals(app.Id, "screentogif", StringComparison.OrdinalIgnoreCase) && !OsEnvironmentService.Instance.Is64BitOperatingSystem)
+            {
+                downloadUrl = "https://github.com/NickeManarin/ScreenToGif/releases/download/2.43.2/ScreenToGif.2.43.2.Setup.x86.msi";
+            }
             if (string.IsNullOrWhiteSpace(downloadUrl))
             {
                 return await InstallWingetAppAsync(app, onLog, cancellationToken);
@@ -1760,6 +1785,9 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
             -1978335120 => "Package not found in configured source",
             -1978335173 => "MS Store unavailable in Windows Sandbox (Works on host Windows)",
             -1978335230 => "Invalid installer command arguments",
+            -2147012894 => "Download timed out (Network / CDN timeout)",
+            -2147012891 => "Host not found (DNS / network error)",
+            -2147012889 => "Connection failed (Network / server unreachable)",
             _ => $"Exit code {exitCode}"
         };
     }

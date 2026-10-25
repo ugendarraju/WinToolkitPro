@@ -1002,7 +1002,10 @@
         "WingetId":  "NickeManarin.ScreenToGif",
         "Description":  "Screen, webcam, and sketch recorder with integrated frame editor and GIF exporter.",
         "Icon":  "VideoClip24",
-        "Category":  "Imaging"
+        "Category":  "Imaging",
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://github.com/NickeManarin/ScreenToGif/releases/download/2.43.2/ScreenToGif.2.43.2.Setup.x64.msi",
+        "BatArguments":  "/qn /norestart"
     },
     {
         "Id":  "translucenttb",
