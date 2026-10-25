@@ -383,9 +383,9 @@ public partial class AppsViewModel : ObservableObject
         // Semaphores:
         // 1. Up to 3 simultaneous background downloads
         var downloadSemaphore = new SemaphoreSlim(3, 3);
-        // 2. Up to 2 concurrent non-MSI installs, but strictly 1 MSI install at a time (Windows 1618 mutex lock)
-        var generalInstallSemaphore = new SemaphoreSlim(2, 2);
-        var msiLock = new SemaphoreSlim(1, 1);
+        // 2. Strict sequential installation queue (1 at a time) to prevent Windows Installer Error 1618,
+        // UAC / registry conflicts, and winget database collisions
+        var installSemaphore = new SemaphoreSlim(1, 1);
 
         try
         {
@@ -404,7 +404,9 @@ public partial class AppsViewModel : ObservableObject
                             InstallStatus.Installed => ActivityTaskStatus.Completed,
                             InstallStatus.Failed => ActivityTaskStatus.Failed,
                             InstallStatus.Queued => ActivityTaskStatus.Queued,
-                            _ => ActivityTaskStatus.Running
+                            InstallStatus.Installing => ActivityTaskStatus.Running,
+                            InstallStatus.Downloading => ActivityTaskStatus.Running,
+                            _ => ActivityTaskStatus.Queued
                         };
                         ActivityService.Instance.UpdateTask(app.Id, taskStatus, app.StatusMessage, app.Progress);
                     }
@@ -419,14 +421,14 @@ public partial class AppsViewModel : ObservableObject
                     try
                     {
                         if (ct.IsCancellationRequested) return;
-                        AddLog($"[{app.Name}] Downloading in background...");
-                        ActivityService.Instance.UpdateTask(app.Id, ActivityTaskStatus.Running, "Downloading...", app.Progress > 0 ? app.Progress : 5);
+                        AddLog($"[{app.Name}] Preparing package in background...");
+                        ActivityService.Instance.UpdateTask(app.Id, ActivityTaskStatus.Running, "Preparing...", app.Progress > 0 ? app.Progress : 5);
                         await _wingetService.PreDownloadAppAsync(app, AddLog, ct);
                     }
                     catch (OperationCanceledException) { return; }
                     catch (Exception ex)
                     {
-                        AddLog($"[{app.Name}] Download notice: {ex.Message}");
+                        AddLog($"[{app.Name}] Preparation notice: {ex.Message}");
                     }
                     finally
                     {
@@ -436,57 +438,39 @@ public partial class AppsViewModel : ObservableObject
                     if (ct.IsCancellationRequested) return;
 
                     // Step 2: Installation Queue
-                    var isMsi = WingetService.IsMsiPackage(app);
                     app.Status = InstallStatus.Queued;
-                    app.StatusMessage = isMsi ? "Waiting for MSI installer slot..." : "Waiting for installation slot...";
-                    ActivityService.Instance.UpdateTask(app.Id, ActivityTaskStatus.Running, app.StatusMessage, 50);
+                    app.StatusMessage = "Waiting for installation slot...";
+                    ActivityService.Instance.UpdateTask(app.Id, ActivityTaskStatus.Queued, app.StatusMessage, 50);
 
-                    await generalInstallSemaphore.WaitAsync(ct);
+                    await installSemaphore.WaitAsync(ct);
                     try
                     {
                         if (ct.IsCancellationRequested) return;
 
-                        if (isMsi)
+                        StatusText = $"Installing {app.Name}...";
+                        AddLog($"[{app.Name}] Starting installation...");
+                        app.Status = InstallStatus.Installing;
+                        app.StatusMessage = "Installing package...";
+                        ActivityService.Instance.UpdateTask(app.Id, ActivityTaskStatus.Running, "Installing package...", 75);
+                        await _wingetService.InstallAppAsync(app, AddLog, ct);
+
+                        if (app.Status == InstallStatus.Installed)
                         {
-                            // Acquire exclusive MSI lock so multiple MSIs don't collide with Error 1618
-                            await msiLock.WaitAsync(ct);
+                            ActivityService.Instance.UpdateTask(app.Id, ActivityTaskStatus.Completed, "Installed", 100);
+                            System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                            {
+                                app.IsSelected = false;
+                                UpdateSelectedCount();
+                            });
                         }
-
-                        try
+                        else
                         {
-                            if (ct.IsCancellationRequested) return;
-
-                            StatusText = $"Installing {app.Name}...";
-                            AddLog($"[{app.Name}] Starting installation...");
-                            ActivityService.Instance.UpdateTask(app.Id, ActivityTaskStatus.Running, "Installing package...", 75);
-                            await _wingetService.InstallAppAsync(app, AddLog, ct);
-
-                            if (app.Status == InstallStatus.Installed)
-                            {
-                                ActivityService.Instance.UpdateTask(app.Id, ActivityTaskStatus.Completed, "Installed", 100);
-                                System.Windows.Application.Current?.Dispatcher.Invoke(() =>
-                                {
-                                    app.IsSelected = false;
-                                    UpdateSelectedCount();
-                                });
-                            }
-                            else
-                            {
-                                ActivityService.Instance.UpdateTask(app.Id, ActivityTaskStatus.Failed, app.StatusMessage, 100);
-                            }
-                        }
-                        finally
-                        {
-                            if (isMsi)
-                            {
-                                msiLock.Release();
-                            }
+                            ActivityService.Instance.UpdateTask(app.Id, ActivityTaskStatus.Failed, app.StatusMessage, 100);
                         }
                     }
-                    catch (OperationCanceledException) { }
                     finally
                     {
-                        generalInstallSemaphore.Release();
+                        installSemaphore.Release();
                         var done = Interlocked.Increment(ref completedCount);
                         OverallProgress = ((double)done / total) * 100.0;
                         StatusText = $"Progress: {done}/{total} app(s) processed";

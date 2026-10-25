@@ -454,13 +454,14 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
                 {
                     var tempDir = Path.Combine(Path.GetTempPath(), "WinToolkit", app.Id);
                     Directory.CreateDirectory(tempDir);
+                    var isMsi = downloadUrl.Contains(".msi", StringComparison.OrdinalIgnoreCase);
                     var targetFile = string.Equals(app.InstallerType, "zip_bat", StringComparison.OrdinalIgnoreCase)
                         ? Path.Combine(tempDir, "package.zip")
                         : (string.Equals(app.Id, "vcredist_aio", StringComparison.OrdinalIgnoreCase) || string.Equals(app.InstallerType, "vcredist_aio", StringComparison.OrdinalIgnoreCase))
                             ? Path.Combine(tempDir, "VisualCppRedist_AIO_x86_x64.exe")
-                            : Path.Combine(tempDir, "setup.exe");
+                            : isMsi ? Path.Combine(tempDir, "setup.msi") : Path.Combine(tempDir, "setup.exe");
 
-                    if (!File.Exists(targetFile))
+                    if (!File.Exists(targetFile) || new FileInfo(targetFile).Length == 0)
                     {
                         await DownloadFileWithProgressAsync(downloadUrl, targetFile, app, onLog, cancellationToken);
                     }
@@ -472,71 +473,15 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
                 }
             }
 
-            // For standard winget apps, trigger background download cache with streaming progress
-            if (!await IsWingetAvailableAsync())
-            {
-                var bootstrapped = await EnsureWingetInstalledAsync(onLog);
-                if (!bootstrapped)
-                {
-                    app.Status = InstallStatus.Failed;
-                    app.StatusMessage = "WinGet missing & setup failed";
-                    return false;
-                }
-            }
-
-            var tempCacheDir = Path.Combine(Path.GetTempPath(), "WinToolkit", "Downloads", app.Id);
-            Directory.CreateDirectory(tempCacheDir);
-
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = GetWingetExecutablePath(),
-                Arguments = $"download --id \"{app.WingetId}\" --exact -d \"{tempCacheDir}\" --accept-package-agreements --accept-source-agreements --ignore-security-hash --disable-interactivity",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true,
-                StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8
-            };
-
-            using var proc = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
-            proc.OutputDataReceived += (_, e) =>
-            {
-                if (string.IsNullOrWhiteSpace(e.Data)) return;
-                onLog?.Invoke($"[{app.Name}] {e.Data}");
-
-                var match = ProgressRegex.Match(e.Data);
-                if (match.Success && double.TryParse(match.Groups[1].Value, out var percent))
-                {
-                    app.Progress = Math.Clamp(percent, 0, 99);
-                    app.StatusMessage = $"Downloading: {percent:0}%";
-                }
-                else if (e.Data.Contains("MB") || e.Data.Contains("KB") || e.Data.Contains("GB"))
-                {
-                    app.StatusMessage = $"Downloading: {e.Data.Trim()}";
-                }
-            };
-            proc.ErrorDataReceived += (_, e) =>
-            {
-                if (!string.IsNullOrWhiteSpace(e.Data))
-                {
-                    onLog?.Invoke($"[{app.Name}] {e.Data}");
-                }
-            };
-
-            proc.Start();
-            proc.BeginOutputReadLine();
-            proc.BeginErrorReadLine();
-            await proc.WaitForExitAsync(cancellationToken);
-
+            // For standard winget apps, winget install handles its own streaming download and installation natively
             app.Status = InstallStatus.Queued;
-            app.StatusMessage = "Downloaded (In Queue)";
+            app.StatusMessage = "Ready for installation";
             app.Progress = 50;
             return true;
         }
         catch (Exception ex)
         {
-            onLog?.Invoke($"[{app.Name}] Download notice: {ex.Message}");
+            onLog?.Invoke($"[{app.Name}] Preparation notice: {ex.Message}");
             app.Status = InstallStatus.Queued;
             app.StatusMessage = "In queue";
             return false;
@@ -876,7 +821,7 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
         var startInfo = new ProcessStartInfo
         {
             FileName = GetWingetExecutablePath(),
-            Arguments = $"install --id \"{pkgId}\" --exact {archArg} {sourceArg} --silent --accept-package-agreements --accept-source-agreements --ignore-security-hash --force --disable-interactivity",
+            Arguments = $"install --id \"{pkgId}\" --exact {archArg} {sourceArg} --silent --accept-package-agreements --accept-source-agreements --force --disable-interactivity",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -927,9 +872,10 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
         try
         {
             if (string.Equals(app.Id, "discord", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(app.Id, "slack", StringComparison.OrdinalIgnoreCase))
+                string.Equals(app.Id, "slack", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(app.Id, "spotify", StringComparison.OrdinalIgnoreCase))
             {
-                // Discord & Slack (Squirrel installers) automatically spawn their app process and stay running indefinitely.
+                // Discord, Slack & Spotify automatically spawn their background process and stay open indefinitely.
                 // We monitor for the installed application files and terminate the background process so the installer can finish.
                 _ = Task.Run(async () =>
                 {
@@ -940,14 +886,21 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
 
                         var localApp = string.Equals(app.Id, "discord", StringComparison.OrdinalIgnoreCase)
                             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Discord", "Update.exe")
-                            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "slack", "slack.exe");
+                            : string.Equals(app.Id, "slack", StringComparison.OrdinalIgnoreCase)
+                                ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "slack", "slack.exe")
+                                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Spotify", "Spotify.exe");
 
                         if (File.Exists(localApp))
                         {
                             await Task.Delay(4000);
                             try
                             {
-                                var procName = string.Equals(app.Id, "discord", StringComparison.OrdinalIgnoreCase) ? "Discord.exe" : "slack.exe";
+                                var procName = string.Equals(app.Id, "discord", StringComparison.OrdinalIgnoreCase) 
+                                    ? "Discord.exe" 
+                                    : string.Equals(app.Id, "slack", StringComparison.OrdinalIgnoreCase)
+                                        ? "slack.exe"
+                                        : "Spotify.exe";
+
                                 var killPsi = new ProcessStartInfo
                                 {
                                     FileName = "taskkill.exe",
@@ -1060,20 +1013,22 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
 
             var tempDir = Path.Combine(Path.GetTempPath(), "WinToolkit", app.Id);
             Directory.CreateDirectory(tempDir);
-            var exePath = Path.Combine(tempDir, "setup.exe");
+            var isMsi = downloadUrl.Contains(".msi", StringComparison.OrdinalIgnoreCase);
+            var installerPath = isMsi ? Path.Combine(tempDir, "setup.msi") : Path.Combine(tempDir, "setup.exe");
 
-            onLog?.Invoke($"[{app.Name}] Downloading setup executable from {downloadUrl}...");
-            using (var response = await HttpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+            if (!File.Exists(installerPath) || new FileInfo(installerPath).Length == 0)
             {
+                onLog?.Invoke($"[{app.Name}] Downloading setup from {downloadUrl}...");
+                using var response = await HttpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 response.EnsureSuccessStatusCode();
                 var totalBytes = response.Content.Headers.ContentLength ?? -1L;
 
                 await using var streamToReadFrom = await response.Content.ReadAsStreamAsync(cancellationToken);
-                await using var streamToWriteTo = File.Create(exePath);
+                await using var streamToWriteTo = File.Create(installerPath);
 
                 var buffer = new byte[81920];
-                var bytesRead = 0;
-                var totalBytesRead = 0L;
+                int bytesRead;
+                long totalBytesRead = 0L;
 
                 while ((bytesRead = await streamToReadFrom.ReadAsync(buffer, cancellationToken)) > 0)
                 {
@@ -1101,17 +1056,34 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
             app.Progress = 60;
 
             onLog?.Invoke($"[{app.Name}] Launching installer silently...");
-            var psi = new ProcessStartInfo
+            ProcessStartInfo psi;
+            if (isMsi)
             {
-                FileName = exePath,
-                Arguments = app.BatArguments ?? "/S",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+                var msiArgs = string.IsNullOrWhiteSpace(app.BatArguments) ? "/qn /norestart" : app.BatArguments;
+                psi = new ProcessStartInfo
+                {
+                    FileName = "msiexec.exe",
+                    Arguments = $"/i \"{installerPath}\" {msiArgs}",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+            }
+            else
+            {
+                psi = new ProcessStartInfo
+                {
+                    FileName = installerPath,
+                    Arguments = app.BatArguments ?? "/S",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+            }
 
             using var process = new Process { StartInfo = psi };
 
-            if (string.Equals(app.Id, "discord", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(app.Id, "discord", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(app.Id, "slack", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(app.Id, "spotify", StringComparison.OrdinalIgnoreCase))
             {
                 _ = Task.Run(async () =>
                 {
@@ -1120,16 +1092,27 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
                         await Task.Delay(1000);
                         if (cancellationToken.IsCancellationRequested || process.HasExited) break;
 
-                        var localApp = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Discord", "Update.exe");
+                        var localApp = string.Equals(app.Id, "discord", StringComparison.OrdinalIgnoreCase)
+                            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Discord", "Update.exe")
+                            : string.Equals(app.Id, "slack", StringComparison.OrdinalIgnoreCase)
+                                ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "slack", "slack.exe")
+                                : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Spotify", "Spotify.exe");
+
                         if (File.Exists(localApp))
                         {
                             await Task.Delay(3000);
                             try
                             {
+                                var procName = string.Equals(app.Id, "discord", StringComparison.OrdinalIgnoreCase) 
+                                    ? "Discord.exe" 
+                                    : string.Equals(app.Id, "slack", StringComparison.OrdinalIgnoreCase)
+                                        ? "slack.exe"
+                                        : "Spotify.exe";
+
                                 var killPsi = new ProcessStartInfo
                                 {
                                     FileName = "taskkill.exe",
-                                    Arguments = "/F /IM Discord.exe /T",
+                                    Arguments = $"/F /IM {procName} /T",
                                     CreateNoWindow = true,
                                     UseShellExecute = false
                                 };

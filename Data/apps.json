@@ -107,9 +107,9 @@
         "Category":  "Media",
         "Description":  "Versatile open-source media player supporting nearly all formats.",
         "Icon":  "PlayCircle24",
-        "InstallerType":  null,
-        "DownloadUrl":  null,
-        "BatArguments":  null
+        "InstallerType":  "exe_download",
+        "DownloadUrl":  "https://ftp.osuosl.org/pub/videolan/vlc/3.0.21/win64/vlc-3.0.21-win64.exe",
+        "BatArguments":  "/S"
     },
     {
         "Id":  "aimp",
