@@ -974,6 +974,11 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
                     return await InstallExeDownloadAppAsync(app, onLog, cancellationToken);
                 }
 
+                if (process.ExitCode == -1978335173 && (string.Equals(app.Source, "msstore", StringComparison.OrdinalIgnoreCase) || OsEnvironmentService.Instance.IsWindowsSandbox))
+                {
+                    onLog?.Invoke($"[{app.Name}] Notice: Microsoft Store apps require MS Store infrastructure & licensing, which is disabled inside Windows Sandbox. This package will install normally on your standard host Windows OS.");
+                }
+
                 app.Status = InstallStatus.Failed;
                 app.StatusMessage = $"Failed ({GetExitCodeExplanation(process.ExitCode)})";
                 return false;
@@ -1070,10 +1075,16 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
             }
             else
             {
+                var args = app.BatArguments ?? "/S";
+                if (string.Equals(app.Id, "aimp", StringComparison.OrdinalIgnoreCase))
+                {
+                    args = "/AUTO /SILENT";
+                }
+
                 psi = new ProcessStartInfo
                 {
                     FileName = installerPath,
-                    Arguments = app.BatArguments ?? "/S",
+                    Arguments = args,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
@@ -1747,7 +1758,7 @@ Add-AppxPackage -Path '{wingetBundlePath}' -DependencyPath $deps -ForceApplicati
             -1978334967 => "Hash verification mismatch (Manifest checksum differs from CDN)",
             -1978335212 => "Package not found in configured sources",
             -1978335120 => "Package not found in configured source",
-            -1978335173 => "MS Store / REST API unavailable in Sandbox",
+            -1978335173 => "MS Store unavailable in Windows Sandbox (Works on host Windows)",
             -1978335230 => "Invalid installer command arguments",
             _ => $"Exit code {exitCode}"
         };

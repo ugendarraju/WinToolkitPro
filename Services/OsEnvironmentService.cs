@@ -39,6 +39,13 @@ public class OsEnvironmentService
     /// </summary>
     public bool IsWingetSupported => IsWindows11 || (IsWindows10 && OsVersion.Build >= 17763);
 
+    /// <summary>
+    /// Detects if the app is currently running inside Windows Sandbox (temporary disposable VM).
+    /// </summary>
+    public bool IsWindowsSandbox =>
+        string.Equals(Environment.UserName, "WDAGUtilityAccount", StringComparison.OrdinalIgnoreCase) ||
+        Environment.MachineName.StartsWith("WDAG", StringComparison.OrdinalIgnoreCase);
+
     public string OsDisplayName
     {
         get

@@ -1,4 +1,4 @@
-﻿[
+[
     {
         "Id":  "chrome",
         "Name":  "Google Chrome",
@@ -120,7 +120,7 @@
         "Icon":  "MusicNote224",
         "InstallerType":  "exe_download",
         "DownloadUrl":  "https://aimp.ru/files/desktop/builds/aimp_5.40.2727_w32.exe",
-        "BatArguments":  "/VERYSILENT /NORESTART /SUPPRESSMSGBOXES /SP-"
+        "BatArguments":  "/AUTO /SILENT"
     },
     {
         "Id":  "audacity",
